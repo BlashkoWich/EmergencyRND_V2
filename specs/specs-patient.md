@@ -4,13 +4,11 @@
 ```
 NAMES:    20 русских имён (10 муж + 10 жен)
 SURNAMES: 20 русских фамилий (10 муж + 10 жен)
-MEDICAL_DATA: структурированный объект по типам препаратов:
-  painkiller:     5 симптомов (головная боль, боль в спине, суставах, мигрень, зубная боль)
-                  5 диагнозов (мышечный спазм, остеохондроз, невралгия и т.д.)
-  antihistamine:  5 симптомов (сыпь, отёк, зуд, слезоточивость, чихание)
-                  5 диагнозов (аллергическая реакция, крапивница, поллиноз и т.д.)
-  strepsils:      5 симптомов (боль в горле, кашель, першение, осиплость, глотание)
-                  5 диагнозов (фарингит, ларингит, тонзиллит, простуда, ОРВИ)
+MEDICAL_DATA: структурированный объект по типам препаратов, каждый содержит массив cases[]:
+  Каждый case = { symptom, diagnosis, complaint } — связный медицинский кейс
+  painkiller:     8 кейсов (мигрень с аурой, люмбаго, бурсит, пульпит, невралгия, ишиас, миозит, жёлчная колика)
+  antihistamine:  8 кейсов (крапивница, ангиоотёк, конъюнктивит, дерматит, ринит, контактный дерматит, бронхоспазм, укус насекомого)
+  strepsils:      8 кейсов (гнойная ангина, ларингит, трахеит, фарингит, паратонзиллярный инфильтрат, рефлюкс, мононуклеоз, гранулёзный фарингит)
 CONSUMABLE_KEYS: ['painkiller', 'antihistamine', 'strepsils']
 ```
 
@@ -20,8 +18,16 @@ CONSUMABLE_KEYS: ['painkiller', 'antihistamine', 'strepsils']
   id: number,              // автоинкремент
   name: string,            // из NAMES
   surname: string,         // из SURNAMES
-  symptom: string,         // из MEDICAL_DATA[type].symptoms
-  diagnosis: string,       // из MEDICAL_DATA[type].diagnoses
+  age: number,             // случайный возраст 18-75
+  symptom: string,         // из MEDICAL_DATA[type].cases[].symptom
+  diagnosis: string,       // из MEDICAL_DATA[type].cases[].diagnosis
+  complaint: string,       // из MEDICAL_DATA[type].cases[].complaint — жалоба от первого лица
+  vitals: {                // витальные показатели, зависят от тяжести
+    temp: number,          // температура (°C), 1 знак после запятой
+    bpSys: number,         // систолическое давление
+    bpDia: number,         // диастолическое давление
+    pulse: number           // пульс (уд/мин)
+  },
   requiredConsumable: string, // ключ типа препарата ('painkiller'|'antihistamine'|'strepsils')
   mesh: THREE.Group,       // 3D-модель (иерархия с суставами, см. Patient 3D Model)
   state: string,           // 'queued' | 'interacting' | 'walking' | 'atBed' | 'waiting' | 'discharged' | 'atCashier' | 'leaving'
@@ -83,7 +89,9 @@ CONSUMABLE_KEYS: ['painkiller', 'antihistamine', 'strepsils']
 - Если `queue.length >= 2` → спавн не происходит, уведомление о переполнении
 - Точка появления обычных пациентов: `(0, 0, 1)` — у входа
 - `spawnPatient(instant)` — если `instant=true`, пациент сразу ставится на queueTarget
-- При создании выбирается случайный тип из `CONSUMABLE_KEYS`, затем случайный symptom и diagnosis из `MEDICAL_DATA[type]`
+- При создании выбирается случайный тип из `CONSUMABLE_KEYS`, затем случайный case из `MEDICAL_DATA[type].cases[]` (symptom, diagnosis, complaint — связный кейс)
+- Генерируются витальные показатели через `generateVitals(severity.key)` — значения коррелируют с тяжестью
+- Случайный возраст 18-75 через `randomInt(18, 75)`
 
 ## Severity Distribution (при спавне)
 - 60% — `mild` (Лёгкое, startHp=80)
@@ -114,7 +122,18 @@ waitingChairs = [
 ## Popup Flow
 1. ЛКМ на подсвеченного пациента в состоянии `queued` или `waiting` → `openPopup(patient)`
 2. Состояние → `interacting`, pointer unlock, попап показан
-3. Попап содержит: имя, симптом, диагноз, тяжесть заболевания (цветной текст: красный/жёлтый/зелёный), цветная иконка препарата + название препарата
+3. Попап — медицинская карта со структурой:
+   - **Цветная полоса тяжести** (4px сверху): красная (severe), жёлтая (medium), зелёная (mild)
+   - **Шапка**: имя + фамилия, возраст, тяжесть (цветной текст)
+   - **Витальные показатели** (3 ячейки): температура °C, пульс уд/м, АД sys/dia
+     - Цветовая кодировка: норма (голубой), повышенные (жёлтый `.vital-warning`), критические (красный `.vital-critical`)
+     - Пороги: температура ≥39.0 = critical, ≥37.5 = warning; пульс ≥110 = critical, ≥90 = warning; АД sys ≥160 = critical, ≥140 = warning
+   - **HP-бар**: горизонтальная полоса с процентом, цвет: зелёный >60%, жёлтый 30-60%, красный ≤30%
+   - **Клинический блок** (с левой акцентной линией 2px):
+     - Жалоба (курсивом в «кавычках» — от первого лица пациента)
+     - Симптом
+     - Диагноз
+     - Назначение (цветной кружок + название препарата)
 4. Кнопки:
    - "На кровать (X/2)" — проверяет `beds.find(b => !b.occupied)`, disabled если нет свободных
    - "В зону ожидания (X/3)" — проверяет `waitingChairs.find(c => !c.occupied)`, **скрыта если пациент уже в зоне ожидания**
@@ -304,7 +323,7 @@ ELBOW_SWING = 0.25       // амплитуда локтя (рад)
 POSE_TRANSITION_SPEED = 2.5  // скорость перехода поз (1/сек)
 BODY_COLORS[]            // 7 цветов одежды
 NAMES[], SURNAMES[]      // пулы имён
-MEDICAL_DATA{}           // симптомы/диагнозы по типам препаратов
+MEDICAL_DATA{}           // связные кейсы {symptom, diagnosis, complaint} по типам препаратов (8 на тип)
 CONSUMABLE_KEYS[]        // ключи типов препаратов
 SEVERITIES[]             // [{key, label, startHp}] — тяжесть: severe(30), medium(50), mild(80)
 MAX_HP = 100             // максимальное здоровье
@@ -315,6 +334,10 @@ PARTICLE_LIFETIME = 1.2
 PARTICLE_SPEED = 0.6
 INJURY_POSES{}           // позы травм (holdStomach, holdBack, holdHead, holdThroat, limp)
 INJURY_MAP{}             // маппинг consumable type → возможные типы травм
+// Витальные показатели (generateVitals):
+//   severe: temp 38.5-39.8, sys 150-180, dia 95-110, pulse 100-130
+//   medium: temp 37.2-38.4, sys 130-150, dia 85-95, pulse 80-100
+//   mild:   temp 36.4-37.2, sys 110-130, dia 70-85, pulse 65-80
 ```
 
 ## Internal State (Game.Consumables)
