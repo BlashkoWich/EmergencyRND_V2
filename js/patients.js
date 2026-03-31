@@ -6,11 +6,21 @@
                'Мария','Анна','Елена','Ольга','Наталья','Татьяна','Светлана','Ирина','Екатерина','Юлия'];
   var SURNAMES = ['Иванов','Петров','Сидоров','Козлов','Новиков','Морозов','Волков','Соколов','Лебедев','Попов',
                   'Иванова','Петрова','Сидорова','Козлова','Новикова','Морозова','Волкова','Соколова','Лебедева','Попова'];
-  var SYMPTOMS = ['Головная боль','Боль в горле','Кашель','Температура 38.5\u00B0','Тошнота','Боль в спине',
-                  'Головокружение','Слабость','Боль в животе','Одышка'];
-  var CAUSES = ['Переохлаждение','Вирусная инфекция','Стресс','Аллергическая реакция','Пищевое отравление',
-                'Физическая перегрузка','Хроническое заболевание','Бактериальная инфекция','Недосыпание','Обезвоживание'];
-  var SUPPLIES = ['Бинт','Антисептик','Шприц','Капельница','Термометр','Таблетки','Мазь','Пластырь','Ингалятор','Компресс'];
+  var MEDICAL_DATA = {
+    painkiller: {
+      symptoms: ['Сильная головная боль','Острая боль в спине','Боль в суставах','Мигрень','Зубная боль'],
+      diagnoses: ['Мышечный спазм','Остеохондроз','Невралгия','Перенапряжение','Воспаление сустава']
+    },
+    antihistamine: {
+      symptoms: ['Кожная сыпь','Отёк лица','Зуд по всему телу','Слезоточивость','Чихание и насморк'],
+      diagnoses: ['Аллергическая реакция','Крапивница','Поллиноз','Пищевая аллергия','Контактный дерматит']
+    },
+    strepsils: {
+      symptoms: ['Сильная боль в горле','Сухой кашель','Першение в горле','Осиплость голоса','Затруднённое глотание'],
+      diagnoses: ['Фарингит','Ларингит','Тонзиллит','Простуда','ОРВИ']
+    }
+  };
+  var CONSUMABLE_KEYS = Object.keys(MEDICAL_DATA);
   var BODY_COLORS = [0x4477aa, 0x44aa77, 0xaa7744, 0x7744aa, 0xaa4466, 0x5599bb, 0x88aa44];
 
   function randomFrom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
@@ -26,9 +36,10 @@
   var spawnTimer = 0;
   var SPAWN_INTERVAL = 10;
   var PATIENT_SPEED = 2.0;
+  var animations = [];
 
   // --- UI elements ---
-  var hintEl, popupEl, popupName, popupSymptom, popupCause, popupSupply;
+  var hintEl, popupEl, popupName, popupSymptom, popupDiagnosis, popupSupply, popupSupplyIcon;
   var btnBed, btnWait, bedCount, chairCount;
 
   // --- Interaction raycaster ---
@@ -67,18 +78,23 @@
     mesh.position.set(0, 0, 1);
     scene.add(mesh);
 
+    var consumableType = randomFrom(CONSUMABLE_KEYS);
+    var data = MEDICAL_DATA[consumableType];
+
     var patient = {
       id: patientIdCounter++,
       name: randomFrom(NAMES),
       surname: randomFrom(SURNAMES),
-      symptom: randomFrom(SYMPTOMS),
-      cause: randomFrom(CAUSES),
-      supply: randomFrom(SUPPLIES),
+      symptom: randomFrom(data.symptoms),
+      diagnosis: randomFrom(data.diagnoses),
+      requiredConsumable: consumableType,
       mesh: mesh,
       state: 'queued',
       targetPos: null,
       queueTarget: null,
-      destination: null
+      destination: null,
+      indicator: null,
+      animating: false
     };
 
     patients.push(patient);
@@ -149,7 +165,8 @@
     var meshes = [];
     for (var i = 0; i < patients.length; i++) {
       var p = patients[i];
-      if (p.state === 'queued' || p.state === 'interacting') {
+      if (p.animating) continue;
+      if (p.state === 'queued' || p.state === 'interacting' || p.state === 'atBed') {
         p.mesh.traverse(function(child) {
           if (child.isMesh) meshes.push(child);
         });
@@ -161,6 +178,7 @@
 
     if (hits.length > 0) {
       newHovered = getPatientFromMesh(hits[0].object);
+      if (newHovered && newHovered.animating) newHovered = null;
     }
 
     if (newHovered !== hoveredPatient) {
@@ -169,7 +187,21 @@
       hoveredPatient = newHovered;
     }
 
-    hintEl.style.display = hoveredPatient ? 'block' : 'none';
+    if (!hoveredPatient) {
+      hintEl.style.display = 'none';
+    } else if (hoveredPatient.state === 'atBed') {
+      var activeType = Game.Inventory.getActive();
+      if (activeType) {
+        var typeName = Game.Consumables.TYPES[activeType].name;
+        hintEl.textContent = 'ЛКМ — Применить ' + typeName;
+      } else {
+        hintEl.textContent = 'Нужен расходник';
+      }
+      hintEl.style.display = 'block';
+    } else {
+      hintEl.textContent = 'Нажмите ЛКМ для взаимодействия';
+      hintEl.style.display = 'block';
+    }
   }
 
   function openPopup(patient) {
@@ -177,8 +209,11 @@
     patient.state = 'interacting';
     popupName.textContent = patient.name + ' ' + patient.surname;
     popupSymptom.textContent = patient.symptom;
-    popupCause.textContent = patient.cause;
-    popupSupply.textContent = patient.supply;
+    popupDiagnosis.textContent = patient.diagnosis;
+    var typeInfo = Game.Consumables.TYPES[patient.requiredConsumable];
+    popupSupply.textContent = typeInfo.name;
+    var c = typeInfo.color;
+    popupSupplyIcon.style.backgroundColor = 'rgb(' + ((c >> 16) & 255) + ',' + ((c >> 8) & 255) + ',' + (c & 255) + ')';
     popupEl.style.display = 'block';
 
     var freeBeds = beds.filter(function(b) { return !b.occupied; }).length;
@@ -196,6 +231,7 @@
   function closePopup() {
     popupEl.style.display = 'none';
     popupPatient = null;
+    controls.lock();
   }
 
   function sendPatient(patient, dest, slot) {
@@ -222,6 +258,149 @@
     return false;
   }
 
+  // --- Bed indicator ---
+  function createBedIndicator(patient) {
+    var typeInfo = Game.Consumables.TYPES[patient.requiredConsumable];
+    var canvas = document.createElement('canvas');
+    canvas.width = 64; canvas.height = 64;
+    var ctx = canvas.getContext('2d');
+
+    // Draw colored circle
+    var hex = typeInfo.color;
+    var r = (hex >> 16) & 255, g = (hex >> 8) & 255, b = hex & 255;
+    ctx.beginPath();
+    ctx.arc(32, 32, 28, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    // Draw "+" symbol
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 5;
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(32, 18); ctx.lineTo(32, 46);
+    ctx.moveTo(18, 32); ctx.lineTo(46, 32);
+    ctx.stroke();
+
+    var texture = new THREE.CanvasTexture(canvas);
+    var mat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+    var sprite = new THREE.Sprite(mat);
+    sprite.scale.set(0.3, 0.3, 1);
+    sprite.position.copy(patient.mesh.position);
+    sprite.position.y = 2.0;
+    scene.add(sprite);
+    patient.indicator = sprite;
+  }
+
+  function updateIndicators() {
+    var t = Date.now() * 0.003;
+    for (var i = 0; i < patients.length; i++) {
+      var p = patients[i];
+      if (p.indicator) {
+        p.indicator.position.x = p.mesh.position.x;
+        p.indicator.position.z = p.mesh.position.z;
+        p.indicator.position.y = 2.0 + Math.sin(t + p.id) * 0.08;
+      }
+    }
+  }
+
+  // --- Treatment ---
+  function treatPatient(patient) {
+    Game.Inventory.removeActive();
+    patient.animating = true;
+    Game.Inventory.showNotification('Пациент вылечен!');
+
+    // Clone materials for animation
+    for (var j = 0; j < patient.mesh.userData.bodyParts.length; j++) {
+      var part = patient.mesh.userData.bodyParts[j];
+      part.material = part.material.clone();
+      part.material.emissive = new THREE.Color(0x00ff44);
+      part.material.emissiveIntensity = 0.8;
+    }
+
+    animations.push({ patient: patient, type: 'heal', timer: 0.5, maxTime: 0.5 });
+  }
+
+  function wrongTreatment(patient) {
+    patient.animating = true;
+    Game.Inventory.showNotification('Неправильный расходник!');
+
+    // Clone materials for red flash
+    for (var j = 0; j < patient.mesh.userData.bodyParts.length; j++) {
+      var part = patient.mesh.userData.bodyParts[j];
+      part.material = part.material.clone();
+      part.material.emissive = new THREE.Color(0xff2222);
+      part.material.emissiveIntensity = 0.5;
+    }
+
+    animations.push({
+      patient: patient,
+      type: 'shake',
+      timer: 0.3,
+      maxTime: 0.3,
+      originX: patient.mesh.position.x
+    });
+  }
+
+  function removePatient(patient) {
+    if (patient.indicator) {
+      scene.remove(patient.indicator);
+      patient.indicator = null;
+    }
+    scene.remove(patient.mesh);
+    if (patient.destination) {
+      patient.destination.occupied = false;
+    }
+    var idx = patients.indexOf(patient);
+    if (idx !== -1) patients.splice(idx, 1);
+    if (hoveredPatient === patient) {
+      hoveredPatient = null;
+    }
+  }
+
+  function updateAnimations(delta) {
+    for (var i = animations.length - 1; i >= 0; i--) {
+      var anim = animations[i];
+      anim.timer -= delta;
+
+      if (anim.type === 'heal') {
+        var intensity = Math.max(0, anim.timer / anim.maxTime) * 0.8;
+        for (var j = 0; j < anim.patient.mesh.userData.bodyParts.length; j++) {
+          anim.patient.mesh.userData.bodyParts[j].material.emissiveIntensity = intensity;
+        }
+        if (anim.timer <= 0) {
+          removePatient(anim.patient);
+          animations.splice(i, 1);
+        }
+      }
+
+      if (anim.type === 'shake') {
+        var progress = 1 - (anim.timer / anim.maxTime);
+        var offset = Math.sin(progress * Math.PI * 8) * 0.05 * (1 - progress);
+        anim.patient.mesh.position.x = anim.originX + offset;
+
+        var redIntensity = Math.max(0, anim.timer / anim.maxTime) * 0.5;
+        for (var j = 0; j < anim.patient.mesh.userData.bodyParts.length; j++) {
+          anim.patient.mesh.userData.bodyParts[j].material.emissiveIntensity = redIntensity;
+        }
+
+        if (anim.timer <= 0) {
+          anim.patient.mesh.position.x = anim.originX;
+          for (var j = 0; j < anim.patient.mesh.userData.bodyParts.length; j++) {
+            var part = anim.patient.mesh.userData.bodyParts[j];
+            part.material.emissive.setHex(0x000000);
+            part.material.emissiveIntensity = 0;
+          }
+          anim.patient.animating = false;
+          animations.splice(i, 1);
+        }
+      }
+    }
+  }
+
   function updatePatients(delta) {
     for (var i = 0; i < patients.length; i++) {
       var p = patients[i];
@@ -238,12 +417,19 @@
         if (arrived) {
           p.state = (p.destination && beds.indexOf(p.destination) !== -1) ? 'atBed' : 'waiting';
           p.targetPos = null;
+          if (p.state === 'atBed') {
+            createBedIndicator(p);
+          }
         }
       }
     }
   }
 
   window.Game.Patients = {
+    hasInteraction: function() { return !!hoveredPatient || !!popupPatient; },
+    isPopupOpen: function() { return !!popupPatient; },
+    getHoveredPatient: function() { return hoveredPatient; },
+
     setup: function(_THREE, _scene, _camera, _controls, _beds, _waitingChairs) {
       THREE = _THREE;
       scene = _scene;
@@ -261,8 +447,9 @@
       popupEl = document.getElementById('patient-popup');
       popupName = document.getElementById('popup-name');
       popupSymptom = document.getElementById('popup-symptom');
-      popupCause = document.getElementById('popup-cause');
+      popupDiagnosis = document.getElementById('popup-diagnosis');
       popupSupply = document.getElementById('popup-supply');
+      popupSupplyIcon = document.getElementById('popup-supply-icon');
       btnBed = document.getElementById('btn-bed');
       btnWait = document.getElementById('btn-wait');
       bedCount = document.getElementById('bed-count');
@@ -273,6 +460,21 @@
         if (e.button !== 0 || !controls.isLocked) return;
         if (popupPatient) return;
         if (!hoveredPatient) return;
+
+        if (hoveredPatient.state === 'atBed') {
+          var activeType = Game.Inventory.getActive();
+          if (!activeType) {
+            Game.Inventory.showNotification('Выберите расходник в инвентаре');
+            return;
+          }
+          if (activeType === hoveredPatient.requiredConsumable) {
+            treatPatient(hoveredPatient);
+          } else {
+            wrongTreatment(hoveredPatient);
+          }
+          return;
+        }
+
         openPopup(hoveredPatient);
       });
 
@@ -310,6 +512,8 @@
       }
 
       updatePatients(delta);
+      updateAnimations(delta);
+      updateIndicators();
       updateInteraction();
     }
   };

@@ -18,6 +18,7 @@
       indoorFloor.position.set(0, -0.05, -BD / 2);
       indoorFloor.receiveShadow = true;
       scene.add(indoorFloor);
+      collidables.push(indoorFloor);
 
       // --- Outdoor ground: asphalt sidewalk ---
       var sidewalk = new THREE.Mesh(
@@ -27,13 +28,14 @@
       sidewalk.position.set(0, -0.06, 24);
       sidewalk.receiveShadow = true;
       scene.add(sidewalk);
+      collidables.push(sidewalk);
 
       // --- Grass areas ---
       var grassMat = new THREE.MeshStandardMaterial({ map: H.createGrassTexture(THREE), roughness: 0.9 });
       var grassL = new THREE.Mesh(new THREE.BoxGeometry(20, 0.1, 40), grassMat);
-      grassL.position.set(-20, -0.04, 20); grassL.receiveShadow = true; scene.add(grassL);
+      grassL.position.set(-20, -0.04, 20); grassL.receiveShadow = true; scene.add(grassL); collidables.push(grassL);
       var grassR = new THREE.Mesh(new THREE.BoxGeometry(20, 0.1, 40), grassMat);
-      grassR.position.set(20, -0.04, 20); grassR.receiveShadow = true; scene.add(grassR);
+      grassR.position.set(20, -0.04, 20); grassR.receiveShadow = true; scene.add(grassR); collidables.push(grassR);
 
       // --- Ceiling (only over building) ---
       var ceilMesh = new THREE.Mesh(
@@ -43,6 +45,7 @@
       ceilMesh.position.set(0, 3.05, -BD / 2);
       ceilMesh.receiveShadow = true;
       scene.add(ceilMesh);
+      collidables.push(ceilMesh);
 
       // --- Building walls ---
       var T = 0.2;
@@ -61,7 +64,7 @@
       for (var i = 0; i < 2; i++) {
         var dx = i === 0 ? -doorHalf : doorHalf;
         var post = new THREE.Mesh(new THREE.BoxGeometry(0.08, 3, 0.25), frameMat);
-        post.position.set(dx, 1.5, BZ2); scene.add(post);
+        post.position.set(dx, 1.5, BZ2); scene.add(post); collidables.push(post);
       }
 
       // --- Entrance sign ---
@@ -80,9 +83,9 @@
       deskFront.position.set(0, 0.5, -10.0); deskFront.castShadow = true; scene.add(deskFront); collidables.push(deskFront);
 
       var deskSide1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.0, 1.0), deskPanelMat);
-      deskSide1.position.set(-1.5, 0.5, -10.5); scene.add(deskSide1);
+      deskSide1.position.set(-1.5, 0.5, -10.5); scene.add(deskSide1); collidables.push(deskSide1);
       var deskSide2 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.0, 1.0), deskPanelMat);
-      deskSide2.position.set(1.5, 0.5, -10.5); scene.add(deskSide2);
+      deskSide2.position.set(1.5, 0.5, -10.5); scene.add(deskSide2); collidables.push(deskSide2);
 
       // --- 3 Chairs (waiting area, along east wall) ---
       var chairMat = new THREE.MeshStandardMaterial({ color: 0x3366aa, roughness: 0.6 });

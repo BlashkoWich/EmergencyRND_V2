@@ -12,12 +12,31 @@
   <div id="patient-popup">
     <h2 id="popup-name"></h2>
     <div class="info-row">Симптом: <span id="popup-symptom"></span></div>
-    <div class="info-row">Причина: <span id="popup-cause"></span></div>
-    <div class="info-row">Расходник: <span id="popup-supply"></span></div>
+    <div class="info-row">Диагноз: <span id="popup-diagnosis"></span></div>
+    <div class="info-row">Расходник: <span id="popup-supply-icon" style="display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:middle;margin-right:6px;border:1px solid rgba(255,255,255,0.3)"></span><span id="popup-supply"></span></div>
     <div class="buttons">
       <button id="btn-bed">На кровать <span id="bed-count" style="opacity:0.7"></span></button>
       <button id="btn-wait">В зону ожидания <span id="chair-count" style="opacity:0.7"></span></button>
     </div>
+  </div>
+  <div id="shop-popup">
+    <h2>Магазин расходников</h2>
+    <div class="shop-item" data-type="strepsils">
+      <span class="shop-item-icon" style="background:#cc3333"></span>
+      <span class="shop-item-name">Стрепсилс</span>
+      <button class="shop-buy-btn">Купить</button>
+    </div>
+    <div class="shop-item" data-type="painkiller">
+      <span class="shop-item-icon" style="background:#3366cc"></span>
+      <span class="shop-item-name">Обезболивающее</span>
+      <button class="shop-buy-btn">Купить</button>
+    </div>
+    <div class="shop-item" data-type="antihistamine">
+      <span class="shop-item-icon" style="background:#33aa55"></span>
+      <span class="shop-item-name">Антигистаминное</span>
+      <button class="shop-buy-btn">Купить</button>
+    </div>
+    <button id="shop-close">✕</button>
   </div>
   <div id="overlay">
     <h1>Частная Клиника</h1>
@@ -33,12 +52,17 @@
       <div class="key">D</div>
     </div>
     <p style="margin-top:1rem;">WASD — движение &nbsp;|&nbsp; Мышь — камера &nbsp;|&nbsp; ESC — пауза</p>
+    <p style="margin-top:0.5rem; opacity:0.6; font-size:0.85rem;">Q — магазин &nbsp;|&nbsp; 1-6 — инвентарь &nbsp;|&nbsp; ЛКМ — взаимодействие</p>
   </div>
 
   <script src="js/helpers.js"></script>
   <script src="js/world.js"></script>
   <script src="js/patients.js"></script>
   <script src="js/controls.js"></script>
+  <script src="js/consumables.js"></script>
+  <script src="js/inventory.js"></script>
+  <script src="js/shop.js"></script>
+  <script src="js/shelves.js"></script>
 
   <script type="importmap">
   {
@@ -55,7 +79,7 @@
 
     // --- Renderer ---
     const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -71,6 +95,8 @@
     // --- Camera ---
     const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
     camera.position.set(0, 1.6, -11);
+    camera.rotation.order = 'YXZ'; // Match PointerLockControls euler order to prevent quaternion↔euler drift
+    camera.rotation.y = Math.PI;   // Face towards street (+Z)
 
     // --- Resize ---
     window.addEventListener('resize', () => {
@@ -91,18 +117,26 @@
     // --- Setup patients ---
     Game.Patients.setup(THREE, scene, camera, controls, beds, waitingChairs);
 
+    // --- Setup consumables, inventory, shop, shelves ---
+    Game.Consumables.setup(THREE, scene, camera, controls, collidables);
+    Game.Inventory.setup();
+    Game.Shop.setup(controls);
+    Game.Shelves.setup(THREE, scene, camera, controls, collidables);
+
     // --- Animation loop ---
     const clock = new THREE.Clock();
 
     function animate() {
       requestAnimationFrame(animate);
-      const delta = clock.getDelta();
+      const delta = Math.min(clock.getDelta(), 0.05);
 
       if (controls.isLocked) {
         Game.Controls.update(delta);
       }
 
       Game.Patients.update(delta);
+      Game.Consumables.update(delta);
+      Game.Shelves.update(delta);
 
       renderer.render(scene, camera);
     }
