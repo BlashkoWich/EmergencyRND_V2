@@ -219,7 +219,7 @@
           var typeName = Game.Consumables.TYPES[activeType].name;
           hintEl.textContent = 'ЛКМ — Применить ' + typeName;
         } else {
-          hintEl.textContent = 'Нужен расходник';
+          hintEl.textContent = 'Нужен препарат';
         }
       }
       hintEl.style.display = 'block';
@@ -523,7 +523,7 @@
 
   function wrongTreatment(patient) {
     patient.animating = true;
-    Game.Inventory.showNotification('Неправильный расходник!');
+    Game.Inventory.showNotification('Неправильный препарат!');
 
     // Clone materials for red flash
     for (var j = 0; j < patient.mesh.userData.bodyParts.length; j++) {
@@ -769,7 +769,7 @@
           if (hoveredPatient.treated) return;
           var activeType = Game.Inventory.getActive();
           if (!activeType) {
-            Game.Inventory.showNotification('Выберите расходник в инвентаре');
+            Game.Inventory.showNotification('Выберите препарат в инвентаре');
             return;
           }
           if (activeType === hoveredPatient.requiredConsumable) {

@@ -132,8 +132,10 @@ canvas { display: block; }
   display: flex; gap: 12px;
 }
 .inv-hint {
-  color: rgba(255,255,255,0.45); font-family: 'Segoe UI', Arial, sans-serif;
-  font-size: 0.7rem; font-weight: 500;
+  color: rgba(255,255,255,0.85); font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 0.9rem; font-weight: 600;
+  background: rgba(0,0,0,0.5);
+  padding: 3px 10px; border-radius: 4px;
 }
 
 /* --- Notification --- */
