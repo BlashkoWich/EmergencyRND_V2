@@ -1,0 +1,66 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { overflow: hidden; background: #000; }
+canvas { display: block; }
+
+#overlay {
+  position: fixed; inset: 0; z-index: 10;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff; font-family: 'Segoe UI', Arial, sans-serif;
+  cursor: pointer; user-select: none;
+}
+#overlay h1 { font-size: 2.4rem; margin-bottom: 0.6rem; font-weight: 300; letter-spacing: 0.05em; }
+#overlay p { font-size: 1rem; opacity: 0.7; }
+#overlay .keys { margin-top: 1.2rem; display: flex; gap: 0.5rem; }
+#overlay .key {
+  width: 42px; height: 42px; border: 1px solid rgba(255,255,255,0.4);
+  border-radius: 6px; display: flex; align-items: center; justify-content: center;
+  font-size: 0.9rem; font-weight: 600;
+}
+
+/* --- Crosshair --- */
+#crosshair {
+  position: fixed; top: 50%; left: 50%; z-index: 5;
+  transform: translate(-50%, -50%);
+  width: 24px; height: 24px;
+  pointer-events: none; display: none;
+}
+#crosshair::before, #crosshair::after {
+  content: ''; position: absolute; background: rgba(255,255,255,0.85); border-radius: 1px;
+}
+#crosshair::before { width: 2px; height: 24px; left: 11px; top: 0; }
+#crosshair::after  { width: 24px; height: 2px; top: 11px; left: 0; }
+
+/* --- Interaction hint --- */
+#interact-hint {
+  position: fixed; top: calc(50% + 30px); left: 50%; z-index: 5;
+  transform: translateX(-50%);
+  color: #fff; font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 0.85rem; background: rgba(0,0,0,0.55);
+  padding: 4px 12px; border-radius: 4px;
+  pointer-events: none; display: none; white-space: nowrap;
+}
+
+/* --- Patient popup --- */
+#patient-popup {
+  position: fixed; top: 50%; left: 50%; z-index: 20;
+  transform: translate(-50%, -50%);
+  background: #1a2a3a; color: #e0e8f0;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  padding: 28px 32px; border-radius: 12px;
+  min-width: 320px; display: none;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+}
+#patient-popup h2 { font-size: 1.3rem; margin-bottom: 14px; font-weight: 500; }
+#patient-popup .info-row { margin-bottom: 8px; font-size: 0.92rem; opacity: 0.9; }
+#patient-popup .info-row span { color: #7abfff; font-weight: 600; }
+#patient-popup .buttons { display: flex; gap: 12px; margin-top: 20px; }
+#patient-popup .buttons button {
+  flex: 1; padding: 10px 0; border: none; border-radius: 6px;
+  font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.2s;
+}
+#btn-bed { background: #2a8a5a; color: #fff; }
+#btn-bed:hover { background: #33a06a; }
+#btn-wait { background: #5a7a9a; color: #fff; }
+#btn-wait:hover { background: #6a8aaa; }

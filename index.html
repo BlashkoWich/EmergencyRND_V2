@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Частная Клиника</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="crosshair"></div>
+  <div id="interact-hint">Нажмите ЛКМ для взаимодействия</div>
+  <div id="patient-popup">
+    <h2 id="popup-name"></h2>
+    <div class="info-row">Симптом: <span id="popup-symptom"></span></div>
+    <div class="info-row">Причина: <span id="popup-cause"></span></div>
+    <div class="info-row">Расходник: <span id="popup-supply"></span></div>
+    <div class="buttons">
+      <button id="btn-bed">На кровать <span id="bed-count" style="opacity:0.7"></span></button>
+      <button id="btn-wait">В зону ожидания <span id="chair-count" style="opacity:0.7"></span></button>
+    </div>
+  </div>
+  <div id="overlay">
+    <h1>Частная Клиника</h1>
+    <p>Нажмите, чтобы начать</p>
+    <div class="keys">
+      <div class="key" style="visibility:hidden">.</div>
+      <div class="key">W</div>
+      <div class="key" style="visibility:hidden">.</div>
+    </div>
+    <div class="keys">
+      <div class="key">A</div>
+      <div class="key">S</div>
+      <div class="key">D</div>
+    </div>
+    <p style="margin-top:1rem;">WASD — движение &nbsp;|&nbsp; Мышь — камера &nbsp;|&nbsp; ESC — пауза</p>
+  </div>
+
+  <script src="js/helpers.js"></script>
+  <script src="js/world.js"></script>
+  <script src="js/patients.js"></script>
+  <script src="js/controls.js"></script>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+    }
+  }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+
+    // --- Renderer ---
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
+    document.body.appendChild(renderer.domElement);
+
+    // --- Scene ---
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x87ceeb);
+    scene.fog = new THREE.Fog(0x87ceeb, 25, 60);
+
+    // --- Camera ---
+    const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
+    camera.position.set(0, 1.6, -11);
+
+    // --- Resize ---
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // --- Collidable objects ---
+    const collidables = [];
+
+    // --- Build world ---
+    const { beds, waitingChairs } = Game.World.setup(THREE, scene, collidables);
+
+    // --- Setup controls ---
+    const controls = Game.Controls.setup(THREE, camera, collidables, PointerLockControls);
+
+    // --- Setup patients ---
+    Game.Patients.setup(THREE, scene, camera, controls, beds, waitingChairs);
+
+    // --- Animation loop ---
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const delta = clock.getDelta();
+
+      if (controls.isLocked) {
+        Game.Controls.update(delta);
+      }
+
+      Game.Patients.update(delta);
+
+      renderer.render(scene, camera);
+    }
+    animate();
+  </script>
+</body>
+</html>
