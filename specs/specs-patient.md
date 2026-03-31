@@ -23,7 +23,7 @@ CONSUMABLE_KEYS: ['painkiller', 'antihistamine', 'strepsils']
   symptom: string,         // из MEDICAL_DATA[type].symptoms
   diagnosis: string,       // из MEDICAL_DATA[type].diagnoses
   requiredConsumable: string, // ключ типа препарата ('painkiller'|'antihistamine'|'strepsils')
-  mesh: THREE.Group,       // 3D-модель
+  mesh: THREE.Group,       // 3D-модель (иерархия с суставами, см. Patient 3D Model)
   state: string,           // 'queued' | 'interacting' | 'walking' | 'atBed' | 'waiting' | 'discharged' | 'atCashier' | 'leaving'
   targetPos: Vector3|null, // целевая позиция при walking/discharged/leaving
   queueTarget: Vector3|null, // позиция в очереди
@@ -35,14 +35,24 @@ CONSUMABLE_KEYS: ['painkiller', 'antihistamine', 'strepsils']
   severity: object,        // { key, label, startHp } — тяжесть заболевания
   treated: boolean,        // true после применения правильного препарата
   hpDecayTimer: number,    // таймер деградации HP (сбрасывается каждые 3 сек)
-  healthBar: THREE.Sprite|null, // 3D хелсбар над головой (статичный, y=1.7)
-  healthBarCanvas: HTMLCanvasElement, // канвас для перерисовки хелсбара
-  healthBarTexture: THREE.CanvasTexture, // текстура хелсбара
+  healthBar: THREE.Sprite|null, // 3D хелсбар над головой
+  healthBarCanvas: HTMLCanvasElement,
+  healthBarTexture: THREE.CanvasTexture,
   lastDrawnHp: number,     // кеш для оптимизации перерисовки
   particleTimer: number,   // таймер спавна лечебных частиц
   leavePhase: string|null, // 'toExit' | 'toStreet' — фаза ухода (только для leaving)
   fadeTimer: number|null,  // таймер fade-out при уходе
-  _wasWaiting: boolean     // флаг: пациент был в зоне ожидания перед открытием попапа
+  _wasWaiting: boolean,    // флаг: пациент был в зоне ожидания перед открытием попапа
+  anim: {                  // состояние анимации
+    walkPhase: number,     // фаза шагового цикла (distance-based, рад)
+    walkBlend: number,     // 0..1, blend in/out анимации ходьбы
+    pose: string,          // 'standing' | 'sitting' | 'lying' — текущая поза
+    targetPose: string,    // целевая поза (для плавного перехода)
+    poseTransition: number,// 0..1, прогресс перехода между позами
+    poseFrom: string,      // предыдущая поза (для интерполяции)
+    recovered: boolean,    // true после выписки (HP=100) — пациент ходит нормально
+    injuryType: string     // тип травмы: 'holdStomach'|'holdBack'|'holdHead'|'holdThroat'|'limp'
+  }
 }
 ```
 
@@ -132,8 +142,10 @@ waitingChairs = [
    - Освобождает кровать (`destination.occupied = false`)
    - Удаляет indicator и healthBar
    - `patient.treated = false` (остановка логики восстановления)
+   - `patient.anim.recovered = true` — скорость и походка становятся нормальными
+   - `patient.anim.targetPose = 'standing'` — пациент встаёт с кровати (плавный переход из lying), сдвигается на standing position
    - Вызывает `Game.Cashier.addPatientToQueue(patient)`
-2. Пациент получает `state = 'discharged'`, `targetPos` к кассе
+2. Пациент получает `state = 'discharged'`, `targetPos` к кассе, идёт нормальной походкой
 3. Подход к кассе → `state = 'atCashier'`
 4. Оплата через терминал → `state = 'leaving'`
 5. Уход: к выходу (0,0,1), затем на улицу (0,0,25)
@@ -142,7 +154,7 @@ waitingChairs = [
 ## Health Bar (3D Sprite)
 - Создаётся при спавне пациента (`createHealthBar()`)
 - Canvas 128×16 → `THREE.CanvasTexture` → `THREE.Sprite`
-- Статичная позиция `y=1.7` над головой (без покачивания)
+- Позиция `y=1.7` над головой (стоя/сидя) или `y=1.2` (лёжа)
 - Scale: `(0.6, 0.08, 1)`, `depthTest: false`
 - Цветовая индикация по текущему HP:
   - Зелёный (`rgb(50, 205, 50)`) при HP > 60%
@@ -200,13 +212,47 @@ waitingChairs = [
   - `'shake'` — тряска (sin-осцилляция x ±0.05, 8 колебаний за 0.3с) + красная вспышка, по завершении сброс позиции и `animating=false`
 
 ## Patient Movement
-- Скорость: `PATIENT_SPEED = 2.0` ед/сек
+- Базовая скорость: `PATIENT_SPEED = 2.0` ед/сек
+- Скорость зависит от тяжести: `getPatientSpeed(patient)` = `PATIENT_SPEED * WALK_SPEED[severity]`
+  - severe: ×0.35, medium: ×0.65, mild: ×0.9, normal (после выздоровления): ×1.0
 - Функция `moveToward(pos, target, maxDist)`: линейное перемещение по XZ
 - В состоянии `queued`: движение к `queueTarget`
 - В состоянии `walking`: движение к `targetPos`, поворот лицом к цели
-- При достижении цели: state → `atBed` (+ создание индикатора) или `waiting`
-- В состоянии `discharged`: движение к кассе, поворот лицом к цели
+- При достижении цели: state → `atBed` (+ создание индикатора, поза → lying) или `waiting` (поза → sitting)
+- В состоянии `discharged`: движение к кассе, `recovered=true`, нормальная скорость
 - В состоянии `leaving`: движение к выходу (phase toExit → toStreet), fade-out при z>18
+
+## Walk Animation System
+- Фаза шагового цикла привязана к пройденному расстоянию: `walkPhase += (dist / STRIDE_LEN) * 2PI`
+- `STRIDE_LEN = 1.1` — мировых единиц на полный цикл (2 шага)
+- Плавный blend in/out при начале/остановке движения (walkBlend 0..1)
+- Ноги: `sin(phase)` / `sin(phase + PI)` — противофазное качание вокруг X на тазобедренных суставах
+  - Амплитуда: `LEG_SWING = 0.4` рад
+  - При хромоте (limp): правая нога с задержкой фазы и уменьшенной амплитудой
+- Руки: плечо качается в противофазе ногам, локоть слегка сгибается на заднем махе
+  - `ARM_SWING = 0.35`, `ELBOW_SWING = 0.25`
+
+## Injury Poses (при ходьбе)
+- Каждый пациент при спавне получает `injuryType` из `INJURY_MAP[requiredConsumable]`:
+  - **painkiller** → случайно: `holdStomach`, `holdBack`, или `limp`
+  - **antihistamine** → `holdHead`
+  - **strepsils** → `holdThroat`
+- Эффект травмы масштабируется по `getSeverityFactor()`:
+  - severe=1.0, medium=0.5, mild=0.15, recovered=0
+- Каждая поза задаёт: наклон торса (hunch), опускание головы (headDroop), углы плеча и локтя для каждой руки, хромоту
+- При ходьбе руки плавно интерполируются между нормальным махом и позой травмы по severity factor
+- Позы:
+  - `holdStomach`: hunch=0.3, обе руки согнуты к животу (shoulder=-0.8, elbow=-1.6)
+  - `holdBack`: hunch=0.25, одна рука за спину (shoulder=0.4, elbow=-1.2), хромота
+  - `holdHead`: hunch=0.1, обе руки подняты к лицу (shoulder=-1.8, elbow=-2.0)
+  - `holdThroat`: hunch=0.15, одна рука у горла (shoulder=-1.4, elbow=-2.2), вторая свободна
+  - `limp`: hunch=0.12, руки свободны, хромота
+
+## Pose Transitions (standing → sitting / lying)
+- Плавная интерполяция (smoothstep) за ~0.4с (`POSE_TRANSITION_SPEED = 2.5`)
+- **Sitting** (зона ожидания): bodyContainer опускается на 0.3, ноги сгибаются на -PI/2 (вперёд)
+- **Lying** (кровать): poseContainer.rotation.x = -PI/2 (тело укладывается горизонтально), poseContainer.position.y = 0.62 (высота матраса), Z-компенсация = 0.75. Пациент плавно сдвигается на центр кровати, поворачивается головой к подушке (rotation.y = PI/2). Руки слегка разведены (armRotZ ±0.3)
+- При выписке: поза → standing, пациент сдвигается обратно на standing position, `recovered=true`
 
 ## Consumable System
 
@@ -249,7 +295,13 @@ healParticleTexture      // кешированная текстура части
 ## Constants (Game.Patients)
 ```js
 SPAWN_INTERVAL = 10      // секунды между спавнами
-PATIENT_SPEED = 2.0      // ед/сек
+PATIENT_SPEED = 2.0      // базовая ед/сек (умножается на WALK_SPEED[severity])
+WALK_SPEED = { severe: 0.35, medium: 0.65, mild: 0.9, normal: 1.0 }
+STRIDE_LEN = 1.1         // мировых единиц на полный шаговый цикл
+LEG_SWING = 0.4          // амплитуда ног (рад)
+ARM_SWING = 0.35         // амплитуда плеча (рад)
+ELBOW_SWING = 0.25       // амплитуда локтя (рад)
+POSE_TRANSITION_SPEED = 2.5  // скорость перехода поз (1/сек)
 BODY_COLORS[]            // 7 цветов одежды
 NAMES[], SURNAMES[]      // пулы имён
 MEDICAL_DATA{}           // симптомы/диагнозы по типам препаратов
@@ -258,9 +310,11 @@ SEVERITIES[]             // [{key, label, startHp}] — тяжесть: severe(3
 MAX_HP = 100             // максимальное здоровье
 HP_DECAY_INTERVAL = 3.0  // секунды между потерей 1 HP
 HP_RECOVERY_RATE = 3.0   // HP/сек при восстановлении
-PARTICLE_SPAWN_INTERVAL = 0.15 // секунды между спавном лечебных частиц
-PARTICLE_LIFETIME = 1.2  // время жизни частицы
-PARTICLE_SPEED = 0.6     // скорость подъёма частицы
+PARTICLE_SPAWN_INTERVAL = 0.15
+PARTICLE_LIFETIME = 1.2
+PARTICLE_SPEED = 0.6
+INJURY_POSES{}           // позы травм (holdStomach, holdBack, holdHead, holdThroat, limp)
+INJURY_MAP{}             // маппинг consumable type → возможные типы травм
 ```
 
 ## Internal State (Game.Consumables)

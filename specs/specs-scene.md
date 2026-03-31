@@ -50,11 +50,26 @@
 ## 3D Models
 
 ### Patient 3D Model
-- `THREE.Group` с дочерними мешами:
-  - **Body**: BoxGeometry(0.4, 0.7, 0.25), случайный цвет из `BODY_COLORS` (7 вариантов), y=0.85
-  - **Head**: SphereGeometry(0.15), skin color (#f0c8a0), y=1.35
-  - **Legs** (×2): BoxGeometry(0.14, 0.5, 0.18), тёмные (#334455), dx=±0.1, y=0.25
-- `group.userData.bodyParts = [body, head]` — для подсветки
+- Иерархическая модель с суставами для анимации:
+```
+root Group (patient.mesh) — позиция/поворот для движения
+  poseContainer (Group) — rotation.x для позы лёжа, position.y для высоты кровати
+    bodyContainer (Group) — position.y для позы сидя
+      Body: BoxGeometry(0.4, 0.7, 0.25), случайный цвет из BODY_COLORS, y=0.85
+      Head: SphereGeometry(0.15), skin color (#f0c8a0), y=1.35
+      Left Arm:
+        shoulderPivot (Group, x=-0.28, y=1.15) — вращение плеча
+          upperArm: BoxGeometry(0.09, 0.24, 0.09), skin color, y=-0.12
+          elbowPivot (Group, y=-0.24) — вращение локтя
+            forearm: BoxGeometry(0.08, 0.22, 0.08), skin color, y=-0.11
+      Right Arm: (зеркально, x=+0.28)
+    leftLegPivot (Group, x=-0.1, y=0.5) — вращение бедра
+      leftLeg: BoxGeometry(0.14, 0.5, 0.18), тёмные (#334455), y=-0.25
+    rightLegPivot (Group, x=+0.1, y=0.5)
+      rightLeg: BoxGeometry(0.14, 0.5, 0.18), y=-0.25
+```
+- `userData.bodyParts = [body, head, leftUpperArm, leftForearm, rightUpperArm, rightForearm, leftLeg, rightLeg]` — для подсветки и raycasting
+- `userData` хранит ссылки: `poseContainer`, `bodyContainer`, `bodyMesh`, `headMesh`, `leftArm` (`{shoulderPivot, elbowPivot, upperArm, forearm}`), `rightArm`, `leftArmPivot`, `rightArmPivot`, `leftLegPivot`, `rightLegPivot`
 
 ### Body Colors
 ```

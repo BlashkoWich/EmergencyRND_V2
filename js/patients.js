@@ -23,6 +23,73 @@
   var CONSUMABLE_KEYS = Object.keys(MEDICAL_DATA);
   var BODY_COLORS = [0x4477aa, 0x44aa77, 0xaa7744, 0x7744aa, 0xaa4466, 0x5599bb, 0x88aa44];
 
+  // --- Walk speed multiplier per severity ---
+  var WALK_SPEED = {
+    severe: 0.35, medium: 0.65, mild: 0.9, normal: 1.0
+  };
+
+  // --- Injury poses ---
+  // shoulder/elbow: rotation X for upper arm pivot / forearm pivot
+  // All values are at severity=1.0, scaled down by getSeverityFactor()
+  var INJURY_POSES = {
+    holdStomach: {   // both arms wrap to stomach, hunched
+      hunch: 0.3, headDroop: 0.2, limp: false,
+      lShoulder: -0.8, lElbow: -1.6,
+      rShoulder: -0.8, rElbow: -1.6
+    },
+    holdBack: {      // one arm reaches behind to lower back, limping
+      hunch: 0.25, headDroop: 0.15, limp: true,
+      lShoulder: 0.5, lElbow: -1.0,
+      rShoulder: 0, rElbow: -0.3
+    },
+    holdHead: {      // hands up near face/temples
+      hunch: 0.1, headDroop: 0.15, limp: false,
+      lShoulder: -1.8, lElbow: -2.0,
+      rShoulder: -1.8, rElbow: -2.0
+    },
+    holdThroat: {    // one hand at throat level
+      hunch: 0.15, headDroop: 0.2, limp: false,
+      lShoulder: -1.4, lElbow: -2.2,
+      rShoulder: 0, rElbow: 0
+    },
+    limp: {          // just limping, arms mostly free
+      hunch: 0.12, headDroop: 0.08, limp: true,
+      lShoulder: 0, lElbow: 0,
+      rShoulder: 0, rElbow: 0
+    }
+  };
+
+  var INJURY_MAP = {
+    painkiller:    ['holdStomach', 'holdBack', 'limp'],
+    antihistamine: ['holdHead'],
+    strepsils:     ['holdThroat']
+  };
+
+  // --- Pose target values ---
+  var POSE_VALUES = {
+    standing: { poseRotX: 0, posePosY: 0, posePosZ: 0, bodyOffsetY: 0, legPivotY: 0.5, legRotX: 0, leftArmRotZ: 0, rightArmRotZ: 0 },
+    sitting:  { poseRotX: 0, posePosY: 0, posePosZ: 0, bodyOffsetY: -0.30, legPivotY: 0.20, legRotX: -Math.PI / 2, leftArmRotZ: 0, rightArmRotZ: 0 },
+    lying:    { poseRotX: -Math.PI / 2, posePosY: 0.62, posePosZ: 0.75, bodyOffsetY: 0, legPivotY: 0.5, legRotX: 0, leftArmRotZ: 0.3, rightArmRotZ: -0.3 }
+  };
+  var POSE_TRANSITION_SPEED = 2.5;
+
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function smoothstep(t) { return t * t * (3 - 2 * t); }
+
+  function getPatientSpeed(patient) {
+    var mult = patient.anim.recovered ? WALK_SPEED.normal : (WALK_SPEED[patient.severity.key] || WALK_SPEED.mild);
+    return PATIENT_SPEED * mult;
+  }
+
+  // Severity effect multiplier: 0 for normal/mild, partial for medium, full for severe
+  function getSeverityFactor(patient) {
+    if (patient.anim.recovered) return 0;
+    var key = patient.severity.key;
+    if (key === 'severe') return 1.0;
+    if (key === 'medium') return 0.5;
+    return 0.15;
+  }
+
   // --- Health system constants ---
   var SEVERITIES = [
     { key: 'severe', label: 'Тяжёлое', startHp: 30 },
@@ -65,21 +132,75 @@
     var bodyColor = BODY_COLORS[Math.floor(Math.random() * BODY_COLORS.length)];
     var bodyMat = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.7 });
     var skinMat = new THREE.MeshStandardMaterial({ color: 0xf0c8a0, roughness: 0.6 });
-
-    var body = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.7, 0.25), bodyMat);
-    body.position.y = 0.85; body.castShadow = true; group.add(body);
-
-    var head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 10, 8), skinMat);
-    head.position.y = 1.35; head.castShadow = true; group.add(head);
-
     var legMat = new THREE.MeshStandardMaterial({ color: 0x334455, roughness: 0.7 });
-    for (var i = 0; i < 2; i++) {
-      var dx = i === 0 ? -0.1 : 0.1;
-      var leg = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.5, 0.18), legMat);
-      leg.position.set(dx, 0.25, 0); leg.castShadow = true; group.add(leg);
+
+    // Hierarchy: group > poseContainer > bodyContainer + legPivots
+    var poseContainer = new THREE.Group();
+    group.add(poseContainer);
+
+    var bodyContainer = new THREE.Group();
+    poseContainer.add(bodyContainer);
+
+    // Body (torso)
+    var body = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.7, 0.25), bodyMat);
+    body.position.y = 0.85; body.castShadow = true; bodyContainer.add(body);
+
+    // Head
+    var head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 10, 8), skinMat);
+    head.position.y = 1.35; head.castShadow = true; bodyContainer.add(head);
+
+    // Arms: shoulder pivot > upper arm > elbow pivot > forearm
+    function createArm(xSide) {
+      var shoulderPivot = new THREE.Group();
+      shoulderPivot.position.set(xSide * 0.28, 1.15, 0);
+      bodyContainer.add(shoulderPivot);
+
+      var upperArm = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.24, 0.09), skinMat.clone());
+      upperArm.position.y = -0.12; upperArm.castShadow = true;
+      shoulderPivot.add(upperArm);
+
+      var elbowPivot = new THREE.Group();
+      elbowPivot.position.set(0, -0.24, 0);
+      shoulderPivot.add(elbowPivot);
+
+      var forearm = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.22, 0.08), skinMat.clone());
+      forearm.position.y = -0.11; forearm.castShadow = true;
+      elbowPivot.add(forearm);
+
+      return { shoulderPivot: shoulderPivot, elbowPivot: elbowPivot, upperArm: upperArm, forearm: forearm };
     }
 
-    group.userData.bodyParts = [body, head];
+    var leftArm = createArm(-1);
+    var rightArm = createArm(1);
+
+    // Legs (pivots at hip, mesh hangs down)
+    var leftLegPivot = new THREE.Group();
+    leftLegPivot.position.set(-0.1, 0.5, 0);
+    poseContainer.add(leftLegPivot);
+    var leftLeg = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.5, 0.18), legMat);
+    leftLeg.position.y = -0.25; leftLeg.castShadow = true; leftLegPivot.add(leftLeg);
+
+    var rightLegPivot = new THREE.Group();
+    rightLegPivot.position.set(0.1, 0.5, 0);
+    poseContainer.add(rightLegPivot);
+    var rightLeg = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.5, 0.18), legMat);
+    rightLeg.position.y = -0.25; rightLeg.castShadow = true; rightLegPivot.add(rightLeg);
+
+    // Store references
+    var ud = group.userData;
+    ud.poseContainer = poseContainer;
+    ud.bodyContainer = bodyContainer;
+    ud.bodyMesh = body;
+    ud.headMesh = head;
+    ud.leftArm = leftArm;   // { shoulderPivot, elbowPivot, upperArm, forearm }
+    ud.rightArm = rightArm;
+    // Keep old names for pose transitions (lying/sitting)
+    ud.leftArmPivot = leftArm.shoulderPivot;
+    ud.rightArmPivot = rightArm.shoulderPivot;
+    ud.leftLegPivot = leftLegPivot;
+    ud.rightLegPivot = rightLegPivot;
+    ud.bodyParts = [body, head, leftArm.upperArm, leftArm.forearm, rightArm.upperArm, rightArm.forearm, leftLeg, rightLeg];
+
     return group;
   }
 
@@ -114,7 +235,17 @@
       hpDecayTimer: 0,
       healthBar: null,
       lastDrawnHp: -1,
-      particleTimer: 0
+      particleTimer: 0,
+      anim: {
+        walkPhase: 0,
+        walkBlend: 0,
+        pose: 'standing',
+        targetPose: 'standing',
+        poseTransition: 1,
+        poseFrom: 'standing',
+        recovered: false,
+        injuryType: randomFrom(INJURY_MAP[consumableType] || ['limp'])
+      }
     };
 
     patients.push(patient);
@@ -288,6 +419,7 @@
     patient.targetPos.y = 0;
     patient.destination = slot;
     slot.occupied = true;
+    patient.anim.targetPose = 'standing';
     removeFromQueue(patient);
     closePopup();
   }
@@ -486,19 +618,184 @@
     }
   }
 
+  // --- Walking animation ---
+  var STRIDE_LEN = 1.1;
+  var LEG_SWING = 0.4;
+  var ARM_SWING = 0.35;
+  var ELBOW_SWING = 0.25;
+
+  function updateWalkAnimation(patient, delta, isMoving) {
+    var anim = patient.anim;
+    if (anim.pose !== 'standing' || anim.poseTransition < 1) return;
+
+    var ud = patient.mesh.userData;
+    var sev = getSeverityFactor(patient);
+    var pose = INJURY_POSES[anim.injuryType] || INJURY_POSES.limp;
+
+    // --- Phase & blend ---
+    if (isMoving) {
+      var dist = getPatientSpeed(patient) * delta;
+      anim.walkPhase += (dist / STRIDE_LEN) * Math.PI * 2;
+      anim.walkBlend = Math.min(1, anim.walkBlend + delta * 5);
+    } else {
+      anim.walkBlend = Math.max(0, anim.walkBlend - delta * 4);
+      if (anim.walkBlend <= 0) anim.walkPhase = 0;
+    }
+
+    var wb = anim.walkBlend;
+    var ph = anim.walkPhase;
+    var sinPh = Math.sin(ph);
+    var sinPhOpp = Math.sin(ph + Math.PI);
+
+    // --- Body hunch (forward lean) ---
+    var hunch = pose.hunch * sev;
+    ud.bodyMesh.rotation.x = hunch;
+    ud.bodyMesh.rotation.y = 0;
+    ud.bodyMesh.rotation.z = 0;
+    ud.bodyMesh.position.y = 0.85;
+
+    // --- Head droop ---
+    ud.headMesh.rotation.x = pose.headDroop * sev;
+
+    // --- Legs ---
+    var legAmp = LEG_SWING * wb;
+    if (pose.limp && sev > 0.1) {
+      // Limp: right leg shorter swing, slight delay
+      ud.leftLegPivot.rotation.x = sinPh * legAmp;
+      ud.rightLegPivot.rotation.x = Math.sin(ph + Math.PI + 0.5 * sev) * legAmp * (1 - 0.4 * sev);
+    } else {
+      ud.leftLegPivot.rotation.x = sinPh * legAmp;
+      ud.rightLegPivot.rotation.x = sinPhOpp * legAmp;
+    }
+
+    // --- Arms ---
+    // Normal walk swing: shoulder swings, elbow bends slightly on backswing
+    var normalLShoulderX = sinPhOpp * ARM_SWING * wb;
+    var normalRShoulderX = sinPh * ARM_SWING * wb;
+    var normalLElbowX = Math.min(0, sinPhOpp) * ELBOW_SWING * wb; // only bend on backswing
+    var normalRElbowX = Math.min(0, sinPh) * ELBOW_SWING * wb;
+
+    // Injury pose targets (scaled by severity)
+    var injLShoulder = pose.lShoulder * sev;
+    var injLElbow = pose.lElbow * sev;
+    var injRShoulder = pose.rShoulder * sev;
+    var injRElbow = pose.rElbow * sev;
+
+    // Blend: sev=0 -> normal swing, sev=1 -> full injury pose with subtle sway
+    var sway = sinPh * 0.04 * sev; // tiny rhythmic movement even in injury pose
+    ud.leftArm.shoulderPivot.rotation.x = lerp(normalLShoulderX, injLShoulder, sev) + sway;
+    ud.leftArm.elbowPivot.rotation.x = lerp(normalLElbowX, injLElbow, sev);
+    ud.rightArm.shoulderPivot.rotation.x = lerp(normalRShoulderX, injRShoulder, sev) + sway;
+    ud.rightArm.elbowPivot.rotation.x = lerp(normalRElbowX, injRElbow, sev);
+
+    // Reset Z rotations (pose transition might set them)
+    ud.leftArm.shoulderPivot.rotation.z = 0;
+    ud.rightArm.shoulderPivot.rotation.z = 0;
+  }
+
+  // --- Pose transitions ---
+  function updatePoseTransition(patient, delta) {
+    var anim = patient.anim;
+    if (anim.pose === anim.targetPose && anim.poseTransition >= 1) return;
+
+    // Start new transition if target changed
+    if (anim.pose !== anim.targetPose) {
+      anim.poseFrom = anim.pose;
+      anim.pose = anim.targetPose;
+      anim.poseTransition = 0;
+
+      // When lying down, move patient onto the bed center and align with bed
+      if (anim.pose === 'lying' && patient.destination) {
+        var bedPos = patient.destination.pos;
+        // Bed center is 1 unit to the left of standing pos (bed at x=-5.5, patient at x=-4.5)
+        anim.bedTargetX = bedPos.x - 1.0;
+        anim.bedTargetZ = bedPos.z;
+        anim.bedStartX = patient.mesh.position.x;
+        anim.bedStartZ = patient.mesh.position.z;
+        anim.bedStartRotY = patient.mesh.rotation.y;
+        // Face along bed: head toward pillow/rail at -X side
+        anim.bedTargetRotY = Math.PI / 2;
+      }
+      // When standing up from lying, save start position to restore standing pos
+      if (anim.poseFrom === 'lying' && patient.destination) {
+        var standPos = patient.destination.pos;
+        anim.bedStartX = patient.mesh.position.x;
+        anim.bedStartZ = patient.mesh.position.z;
+        anim.bedStartRotY = patient.mesh.rotation.y;
+        anim.bedTargetX = standPos.x;
+        anim.bedTargetZ = standPos.z;
+        anim.bedTargetRotY = 0;
+      }
+    }
+
+    anim.poseTransition = Math.min(1, anim.poseTransition + delta * POSE_TRANSITION_SPEED);
+    var t = smoothstep(anim.poseTransition);
+
+    var from = POSE_VALUES[anim.poseFrom] || POSE_VALUES.standing;
+    var to = POSE_VALUES[anim.pose] || POSE_VALUES.standing;
+    var ud = patient.mesh.userData;
+
+    // Pose container (lying rotation + height + Z compensation)
+    ud.poseContainer.rotation.x = lerp(from.poseRotX, to.poseRotX, t);
+    ud.poseContainer.position.y = lerp(from.posePosY, to.posePosY, t);
+    ud.poseContainer.position.z = lerp(from.posePosZ, to.posePosZ, t);
+
+    // Smoothly move root mesh onto/off bed during lying transition
+    if (anim.bedTargetX !== undefined) {
+      patient.mesh.position.x = lerp(anim.bedStartX, anim.bedTargetX, t);
+      patient.mesh.position.z = lerp(anim.bedStartZ, anim.bedTargetZ, t);
+      patient.mesh.rotation.y = lerp(anim.bedStartRotY, anim.bedTargetRotY, t);
+      if (anim.poseTransition >= 1) {
+        delete anim.bedTargetX;
+        delete anim.bedTargetZ;
+        delete anim.bedStartX;
+        delete anim.bedStartZ;
+        delete anim.bedStartRotY;
+        delete anim.bedTargetRotY;
+      }
+    }
+
+    // Body container (sitting offset)
+    ud.bodyContainer.position.y = lerp(from.bodyOffsetY, to.bodyOffsetY, t);
+
+    // Leg pivots vertical position (for sitting)
+    var legY = lerp(from.legPivotY, to.legPivotY, t);
+    ud.leftLegPivot.position.y = legY;
+    ud.rightLegPivot.position.y = legY;
+
+    // Leg rotation (for sitting)
+    ud.leftLegPivot.rotation.x = lerp(from.legRotX, to.legRotX, t);
+    ud.rightLegPivot.rotation.x = lerp(from.legRotX, to.legRotX, t);
+
+    // Arm spread (for lying)
+    ud.leftArmPivot.rotation.z = lerp(from.leftArmRotZ, to.leftArmRotZ, t);
+    ud.rightArmPivot.rotation.z = lerp(from.rightArmRotZ, to.rightArmRotZ, t);
+
+    // Reset walk-related rotations during transition
+    ud.leftArmPivot.rotation.x = 0;
+    ud.rightArmPivot.rotation.x = 0;
+    if (ud.leftArm) ud.leftArm.elbowPivot.rotation.x = 0;
+    if (ud.rightArm) ud.rightArm.elbowPivot.rotation.x = 0;
+    ud.bodyMesh.position.y = 0.85;
+    ud.bodyMesh.rotation.x = 0;
+    ud.bodyMesh.rotation.z = 0;
+    ud.headMesh.rotation.x = 0;
+  }
+
   function updateIndicators() {
     var t = Date.now() * 0.003;
     for (var i = 0; i < patients.length; i++) {
       var p = patients[i];
+      var isLying = p.anim.pose === 'lying';
       if (p.indicator) {
         p.indicator.position.x = p.mesh.position.x;
         p.indicator.position.z = p.mesh.position.z;
-        p.indicator.position.y = 2.0 + Math.sin(t + p.id) * 0.08;
+        p.indicator.position.y = (isLying ? 1.5 : 2.0) + Math.sin(t + p.id) * 0.08;
       }
       if (p.healthBar) {
         p.healthBar.position.x = p.mesh.position.x;
         p.healthBar.position.z = p.mesh.position.z;
-        p.healthBar.position.y = 1.7;
+        p.healthBar.position.y = isLying ? 1.2 : 1.7;
       }
     }
   }
@@ -557,6 +854,8 @@
       patient.destination = null;
     }
     patient.treated = false; // Stop recovery logic
+    patient.anim.recovered = true;
+    patient.anim.targetPose = 'standing';
     // Send to cashier
     Game.Cashier.addPatientToQueue(patient);
   }
@@ -666,19 +965,28 @@
   function updatePatients(delta) {
     for (var i = patients.length - 1; i >= 0; i--) {
       var p = patients[i];
+      var isMoving = false;
+      var speed = getPatientSpeed(p) * delta;
+
       if (p.state === 'queued' && p.queueTarget) {
-        moveToward(p.mesh.position, p.queueTarget, PATIENT_SPEED * delta);
+        var qDx = p.queueTarget.x - p.mesh.position.x;
+        var qDz = p.queueTarget.z - p.mesh.position.z;
+        isMoving = (qDx * qDx + qDz * qDz) > 0.01;
+        moveToward(p.mesh.position, p.queueTarget, speed);
         p.mesh.rotation.y = Math.PI;
       }
       if (p.state === 'walking' && p.targetPos) {
-        var arrived = moveToward(p.mesh.position, p.targetPos, PATIENT_SPEED * delta);
+        var arrived = moveToward(p.mesh.position, p.targetPos, speed);
         var dir = new THREE.Vector3().subVectors(p.targetPos, p.mesh.position);
         if (dir.lengthSq() > 0.01) {
           p.mesh.rotation.y = Math.atan2(dir.x, dir.z);
         }
+        isMoving = !arrived;
         if (arrived) {
-          p.state = (p.destination && beds.indexOf(p.destination) !== -1) ? 'atBed' : 'waiting';
+          var isBed = p.destination && beds.indexOf(p.destination) !== -1;
+          p.state = isBed ? 'atBed' : 'waiting';
           p.targetPos = null;
+          p.anim.targetPose = isBed ? 'lying' : 'sitting';
           if (p.state === 'atBed') {
             createBedIndicator(p);
           }
@@ -690,7 +998,8 @@
         if (dir2.lengthSq() > 0.01) {
           p.mesh.rotation.y = Math.atan2(dir2.x, dir2.z);
         }
-        moveToward(p.mesh.position, p.targetPos, PATIENT_SPEED * delta);
+        moveToward(p.mesh.position, p.targetPos, speed);
+        isMoving = true;
       }
       // Leaving: walk to exit then beyond
       if (p.state === 'leaving' && p.targetPos) {
@@ -698,7 +1007,8 @@
         if (dir3.lengthSq() > 0.01) {
           p.mesh.rotation.y = Math.atan2(dir3.x, dir3.z);
         }
-        var arrived3 = moveToward(p.mesh.position, p.targetPos, PATIENT_SPEED * delta);
+        var arrived3 = moveToward(p.mesh.position, p.targetPos, speed);
+        isMoving = true;
         if (arrived3) {
           if (p.leavePhase === 'toExit') {
             p.leavePhase = 'toStreet';
@@ -724,6 +1034,10 @@
           }
         }
       }
+
+      // Animation updates
+      updateWalkAnimation(p, delta, isMoving);
+      updatePoseTransition(p, delta);
     }
   }
 
