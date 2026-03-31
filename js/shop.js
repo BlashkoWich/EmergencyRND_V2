@@ -40,6 +40,12 @@
         // Buy button handler
         (function(btn, t) {
           btn.addEventListener('click', function() {
+            var balance = Game.Cashier.getBalance();
+            if (balance < 1) {
+              Game.Inventory.showNotification('Недостаточно средств!');
+              return;
+            }
+            Game.Cashier.spend(1);
             Game.Consumables.spawnInDeliveryZone(t);
             updateCounts();
           });

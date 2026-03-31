@@ -90,7 +90,8 @@
 
     var consumableType = randomFrom(CONSUMABLE_KEYS);
     var data = MEDICAL_DATA[consumableType];
-    var severity = randomFrom(SEVERITIES);
+    var roll = Math.random();
+    var severity = roll < 0.60 ? SEVERITIES[2] : roll < 0.85 ? SEVERITIES[1] : SEVERITIES[0];
 
     var patient = {
       id: patientIdCounter++,

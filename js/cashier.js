@@ -163,6 +163,10 @@
   window.Game.Cashier = {
     isPopupOpen: function() { return isOpen; },
     getBalance: function() { return balance; },
+    spend: function(amount) {
+      balance -= amount;
+      updateBalanceHUD();
+    },
 
     hasInteraction: function() { return hoveredTerminal; },
 
