@@ -148,8 +148,9 @@
       return count;
     },
 
-    showNotification: function(text) {
+    showNotification: function(text, color) {
       notificationEl.textContent = text;
+      notificationEl.style.background = color || 'rgba(200, 50, 50, 0.85)';
       notificationEl.style.display = 'block';
       notificationEl.style.opacity = '1';
       if (notificationTimer) clearTimeout(notificationTimer);

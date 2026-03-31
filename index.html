@@ -18,6 +18,7 @@
     <div class="buttons">
       <button id="btn-bed">На кровать <span id="bed-count" style="opacity:0.7"></span></button>
       <button id="btn-wait">В зону ожидания <span id="chair-count" style="opacity:0.7"></span></button>
+      <button id="btn-dismiss">Подождать</button>
     </div>
   </div>
   <div id="shop-popup">
@@ -38,6 +39,30 @@
       <button class="shop-buy-btn">Купить</button>
     </div>
     <button id="shop-close">✕</button>
+  </div>
+  <div id="balance-hud">Баланс: <span id="balance-value">$100</span></div>
+  <div id="cashier-popup">
+    <button id="terminal-close">&#10005;</button>
+    <div class="terminal-body">
+      <div class="terminal-screen">
+        <div class="terminal-screen-row">К оплате: <span id="terminal-amount">$0</span></div>
+        <div class="terminal-screen-row terminal-screen-entered">Введено: <span id="terminal-entered">0</span></div>
+      </div>
+      <div class="terminal-keypad">
+        <button class="terminal-key" data-value="1">1</button>
+        <button class="terminal-key" data-value="2">2</button>
+        <button class="terminal-key" data-value="3">3</button>
+        <button class="terminal-key" data-value="4">4</button>
+        <button class="terminal-key" data-value="5">5</button>
+        <button class="terminal-key" data-value="6">6</button>
+        <button class="terminal-key" data-value="7">7</button>
+        <button class="terminal-key" data-value="8">8</button>
+        <button class="terminal-key" data-value="9">9</button>
+        <button class="terminal-key terminal-key-clear" data-value="C">C</button>
+        <button class="terminal-key" data-value="0">0</button>
+        <button class="terminal-key terminal-apply" id="terminal-apply" disabled>OK</button>
+      </div>
+    </div>
   </div>
   <div id="overlay">
     <h1>Частная Клиника</h1>
@@ -64,6 +89,7 @@
   <script src="js/inventory.js"></script>
   <script src="js/shop.js"></script>
   <script src="js/shelves.js"></script>
+  <script src="js/cashier.js"></script>
 
   <script type="importmap">
   {
@@ -110,7 +136,7 @@
     const collidables = [];
 
     // --- Build world ---
-    const { beds, waitingChairs } = Game.World.setup(THREE, scene, collidables);
+    const { beds, waitingChairs, cashierDesk } = Game.World.setup(THREE, scene, collidables);
 
     // --- Setup controls ---
     const controls = Game.Controls.setup(THREE, camera, collidables, PointerLockControls);
@@ -123,6 +149,7 @@
     Game.Inventory.setup();
     Game.Shop.setup(controls);
     Game.Shelves.setup(THREE, scene, camera, controls, collidables);
+    Game.Cashier.setup(THREE, scene, camera, controls, cashierDesk);
 
     // --- Animation loop ---
     const clock = new THREE.Clock();
@@ -138,6 +165,7 @@
       Game.Patients.update(delta);
       Game.Consumables.update(delta);
       Game.Shelves.update(delta);
+      Game.Cashier.update(delta);
 
       renderer.render(scene, camera);
     }

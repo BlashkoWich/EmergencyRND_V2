@@ -57,6 +57,7 @@
       document.addEventListener('keydown', function(e) {
         if (e.code !== 'KeyQ') return;
         if (Game.Patients.isPopupOpen()) return;
+        if (Game.Cashier.isPopupOpen()) return;
 
         if (isShopOpen) {
           shopEl.style.display = 'none';

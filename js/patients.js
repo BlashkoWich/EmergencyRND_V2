@@ -50,7 +50,7 @@
 
   // --- UI elements ---
   var hintEl, popupEl, popupName, popupSymptom, popupDiagnosis, popupSupply, popupSupplyIcon, popupSeverity;
-  var btnBed, btnWait, bedCount, chairCount;
+  var btnBed, btnWait, btnDismiss, bedCount, chairCount;
 
   // --- Interaction raycaster ---
   var interactRay;
@@ -175,7 +175,7 @@
   }
 
   function updateInteraction() {
-    if (!controls.isLocked || popupPatient) {
+    if (!controls.isLocked || popupPatient || Game.Cashier.isPopupOpen()) {
       hintEl.style.display = 'none';
       return;
     }
@@ -186,7 +186,7 @@
     for (var i = 0; i < patients.length; i++) {
       var p = patients[i];
       if (p.animating) continue;
-      if (p.state === 'queued' || p.state === 'interacting' || p.state === 'atBed') {
+      if (p.state === 'queued' || p.state === 'interacting' || p.state === 'atBed' || p.state === 'waiting') {
         p.mesh.traverse(function(child) {
           if (child.isMesh) meshes.push(child);
         });
@@ -222,6 +222,9 @@
         }
       }
       hintEl.style.display = 'block';
+    } else if (hoveredPatient.state === 'waiting') {
+      hintEl.textContent = 'ЛКМ — Перевести на кровать';
+      hintEl.style.display = 'block';
     } else {
       hintEl.textContent = 'Нажмите ЛКМ для взаимодействия';
       hintEl.style.display = 'block';
@@ -230,7 +233,9 @@
 
   function openPopup(patient) {
     popupPatient = patient;
+    var wasWaiting = patient.state === 'waiting';
     patient.state = 'interacting';
+    patient._wasWaiting = wasWaiting;
     popupName.textContent = patient.name + ' ' + patient.surname;
     popupSymptom.textContent = patient.symptom;
     popupDiagnosis.textContent = patient.diagnosis;
@@ -248,9 +253,19 @@
     btnBed.disabled = freeBeds === 0;
     btnBed.style.opacity = freeBeds > 0 ? '1' : '0.4';
     bedCount.textContent = '(' + freeBeds + '/' + beds.length + ')';
-    btnWait.disabled = freeChairs === 0;
-    btnWait.style.opacity = freeChairs > 0 ? '1' : '0.4';
-    chairCount.textContent = '(' + freeChairs + '/' + waitingChairs.length + ')';
+
+    // Hide waiting button if patient is already waiting, show otherwise
+    if (wasWaiting) {
+      btnWait.style.display = 'none';
+    } else {
+      btnWait.style.display = '';
+      btnWait.disabled = freeChairs === 0;
+      btnWait.style.opacity = freeChairs > 0 ? '1' : '0.4';
+      chairCount.textContent = '(' + freeChairs + '/' + waitingChairs.length + ')';
+    }
+
+    // Show wait/dismiss button
+    btnDismiss.style.display = '';
 
     controls.unlock();
   }
@@ -262,6 +277,11 @@
   }
 
   function sendPatient(patient, dest, slot) {
+    // Free old destination if moving from waiting chair
+    if (patient._wasWaiting && patient.destination) {
+      patient.destination.occupied = false;
+    }
+    patient._wasWaiting = false;
     patient.state = 'walking';
     patient.targetPos = dest.clone();
     patient.targetPos.y = 0;
@@ -487,7 +507,7 @@
     Game.Inventory.removeActive();
     patient.animating = true;
     patient.treated = true;
-    Game.Inventory.showNotification('Лечение начато!');
+    Game.Inventory.showNotification('Лечение начато!', 'rgba(34, 139, 34, 0.85)');
 
     // Clone materials for animation
     for (var j = 0; j < patient.mesh.userData.bodyParts.length; j++) {
@@ -519,6 +539,25 @@
       maxTime: 0.3,
       originX: patient.mesh.position.x
     });
+  }
+
+  function dischargePatient(patient) {
+    // Free the bed/chair
+    if (patient.indicator) {
+      scene.remove(patient.indicator);
+      patient.indicator = null;
+    }
+    if (patient.healthBar) {
+      scene.remove(patient.healthBar);
+      patient.healthBar = null;
+    }
+    if (patient.destination) {
+      patient.destination.occupied = false;
+      patient.destination = null;
+    }
+    patient.treated = false; // Stop recovery logic
+    // Send to cashier
+    Game.Cashier.addPatientToQueue(patient);
   }
 
   function removePatient(patient) {
@@ -599,8 +638,8 @@
         if (p.hp >= MAX_HP) {
           p.hp = MAX_HP;
           updateHealthBarTexture(p);
-          Game.Inventory.showNotification('Пациент выписан!');
-          removePatient(p);
+          Game.Inventory.showNotification('Пациент выписан! Направлен на оплату.', 'rgba(34, 139, 34, 0.85)');
+          dischargePatient(p);
           continue;
         }
         updateHealthBarTexture(p);
@@ -613,7 +652,7 @@
           if (p.hp <= 0) {
             p.hp = 0;
             updateHealthBarTexture(p);
-            Game.Inventory.showNotification('Пациент потерян!');
+            Game.Inventory.showNotification('Пациент ушел, не дождавшись помощи');
             removePatient(p);
             break;
           }
@@ -624,7 +663,7 @@
   }
 
   function updatePatients(delta) {
-    for (var i = 0; i < patients.length; i++) {
+    for (var i = patients.length - 1; i >= 0; i--) {
       var p = patients[i];
       if (p.state === 'queued' && p.queueTarget) {
         moveToward(p.mesh.position, p.queueTarget, PATIENT_SPEED * delta);
@@ -641,6 +680,46 @@
           p.targetPos = null;
           if (p.state === 'atBed') {
             createBedIndicator(p);
+          }
+        }
+      }
+      // Discharged: walking to cashier
+      if (p.state === 'discharged' && p.targetPos) {
+        var dir2 = new THREE.Vector3().subVectors(p.targetPos, p.mesh.position);
+        if (dir2.lengthSq() > 0.01) {
+          p.mesh.rotation.y = Math.atan2(dir2.x, dir2.z);
+        }
+        moveToward(p.mesh.position, p.targetPos, PATIENT_SPEED * delta);
+      }
+      // Leaving: walk to exit then beyond
+      if (p.state === 'leaving' && p.targetPos) {
+        var dir3 = new THREE.Vector3().subVectors(p.targetPos, p.mesh.position);
+        if (dir3.lengthSq() > 0.01) {
+          p.mesh.rotation.y = Math.atan2(dir3.x, dir3.z);
+        }
+        var arrived3 = moveToward(p.mesh.position, p.targetPos, PATIENT_SPEED * delta);
+        if (arrived3) {
+          if (p.leavePhase === 'toExit') {
+            p.leavePhase = 'toStreet';
+            p.targetPos = new THREE.Vector3(0, 0, 25);
+          }
+        }
+        // Fade out when far enough
+        if (p.mesh.position.z > 18) {
+          if (!p.fadeTimer) p.fadeTimer = 0;
+          p.fadeTimer += delta;
+          var opacity = Math.max(0, 1 - p.fadeTimer / 0.8);
+          p.mesh.traverse(function(child) {
+            if (child.isMesh && child.material) {
+              if (!child.material.transparent) {
+                child.material = child.material.clone();
+                child.material.transparent = true;
+              }
+              child.material.opacity = opacity;
+            }
+          });
+          if (opacity <= 0) {
+            removePatient(p);
           }
         }
       }
@@ -675,6 +754,7 @@
       popupSeverity = document.getElementById('popup-severity');
       btnBed = document.getElementById('btn-bed');
       btnWait = document.getElementById('btn-wait');
+      btnDismiss = document.getElementById('btn-dismiss');
       bedCount = document.getElementById('bed-count');
       chairCount = document.getElementById('chair-count');
 
@@ -696,6 +776,11 @@
           } else {
             wrongTreatment(hoveredPatient);
           }
+          return;
+        }
+
+        if (hoveredPatient.state === 'waiting') {
+          openPopup(hoveredPatient);
           return;
         }
 
@@ -723,6 +808,19 @@
         sendPatient(popupPatient, slot.pos, slot);
       });
 
+      btnDismiss.addEventListener('click', function() {
+        if (!popupPatient) return;
+        var patient = popupPatient;
+        // Return patient to previous state
+        if (patient._wasWaiting) {
+          patient.state = 'waiting';
+        } else {
+          patient.state = 'queued';
+        }
+        patient._wasWaiting = false;
+        closePopup();
+      });
+
       // Spawn first patient immediately
       spawnPatient(true);
     },
@@ -732,7 +830,11 @@
       spawnTimer += delta;
       if (spawnTimer >= SPAWN_INTERVAL) {
         spawnTimer = 0;
-        spawnPatient();
+        if (queue.length >= 2) {
+          Game.Inventory.showNotification('Пациент не смог зайти из-за того, что очередь переполнена');
+        } else {
+          spawnPatient();
+        }
       }
 
       updatePatients(delta);
