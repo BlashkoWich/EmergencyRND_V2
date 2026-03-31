@@ -151,7 +151,7 @@
   var animations = [];
 
   // --- UI elements ---
-  var hintEl, popupEl, popupName, popupSymptom, popupDiagnosis, popupSupply, popupSupplyIcon, popupSeverity;
+  var hintEl, popupEl, popupName, popupDiagnosis, popupSupply, popupSupplyIcon, popupSeverity;
   var popupAge, popupComplaint, popupTemp, popupPulse, popupBp;
   var popupSeverityBand, popupHpFill, popupHpText;
   var btnBed, btnWait, btnDismiss, bedCount, chairCount;
@@ -439,7 +439,6 @@
 
     // Clinical data
     popupComplaint.textContent = '\u00AB' + patient.complaint + '\u00BB';
-    popupSymptom.textContent = patient.symptom;
     popupDiagnosis.textContent = patient.diagnosis;
 
     // Required consumable
@@ -1133,7 +1132,6 @@
       hintEl = document.getElementById('interact-hint');
       popupEl = document.getElementById('patient-popup');
       popupName = document.getElementById('popup-name');
-      popupSymptom = document.getElementById('popup-symptom');
       popupDiagnosis = document.getElementById('popup-diagnosis');
       popupSupply = document.getElementById('popup-supply');
       popupSupplyIcon = document.getElementById('popup-supply-icon');
