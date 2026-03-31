@@ -77,15 +77,18 @@
       var deskPanelMat = new THREE.MeshStandardMaterial({ color: 0x557799, roughness: 0.5 });
 
       var deskTop = new THREE.Mesh(new THREE.BoxGeometry(3, 0.08, 1.0), deskMat);
-      deskTop.position.set(0, 1.0, -10.5); deskTop.castShadow = true; scene.add(deskTop); collidables.push(deskTop);
+      deskTop.position.set(0, 1.0, -9.0); deskTop.castShadow = true; scene.add(deskTop); collidables.push(deskTop);
 
       var deskFront = new THREE.Mesh(new THREE.BoxGeometry(3, 1.0, 0.08), deskPanelMat);
-      deskFront.position.set(0, 0.5, -10.0); deskFront.castShadow = true; scene.add(deskFront); collidables.push(deskFront);
+      deskFront.position.set(0, 0.5, -8.5); deskFront.castShadow = true; scene.add(deskFront); collidables.push(deskFront);
+
+      var deskBack = new THREE.Mesh(new THREE.BoxGeometry(3, 1.0, 0.08), deskPanelMat);
+      deskBack.position.set(0, 0.5, -9.5); deskBack.castShadow = true; scene.add(deskBack); collidables.push(deskBack);
 
       var deskSide1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.0, 1.0), deskPanelMat);
-      deskSide1.position.set(-1.5, 0.5, -10.5); scene.add(deskSide1); collidables.push(deskSide1);
+      deskSide1.position.set(-1.5, 0.5, -9.0); scene.add(deskSide1); collidables.push(deskSide1);
       var deskSide2 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.0, 1.0), deskPanelMat);
-      deskSide2.position.set(1.5, 0.5, -10.5); scene.add(deskSide2); collidables.push(deskSide2);
+      deskSide2.position.set(1.5, 0.5, -9.0); scene.add(deskSide2); collidables.push(deskSide2);
 
       // --- 3 Chairs (waiting area, along east wall) ---
       var chairMat = new THREE.MeshStandardMaterial({ color: 0x3366aa, roughness: 0.6 });

@@ -7,8 +7,9 @@
     _controls: null,
     _THREE: null,
     _raycaster: null,
-    _keys: { forward: false, backward: false, left: false, right: false },
+    _keys: { forward: false, backward: false, left: false, right: false, sprint: false, jump: false },
     _moveSpeed: 4.0,
+    _sprintSpeed: 7.0,
     _collisionDistance: 0.4,
     _collisionOrigin: null,
     _savedQuat: null, // saved quaternion to restore after re-lock
@@ -17,6 +18,11 @@
     _moveDir: null,
     _moveX: null,
     _moveZ: null,
+    _velocityY: 0,
+    _jumpSpeed: 5.0,
+    _gravity: -12.0,
+    _groundY: 1.6,
+    _isGrounded: true,
 
     setup: function(THREE, camera, collidables, PointerLockControls) {
       this._THREE = THREE;
@@ -71,6 +77,8 @@
           case 'KeyS': keys.backward = true; break;
           case 'KeyA': keys.left = true; break;
           case 'KeyD': keys.right = true; break;
+          case 'ShiftLeft': keys.sprint = true; break;
+          case 'Space': keys.jump = true; e.preventDefault(); break;
         }
       });
       document.addEventListener('keyup', function(e) {
@@ -79,6 +87,8 @@
           case 'KeyS': keys.backward = false; break;
           case 'KeyA': keys.left = false; break;
           case 'KeyD': keys.right = false; break;
+          case 'ShiftLeft': keys.sprint = false; break;
+          case 'Space': keys.jump = false; break;
         }
       });
 
@@ -97,7 +107,8 @@
       }
 
       var keys = this._keys;
-      var speed = this._moveSpeed * delta;
+      var baseSpeed = keys.sprint ? this._sprintSpeed : this._moveSpeed;
+      var speed = baseSpeed * delta;
 
       var forward = this._forward;
       camera.getWorldDirection(forward);
@@ -113,20 +124,36 @@
       if (keys.left)     moveDir.sub(right);
       if (keys.right)    moveDir.add(right);
 
-      if (moveDir.lengthSq() === 0) return;
-      moveDir.normalize();
+      if (moveDir.lengthSq() > 0) {
+        moveDir.normalize();
 
-      var moveX = this._moveX.set(moveDir.x, 0, 0).normalize();
-      var moveZ = this._moveZ.set(0, 0, moveDir.z).normalize();
+        var moveX = this._moveX.set(moveDir.x, 0, 0).normalize();
+        var moveZ = this._moveZ.set(0, 0, moveDir.z).normalize();
 
-      if (moveDir.x !== 0 && this._canMove(moveX)) {
-        camera.position.x += moveDir.x * speed;
+        if (moveDir.x !== 0 && this._canMove(moveX)) {
+          camera.position.x += moveDir.x * speed;
+        }
+        if (moveDir.z !== 0 && this._canMove(moveZ)) {
+          camera.position.z += moveDir.z * speed;
+        }
       }
-      if (moveDir.z !== 0 && this._canMove(moveZ)) {
-        camera.position.z += moveDir.z * speed;
+
+      // Jump initiation
+      if (keys.jump && this._isGrounded) {
+        this._velocityY = this._jumpSpeed;
+        this._isGrounded = false;
       }
 
-      camera.position.y = 1.6;
+      // Apply gravity
+      this._velocityY += this._gravity * delta;
+      camera.position.y += this._velocityY * delta;
+
+      // Ground clamp
+      if (camera.position.y <= this._groundY) {
+        camera.position.y = this._groundY;
+        this._velocityY = 0;
+        this._isGrounded = true;
+      }
     },
 
     _canMove: function(direction) {

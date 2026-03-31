@@ -23,6 +23,16 @@
   var CONSUMABLE_KEYS = Object.keys(MEDICAL_DATA);
   var BODY_COLORS = [0x4477aa, 0x44aa77, 0xaa7744, 0x7744aa, 0xaa4466, 0x5599bb, 0x88aa44];
 
+  // --- Health system constants ---
+  var SEVERITIES = [
+    { key: 'severe', label: 'Тяжёлое', startHp: 30 },
+    { key: 'medium', label: 'Среднее', startHp: 50 },
+    { key: 'mild',   label: 'Лёгкое',  startHp: 80 }
+  ];
+  var MAX_HP = 100;
+  var HP_DECAY_INTERVAL = 3.0;
+  var HP_RECOVERY_RATE = 3.0;
+
   function randomFrom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
   // --- Module state ---
@@ -39,7 +49,7 @@
   var animations = [];
 
   // --- UI elements ---
-  var hintEl, popupEl, popupName, popupSymptom, popupDiagnosis, popupSupply, popupSupplyIcon;
+  var hintEl, popupEl, popupName, popupSymptom, popupDiagnosis, popupSupply, popupSupplyIcon, popupSeverity;
   var btnBed, btnWait, bedCount, chairCount;
 
   // --- Interaction raycaster ---
@@ -47,7 +57,7 @@
   var screenCenter;
 
   function getQueuePosition(index) {
-    return new THREE.Vector3(0, 0, -9 + index);
+    return new THREE.Vector3(0, 0, -7.5 + index);
   }
 
   function createPatientMesh() {
@@ -80,6 +90,7 @@
 
     var consumableType = randomFrom(CONSUMABLE_KEYS);
     var data = MEDICAL_DATA[consumableType];
+    var severity = randomFrom(SEVERITIES);
 
     var patient = {
       id: patientIdCounter++,
@@ -94,12 +105,21 @@
       queueTarget: null,
       destination: null,
       indicator: null,
-      animating: false
+      animating: false,
+      hp: severity.startHp,
+      maxHp: MAX_HP,
+      severity: severity,
+      treated: false,
+      hpDecayTimer: 0,
+      healthBar: null,
+      lastDrawnHp: -1,
+      particleTimer: 0
     };
 
     patients.push(patient);
     queue.push(patient);
     updateQueueTargets();
+    createHealthBar(patient);
 
     if (instant && patient.queueTarget) {
       mesh.position.copy(patient.queueTarget);
@@ -190,12 +210,16 @@
     if (!hoveredPatient) {
       hintEl.style.display = 'none';
     } else if (hoveredPatient.state === 'atBed') {
-      var activeType = Game.Inventory.getActive();
-      if (activeType) {
-        var typeName = Game.Consumables.TYPES[activeType].name;
-        hintEl.textContent = 'ЛКМ — Применить ' + typeName;
+      if (hoveredPatient.treated) {
+        hintEl.textContent = 'Пациент лечится...';
       } else {
-        hintEl.textContent = 'Нужен расходник';
+        var activeType = Game.Inventory.getActive();
+        if (activeType) {
+          var typeName = Game.Consumables.TYPES[activeType].name;
+          hintEl.textContent = 'ЛКМ — Применить ' + typeName;
+        } else {
+          hintEl.textContent = 'Нужен расходник';
+        }
       }
       hintEl.style.display = 'block';
     } else {
@@ -210,6 +234,9 @@
     popupName.textContent = patient.name + ' ' + patient.surname;
     popupSymptom.textContent = patient.symptom;
     popupDiagnosis.textContent = patient.diagnosis;
+    popupSeverity.textContent = patient.severity.label;
+    var sevColors = { severe: '#ff4444', medium: '#ffcc00', mild: '#44cc44' };
+    popupSeverity.style.color = sevColors[patient.severity.key] || '#7abfff';
     var typeInfo = Game.Consumables.TYPES[patient.requiredConsumable];
     popupSupply.textContent = typeInfo.name;
     var c = typeInfo.color;
@@ -295,6 +322,149 @@
     patient.indicator = sprite;
   }
 
+  // --- Health bar ---
+  function getHealthColor(ratio) {
+    if (ratio > 0.6) return { r: 50, g: 205, b: 50 };
+    if (ratio > 0.3) return { r: 255, g: 200, b: 0 };
+    return { r: 220, g: 40, b: 40 };
+  }
+
+  function createHealthBar(patient) {
+    var canvas = document.createElement('canvas');
+    canvas.width = 128; canvas.height = 16;
+    var texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    var mat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+    var sprite = new THREE.Sprite(mat);
+    sprite.scale.set(0.6, 0.08, 1);
+    sprite.position.copy(patient.mesh.position);
+    sprite.position.y = 1.7;
+    scene.add(sprite);
+    patient.healthBar = sprite;
+    patient.healthBarCanvas = canvas;
+    patient.healthBarTexture = texture;
+    updateHealthBarTexture(patient);
+  }
+
+  function updateHealthBarTexture(patient) {
+    var hpInt = Math.floor(patient.hp);
+    if (hpInt === patient.lastDrawnHp) return;
+    patient.lastDrawnHp = hpInt;
+
+    var canvas = patient.healthBarCanvas;
+    var ctx = canvas.getContext('2d');
+    var ratio = patient.hp / patient.maxHp;
+
+    // Background
+    ctx.clearRect(0, 0, 128, 16);
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.beginPath();
+    ctx.roundRect(0, 0, 128, 16, 4);
+    ctx.fill();
+
+    // Fill
+    var fillW = Math.max(0, Math.min(126, ratio * 126));
+    if (fillW > 0) {
+      var col = getHealthColor(ratio);
+      ctx.fillStyle = 'rgb(' + col.r + ',' + col.g + ',' + col.b + ')';
+      ctx.beginPath();
+      ctx.roundRect(1, 1, fillW, 14, 3);
+      ctx.fill();
+    }
+
+    // HP text
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(hpInt + '/' + patient.maxHp, 64, 9);
+
+    patient.healthBarTexture.needsUpdate = true;
+  }
+
+  // --- Healing particles ---
+  var healParticles = [];
+  var PARTICLE_SPAWN_INTERVAL = 0.15;
+  var PARTICLE_LIFETIME = 1.2;
+  var PARTICLE_SPEED = 0.6;
+
+  function createParticleSprite() {
+    if (!healParticleTexture) {
+      var c = document.createElement('canvas');
+      c.width = 32; c.height = 32;
+      var ctx = c.getContext('2d');
+      // Green cross particle
+      ctx.fillStyle = '#00ff88';
+      ctx.globalAlpha = 0.9;
+      ctx.fillRect(12, 4, 8, 24);
+      ctx.fillRect(4, 12, 24, 8);
+      // Soft glow
+      var grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
+      grad.addColorStop(0, 'rgba(100, 255, 160, 0.3)');
+      grad.addColorStop(1, 'rgba(100, 255, 160, 0)');
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 32, 32);
+      healParticleTexture = new THREE.CanvasTexture(c);
+    }
+    var mat = new THREE.SpriteMaterial({ map: healParticleTexture, transparent: true, depthTest: false });
+    var sprite = new THREE.Sprite(mat);
+    sprite.scale.set(0.12, 0.12, 1);
+    return sprite;
+  }
+
+  var healParticleTexture = null;
+
+  function spawnHealParticle(patient) {
+    var sprite = createParticleSprite();
+    var px = patient.mesh.position.x + (Math.random() - 0.5) * 0.5;
+    var pz = patient.mesh.position.z + (Math.random() - 0.5) * 0.3;
+    var py = patient.mesh.position.y + 0.4 + Math.random() * 0.6;
+    sprite.position.set(px, py, pz);
+    scene.add(sprite);
+    healParticles.push({
+      sprite: sprite,
+      life: PARTICLE_LIFETIME,
+      maxLife: PARTICLE_LIFETIME,
+      vx: (Math.random() - 0.5) * 0.2,
+      vy: PARTICLE_SPEED + Math.random() * 0.3,
+      vz: (Math.random() - 0.5) * 0.2
+    });
+  }
+
+  function updateHealParticles(delta) {
+    // Spawn particles for treated patients
+    for (var i = 0; i < patients.length; i++) {
+      var p = patients[i];
+      if (p.treated && !p.animating) {
+        if (!p.particleTimer) p.particleTimer = 0;
+        p.particleTimer += delta;
+        while (p.particleTimer >= PARTICLE_SPAWN_INTERVAL) {
+          p.particleTimer -= PARTICLE_SPAWN_INTERVAL;
+          spawnHealParticle(p);
+        }
+      }
+    }
+
+    // Update existing particles
+    for (var i = healParticles.length - 1; i >= 0; i--) {
+      var part = healParticles[i];
+      part.life -= delta;
+      if (part.life <= 0) {
+        scene.remove(part.sprite);
+        healParticles.splice(i, 1);
+        continue;
+      }
+      part.sprite.position.x += part.vx * delta;
+      part.sprite.position.y += part.vy * delta;
+      part.sprite.position.z += part.vz * delta;
+      var alpha = part.life / part.maxLife;
+      part.sprite.material.opacity = alpha;
+      var s = 0.12 * (0.5 + 0.5 * alpha);
+      part.sprite.scale.set(s, s, 1);
+    }
+  }
+
   function updateIndicators() {
     var t = Date.now() * 0.003;
     for (var i = 0; i < patients.length; i++) {
@@ -304,6 +474,11 @@
         p.indicator.position.z = p.mesh.position.z;
         p.indicator.position.y = 2.0 + Math.sin(t + p.id) * 0.08;
       }
+      if (p.healthBar) {
+        p.healthBar.position.x = p.mesh.position.x;
+        p.healthBar.position.z = p.mesh.position.z;
+        p.healthBar.position.y = 1.7;
+      }
     }
   }
 
@@ -311,7 +486,8 @@
   function treatPatient(patient) {
     Game.Inventory.removeActive();
     patient.animating = true;
-    Game.Inventory.showNotification('Пациент вылечен!');
+    patient.treated = true;
+    Game.Inventory.showNotification('Лечение начато!');
 
     // Clone materials for animation
     for (var j = 0; j < patient.mesh.userData.bodyParts.length; j++) {
@@ -350,6 +526,10 @@
       scene.remove(patient.indicator);
       patient.indicator = null;
     }
+    if (patient.healthBar) {
+      scene.remove(patient.healthBar);
+      patient.healthBar = null;
+    }
     scene.remove(patient.mesh);
     if (patient.destination) {
       patient.destination.occupied = false;
@@ -372,7 +552,16 @@
           anim.patient.mesh.userData.bodyParts[j].material.emissiveIntensity = intensity;
         }
         if (anim.timer <= 0) {
-          removePatient(anim.patient);
+          for (var j = 0; j < anim.patient.mesh.userData.bodyParts.length; j++) {
+            var part = anim.patient.mesh.userData.bodyParts[j];
+            part.material.emissive.setHex(0x000000);
+            part.material.emissiveIntensity = 0;
+          }
+          anim.patient.animating = false;
+          if (anim.patient.indicator) {
+            scene.remove(anim.patient.indicator);
+            anim.patient.indicator = null;
+          }
           animations.splice(i, 1);
         }
       }
@@ -396,6 +585,39 @@
           }
           anim.patient.animating = false;
           animations.splice(i, 1);
+        }
+      }
+    }
+  }
+
+  function updateHealthTimers(delta) {
+    for (var i = patients.length - 1; i >= 0; i--) {
+      var p = patients[i];
+      if (p.treated) {
+        // Recovery: 3 HP/sec
+        p.hp += HP_RECOVERY_RATE * delta;
+        if (p.hp >= MAX_HP) {
+          p.hp = MAX_HP;
+          updateHealthBarTexture(p);
+          Game.Inventory.showNotification('Пациент выписан!');
+          removePatient(p);
+          continue;
+        }
+        updateHealthBarTexture(p);
+      } else {
+        // Decay: -1 HP every 3 sec
+        p.hpDecayTimer += delta;
+        while (p.hpDecayTimer >= HP_DECAY_INTERVAL) {
+          p.hpDecayTimer -= HP_DECAY_INTERVAL;
+          p.hp -= 1;
+          if (p.hp <= 0) {
+            p.hp = 0;
+            updateHealthBarTexture(p);
+            Game.Inventory.showNotification('Пациент потерян!');
+            removePatient(p);
+            break;
+          }
+          updateHealthBarTexture(p);
         }
       }
     }
@@ -450,6 +672,7 @@
       popupDiagnosis = document.getElementById('popup-diagnosis');
       popupSupply = document.getElementById('popup-supply');
       popupSupplyIcon = document.getElementById('popup-supply-icon');
+      popupSeverity = document.getElementById('popup-severity');
       btnBed = document.getElementById('btn-bed');
       btnWait = document.getElementById('btn-wait');
       bedCount = document.getElementById('bed-count');
@@ -462,6 +685,7 @@
         if (!hoveredPatient) return;
 
         if (hoveredPatient.state === 'atBed') {
+          if (hoveredPatient.treated) return;
           var activeType = Game.Inventory.getActive();
           if (!activeType) {
             Game.Inventory.showNotification('Выберите расходник в инвентаре');
@@ -512,7 +736,9 @@
       }
 
       updatePatients(delta);
+      updateHealthTimers(delta);
       updateAnimations(delta);
+      updateHealParticles(delta);
       updateIndicators();
       updateInteraction();
     }

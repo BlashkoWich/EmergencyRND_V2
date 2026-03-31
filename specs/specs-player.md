@@ -1,7 +1,7 @@
 # EmergencyRND V2 — Игрок, управление, взаимодействие
 
 ## Player
-- Стартовая позиция: `(0, 1.6, -11)` (за ресепшн-стойкой), лицом к улице (+Z)
+- Стартовая позиция: `(0, 1.6, -10)` (за ресепшн-стойкой), лицом к улице (+Z)
 - Камера: PerspectiveCamera, FOV 70, near 0.1, far 100
 - `rotation.order = 'YXZ'` — совпадает с внутренним euler order PointerLockControls, предотвращает quaternion↔euler drift
 - Начальный поворот: `camera.quaternion.setFromEuler(new Euler(0, PI, 0, 'YXZ'))` — лицом к входу/улице
@@ -13,9 +13,11 @@
 - **Q (KeyQ)** — открыть/закрыть магазин расходников
 - **G (KeyG)** — бросить предмет из активного слота инвентаря (вперёд по камере с физикой)
 - **1-6 (Digit1-Digit6)** — выбор слота инвентаря
+- **Shift (ShiftLeft)** — ускорение (спринт): скорость `7.0` ед/сек вместо `4.0`
+- **Space** — прыжок (начальная скорость `5.0`, гравитация `-12.0`); горизонтальное движение сохраняется в воздухе
 - **ESC** — пауза (разблокировка курсора, показ overlay)
-- Скорость движения: `4.0` ед/сек
-- Высота камеры: `1.6` (фиксирована, нет прыжков)
+- Скорость движения: `4.0` ед/сек (обычная), `7.0` ед/сек (спринт)
+- Высота камеры: `1.6` (базовая, меняется при прыжке)
 
 ## Mouse Delta Filter
 - Capture-phase `mousemove` listener на `document`, срабатывает ДО PointerLockControls
@@ -24,13 +26,19 @@
 
 ## Controls Internal State
 ```js
-_keys { forward, backward, left, right }  // состояние клавиш
+_keys { forward, backward, left, right, sprint, jump }  // состояние клавиш
 _raycaster                // для коллизий
 _collisionOrigin          // Vector3, точка начала рейкаста (y=0.5, центр тела)
 _savedQuat                // Quaternion|null, сохраняется при lock, восстанавливается в первом update
 _forward, _right, _moveDir, _moveX, _moveZ  // pre-allocated Vector3, переиспользуются каждый кадр (без GC-давления)
 _moveSpeed = 4.0
+_sprintSpeed = 7.0
 _collisionDistance = 0.4
+_velocityY = 0            // вертикальная скорость (прыжок/падение)
+_jumpSpeed = 5.0           // начальная скорость прыжка
+_gravity = -12.0           // гравитация
+_groundY = 1.6             // базовая высота камеры
+_isGrounded = true         // на земле ли игрок
 ```
 
 ## UI Elements

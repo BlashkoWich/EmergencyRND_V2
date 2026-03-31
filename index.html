@@ -13,6 +13,7 @@
     <h2 id="popup-name"></h2>
     <div class="info-row">Симптом: <span id="popup-symptom"></span></div>
     <div class="info-row">Диагноз: <span id="popup-diagnosis"></span></div>
+    <div class="info-row">Тяжесть: <span id="popup-severity"></span></div>
     <div class="info-row">Расходник: <span id="popup-supply-icon" style="display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:middle;margin-right:6px;border:1px solid rgba(255,255,255,0.3)"></span><span id="popup-supply"></span></div>
     <div class="buttons">
       <button id="btn-bed">На кровать <span id="bed-count" style="opacity:0.7"></span></button>
@@ -94,7 +95,7 @@
 
     // --- Camera ---
     const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
-    camera.position.set(0, 1.6, -11);
+    camera.position.set(0, 1.6, -10);
     camera.rotation.order = 'YXZ'; // Match PointerLockControls euler order to prevent quaternion↔euler drift
     camera.rotation.y = Math.PI;   // Face towards street (+Z)
 
