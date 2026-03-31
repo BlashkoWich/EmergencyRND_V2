@@ -12,7 +12,8 @@
       if (!countEls[type]) continue;
       var inInventory = Game.Inventory.countType(type);
       var onGround = Game.Consumables.countGroundItems(type);
-      var total = inInventory + onGround;
+      var inBoxes = Game.Consumables.countBoxItems(type);
+      var total = inInventory + onGround + inBoxes;
       countEls[type].textContent = total > 0 ? '(есть: ' + total + ')' : '';
     }
   }
@@ -41,12 +42,12 @@
         (function(btn, t) {
           btn.addEventListener('click', function() {
             var balance = Game.Cashier.getBalance();
-            if (balance < 1) {
+            if (balance < 10) {
               Game.Inventory.showNotification('Недостаточно средств!');
               return;
             }
-            Game.Cashier.spend(1);
-            Game.Consumables.spawnInDeliveryZone(t);
+            Game.Cashier.spend(10);
+            Game.Consumables.spawnBoxInDeliveryZone(t);
             updateCounts();
           });
         })(itemEl.querySelector('.shop-buy-btn'), type);

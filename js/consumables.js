@@ -13,13 +13,20 @@
   var DROP_FORWARD_SPEED = 4.0;
   var DROP_UP_SPEED = 2.0;
 
+  // Box constants
+  var BOX_SIZE = { x: 0.8, y: 0.6, z: 0.6 };
+  var BOX_ITEMS_COUNT = 10;
+
   var THREE, scene, camera, controls, collidables;
   var groundItems = [];
+  var groundBoxes = [];
+  var heldBox = null;
   var hoveredItem = null;
+  var hoveredBox = null;
   var interactRay, screenCenter;
-  var hintEl;
+  var hintEl, heldBoxHintEl;
   var deliveryZoneMesh;
-  var physicsRay; // reusable raycaster for physics collisions
+  var physicsRay;
 
   function createDeliveryZone() {
     var canvas = document.createElement('canvas');
@@ -46,15 +53,173 @@
     scene.add(deliveryZoneMesh);
   }
 
+  // --- Medical 3D Models ---
+
   function createConsumableMesh(type) {
     var info = CONSUMABLE_TYPES[type];
-    var geo = new THREE.BoxGeometry(info.size.x, info.size.y, info.size.z);
-    var mat = new THREE.MeshStandardMaterial({ color: info.color, roughness: 0.5 });
-    var mesh = new THREE.Mesh(geo, mat);
-    mesh.castShadow = true;
-    mesh.userData.consumableType = type;
-    return mesh;
+    var group = new THREE.Group();
+
+    if (type === 'strepsils') {
+      // Blister pack: flat base + 6 hemispherical bumps (2 rows x 3)
+      var baseMat = new THREE.MeshStandardMaterial({ color: info.color, roughness: 0.4, metalness: 0.1 });
+      var base = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.02, 0.10), baseMat);
+      base.castShadow = true;
+      group.add(base);
+
+      var bumpMat = new THREE.MeshStandardMaterial({ color: 0xee5555, roughness: 0.3, metalness: 0.2 });
+      var bumpGeo = new THREE.SphereGeometry(0.016, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2);
+      for (var row = 0; row < 2; row++) {
+        for (var col = 0; col < 3; col++) {
+          var bump = new THREE.Mesh(bumpGeo, bumpMat);
+          bump.position.set(-0.04 + col * 0.04, 0.01, -0.025 + row * 0.05);
+          bump.castShadow = true;
+          group.add(bump);
+        }
+      }
+
+      // Foil back (bottom)
+      var foilMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.2, metalness: 0.6 });
+      var foil = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.003, 0.09), foilMat);
+      foil.position.y = -0.01;
+      group.add(foil);
+
+    } else if (type === 'painkiller') {
+      // Pill bottle: cylinder body + white cap + label band
+      var bodyMat = new THREE.MeshStandardMaterial({ color: info.color, roughness: 0.4 });
+      var body = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.10, 12), bodyMat);
+      body.castShadow = true;
+      group.add(body);
+
+      // White cap
+      var capMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+      var cap = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.038, 0.025, 12), capMat);
+      cap.position.y = 0.0625;
+      cap.castShadow = true;
+      group.add(cap);
+
+      // White label band
+      var labelMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.5 });
+      var label = new THREE.Mesh(new THREE.CylinderGeometry(0.037, 0.037, 0.035, 12), labelMat);
+      label.position.y = -0.005;
+      group.add(label);
+
+    } else if (type === 'antihistamine') {
+      // Medicine box with white cross on front
+      var boxMat = new THREE.MeshStandardMaterial({ color: info.color, roughness: 0.5 });
+      var box = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.10, 0.05), boxMat);
+      box.castShadow = true;
+      group.add(box);
+
+      // White cross on front face
+      var crossMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
+      var crossH = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.015, 0.002), crossMat);
+      crossH.position.set(0, 0, 0.026);
+      group.add(crossH);
+      var crossV = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.05, 0.002), crossMat);
+      crossV.position.set(0, 0, 0.026);
+      group.add(crossV);
+    }
+
+    group.userData.consumableType = type;
+    return group;
   }
+
+  // --- Box 3D Model ---
+
+  function createBoxMesh(type) {
+    var info = CONSUMABLE_TYPES[type];
+    var group = new THREE.Group();
+
+    // Box in the drug's color
+    var boxMat = new THREE.MeshStandardMaterial({ color: info.color, roughness: 0.6 });
+    var box = new THREE.Mesh(new THREE.BoxGeometry(BOX_SIZE.x, BOX_SIZE.y, BOX_SIZE.z), boxMat);
+    box.castShadow = true;
+    group.add(box);
+
+    // Slightly darker edge strip on top
+    var darkerColor = new THREE.Color(info.color).multiplyScalar(0.7);
+    var edgeMat = new THREE.MeshStandardMaterial({ color: darkerColor, roughness: 0.7 });
+    var edgeT = new THREE.Mesh(new THREE.BoxGeometry(BOX_SIZE.x + 0.01, 0.02, BOX_SIZE.z + 0.01), edgeMat);
+    edgeT.position.y = BOX_SIZE.y / 2;
+    group.add(edgeT);
+
+    // Create label canvas (high-res for clarity)
+    var canvas = document.createElement('canvas');
+    canvas.width = 512; canvas.height = 512;
+    var ctx = canvas.getContext('2d');
+
+    // White label area
+    ctx.fillStyle = '#ffffff';
+    ctx.roundRect(20, 20, 472, 472, 16);
+    ctx.fill();
+
+    // Colored border
+    var colorHex = '#' + info.color.toString(16).padStart(6, '0');
+    ctx.strokeStyle = colorHex;
+    ctx.lineWidth = 8;
+    ctx.roundRect(20, 20, 472, 472, 16);
+    ctx.stroke();
+
+    // Medical cross icon (large)
+    ctx.fillStyle = colorHex;
+    ctx.fillRect(216, 50, 80, 24);
+    ctx.fillRect(236, 30, 40, 64);
+
+    // Drug name (large, bold)
+    ctx.fillStyle = '#111';
+    ctx.font = 'bold 52px Segoe UI, Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(info.name, 256, 180);
+
+    // Horizontal divider
+    ctx.strokeStyle = colorHex;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(80, 230);
+    ctx.lineTo(432, 230);
+    ctx.stroke();
+
+    // "x10" text (large)
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 72px Segoe UI, Arial, sans-serif';
+    ctx.fillText('×10', 256, 320);
+
+    // Subtitle
+    ctx.fillStyle = '#777';
+    ctx.font = '32px Segoe UI, Arial, sans-serif';
+    ctx.fillText('препараты', 256, 410);
+
+    var tex = new THREE.CanvasTexture(canvas);
+    var labelGeo = new THREE.PlaneGeometry(BOX_SIZE.x * 0.85, BOX_SIZE.y * 0.85);
+    var labelMatFront = new THREE.MeshBasicMaterial({
+      map: tex, transparent: true,
+      depthTest: true, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1
+    });
+
+    // Front label
+    var labelFront = new THREE.Mesh(labelGeo, labelMatFront);
+    labelFront.position.z = BOX_SIZE.z / 2 + 0.005;
+    labelFront.userData.isLabel = true;
+    group.add(labelFront);
+
+    // Back label (same texture, rotated 180)
+    var labelMatBack = new THREE.MeshBasicMaterial({
+      map: tex, transparent: true,
+      depthTest: true, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1
+    });
+    var labelBack = new THREE.Mesh(labelGeo, labelMatBack);
+    labelBack.position.z = -(BOX_SIZE.z / 2 + 0.005);
+    labelBack.rotation.y = Math.PI;
+    labelBack.userData.isLabel = true;
+    group.add(labelBack);
+
+    group.userData.isBox = true;
+    group.userData.boxType = type;
+    return group;
+  }
+
+  // --- Spawn Functions ---
 
   function spawnInDeliveryZone(type) {
     var mesh = createConsumableMesh(type);
@@ -73,9 +238,26 @@
     });
   }
 
+  function spawnBoxInDeliveryZone(type) {
+    var mesh = createBoxMesh(type);
+    var x = DELIVERY_ZONE.cx + (Math.random() - 0.5) * 2 * DELIVERY_ZONE.hw;
+    var z = DELIVERY_ZONE.cz + (Math.random() - 0.5) * 2 * DELIVERY_ZONE.hd;
+    mesh.position.set(x, 3.0, z);
+    mesh.rotation.y = Math.random() * Math.PI * 2;
+    scene.add(mesh);
+
+    groundBoxes.push({
+      type: type,
+      mesh: mesh,
+      remaining: BOX_ITEMS_COUNT,
+      velocity: new THREE.Vector3(0, 0, 0),
+      grounded: false,
+      pickedUp: false
+    });
+  }
+
   function dropFromPlayer(type) {
     var mesh = createConsumableMesh(type);
-    // Spawn slightly in front and below camera
     var forward = new THREE.Vector3();
     camera.getWorldDirection(forward);
     var spawnPos = camera.position.clone().add(forward.clone().multiplyScalar(0.8));
@@ -84,7 +266,6 @@
     mesh.rotation.y = Math.random() * Math.PI * 2;
     scene.add(mesh);
 
-    // Velocity: forward + slightly up
     var vel = forward.clone().multiplyScalar(DROP_FORWARD_SPEED);
     vel.y = DROP_UP_SPEED;
 
@@ -97,86 +278,55 @@
     });
   }
 
-  // Check if moving along an axis would hit a collider
-  function checkAxisCollision(pos, direction, distance, halfH) {
-    // Cast from item center
-    physicsRay.set(pos, direction);
-    physicsRay.far = distance + 0.05;
-    var hits = physicsRay.intersectObjects(collidables);
-    if (hits.length > 0 && hits[0].distance < distance + 0.05) {
-      return true;
-    }
-    return false;
+  function throwHeldBox() {
+    var forward = new THREE.Vector3();
+    camera.getWorldDirection(forward);
+    var vel = forward.clone().multiplyScalar(DROP_FORWARD_SPEED);
+    vel.y = DROP_UP_SPEED;
+
+    heldBox.velocity = vel;
+    heldBox.grounded = false;
+    heldBox.pickedUp = false;
+    heldBox = null;
   }
 
-  function updatePhysics(delta) {
-    var downDir = new THREE.Vector3(0, -1, 0);
-    var tempPos = new THREE.Vector3();
+  // --- Physics ---
 
-    for (var i = 0; i < groundItems.length; i++) {
-      var item = groundItems[i];
-      if (item.grounded || item.pickedUp) continue;
+  function applyItemPhysics(item, halfH, halfW, delta, downDir) {
+    item.velocity.y += GRAVITY * delta;
 
-      var halfH = CONSUMABLE_TYPES[item.type].size.y / 2;
-      var halfW = CONSUMABLE_TYPES[item.type].size.x / 2;
+    var pos = item.mesh.position;
+    var vel = item.velocity;
 
-      // Apply gravity
-      item.velocity.y += GRAVITY * delta;
-
-      var pos = item.mesh.position;
-      var vel = item.velocity;
-
-      // --- Horizontal collision (X axis) ---
-      if (Math.abs(vel.x) > 0.001) {
-        var dirX = new THREE.Vector3(vel.x > 0 ? 1 : -1, 0, 0);
-        physicsRay.set(pos, dirX);
-        physicsRay.far = Math.abs(vel.x * delta) + halfW + 0.02;
-        var hitsX = physicsRay.intersectObjects(collidables);
-        if (hitsX.length > 0 && hitsX[0].distance < Math.abs(vel.x * delta) + halfW + 0.02) {
-          vel.x = 0;
-        }
+    // X axis collision
+    if (Math.abs(vel.x) > 0.001) {
+      var dirX = new THREE.Vector3(vel.x > 0 ? 1 : -1, 0, 0);
+      physicsRay.set(pos, dirX);
+      physicsRay.far = Math.abs(vel.x * delta) + halfW + 0.02;
+      var hitsX = physicsRay.intersectObjects(collidables);
+      if (hitsX.length > 0 && hitsX[0].distance < Math.abs(vel.x * delta) + halfW + 0.02) {
+        vel.x = 0;
       }
+    }
 
-      // --- Horizontal collision (Z axis) ---
-      if (Math.abs(vel.z) > 0.001) {
-        var dirZ = new THREE.Vector3(0, 0, vel.z > 0 ? 1 : -1);
-        physicsRay.set(pos, dirZ);
-        physicsRay.far = Math.abs(vel.z * delta) + halfW + 0.02;
-        var hitsZ = physicsRay.intersectObjects(collidables);
-        if (hitsZ.length > 0 && hitsZ[0].distance < Math.abs(vel.z * delta) + halfW + 0.02) {
-          vel.z = 0;
-        }
+    // Z axis collision
+    if (Math.abs(vel.z) > 0.001) {
+      var dirZ = new THREE.Vector3(0, 0, vel.z > 0 ? 1 : -1);
+      physicsRay.set(pos, dirZ);
+      physicsRay.far = Math.abs(vel.z * delta) + halfW + 0.02;
+      var hitsZ = physicsRay.intersectObjects(collidables);
+      if (hitsZ.length > 0 && hitsZ[0].distance < Math.abs(vel.z * delta) + halfW + 0.02) {
+        vel.z = 0;
       }
+    }
 
-      // --- Vertical collision (downward) ---
-      var landedOnSurface = false;
-      if (vel.y < 0) {
-        physicsRay.set(pos, downDir);
-        physicsRay.far = Math.abs(vel.y * delta) + halfH + 0.02;
-        var hitsY = physicsRay.intersectObjects(collidables);
-        if (hitsY.length > 0 && hitsY[0].distance < Math.abs(vel.y * delta) + halfH + 0.02) {
-          pos.y = hitsY[0].point.y + halfH;
-          vel.y = 0;
-          vel.x *= 0.3; // friction
-          vel.z *= 0.3;
-          landedOnSurface = true;
-          // Check if nearly stopped
-          if (Math.abs(vel.x) < 0.1 && Math.abs(vel.z) < 0.1) {
-            vel.x = 0;
-            vel.z = 0;
-            item.grounded = true;
-          }
-        }
-      }
-
-      // Apply velocity
-      pos.x += vel.x * delta;
-      pos.y += vel.y * delta;
-      pos.z += vel.z * delta;
-
-      // Ground plane fallback
-      if (pos.y - halfH <= GROUND_Y) {
-        pos.y = GROUND_Y + halfH;
+    // Y axis (downward) collision
+    if (vel.y < 0) {
+      physicsRay.set(pos, downDir);
+      physicsRay.far = Math.abs(vel.y * delta) + halfH + 0.02;
+      var hitsY = physicsRay.intersectObjects(collidables);
+      if (hitsY.length > 0 && hitsY[0].distance < Math.abs(vel.y * delta) + halfH + 0.02) {
+        pos.y = hitsY[0].point.y + halfH;
         vel.y = 0;
         vel.x *= 0.3;
         vel.z *= 0.3;
@@ -186,39 +336,167 @@
           item.grounded = true;
         }
       }
+    }
 
-      // Apply horizontal friction for items on ground/surface
-      if (landedOnSurface && !item.grounded) {
-        // Still sliding -- will decelerate next frame
+    // Apply velocity
+    pos.x += vel.x * delta;
+    pos.y += vel.y * delta;
+    pos.z += vel.z * delta;
+
+    // Ground plane fallback
+    if (pos.y - halfH <= GROUND_Y) {
+      pos.y = GROUND_Y + halfH;
+      vel.y = 0;
+      vel.x *= 0.3;
+      vel.z *= 0.3;
+      if (Math.abs(vel.x) < 0.1 && Math.abs(vel.z) < 0.1) {
+        vel.x = 0;
+        vel.z = 0;
+        item.grounded = true;
       }
     }
   }
 
-  function highlightItem(item) {
-    item.mesh.material = item.mesh.material.clone();
-    item.mesh.material.emissive = new THREE.Color(0x00ff44);
-    item.mesh.material.emissiveIntensity = 0.35;
-  }
+  function updatePhysics(delta) {
+    var downDir = new THREE.Vector3(0, -1, 0);
 
-  function unhighlightItem(item) {
-    item.mesh.material.emissive = new THREE.Color(0x000000);
-    item.mesh.material.emissiveIntensity = 0;
-  }
-
-  function getItemFromMesh(mesh) {
     for (var i = 0; i < groundItems.length; i++) {
-      if (groundItems[i].mesh === mesh && !groundItems[i].pickedUp) return groundItems[i];
+      var item = groundItems[i];
+      if (item.grounded || item.pickedUp) continue;
+      var halfH = CONSUMABLE_TYPES[item.type].size.y / 2;
+      var halfW = CONSUMABLE_TYPES[item.type].size.x / 2;
+      applyItemPhysics(item, halfH, halfW, delta, downDir);
+    }
+
+    for (var i = 0; i < groundBoxes.length; i++) {
+      var box = groundBoxes[i];
+      if (box.grounded || box.pickedUp) continue;
+      applyItemPhysics(box, BOX_SIZE.y / 2, BOX_SIZE.x / 2, delta, downDir);
+    }
+  }
+
+  // --- Highlight / Unhighlight ---
+
+  function highlightGroup(group) {
+    group.traverse(function(child) {
+      if (child.isMesh && !child.userData.isLabel) {
+        child.material = child.material.clone();
+        child.material.emissive = new THREE.Color(0x00ff44);
+        child.material.emissiveIntensity = 0.35;
+      }
+    });
+  }
+
+  function unhighlightGroup(group) {
+    group.traverse(function(child) {
+      if (child.isMesh && !child.userData.isLabel && child.material.emissive) {
+        child.material.emissive = new THREE.Color(0x000000);
+        child.material.emissiveIntensity = 0;
+      }
+    });
+  }
+
+  // --- Mesh Lookup ---
+
+  function getItemFromMesh(hitObject) {
+    for (var i = 0; i < groundItems.length; i++) {
+      if (groundItems[i].pickedUp) continue;
+      var current = hitObject;
+      while (current) {
+        if (current === groundItems[i].mesh) return groundItems[i];
+        current = current.parent;
+      }
     }
     return null;
   }
 
-  function updateInteraction() {
+  function getBoxFromMesh(hitObject) {
+    for (var i = 0; i < groundBoxes.length; i++) {
+      if (groundBoxes[i].pickedUp) continue;
+      var current = hitObject;
+      while (current) {
+        if (current === groundBoxes[i].mesh) return groundBoxes[i];
+        current = current.parent;
+      }
+    }
+    return null;
+  }
+
+  // --- Held Box Update ---
+
+  function updateHeldBox() {
+    if (!heldBox) return;
+    var forward = new THREE.Vector3();
+    camera.getWorldDirection(forward);
+    var pos = camera.position.clone();
+    pos.add(forward.clone().multiplyScalar(0.6));
+    pos.y -= 0.35;
+    var right = new THREE.Vector3();
+    right.crossVectors(forward, new THREE.Vector3(0, 1, 0)).normalize();
+    pos.add(right.multiplyScalar(0.2));
+    heldBox.mesh.position.copy(pos);
+    heldBox.mesh.rotation.y = Math.atan2(forward.x, forward.z);
+  }
+
+  function updateHeldBoxHints() {
+    if (heldBox && controls.isLocked) {
+      heldBoxHintEl.innerHTML = 'ЛКМ — Взять препарат (осталось: ' + heldBox.remaining + ')<br>G — Бросить коробку';
+      heldBoxHintEl.style.display = 'block';
+    } else {
+      heldBoxHintEl.style.display = 'none';
+    }
+  }
+
+  // --- Box Interaction (hover + E key hint) ---
+
+  function updateBoxInteraction() {
     if (!controls.isLocked || Game.Patients.isPopupOpen() || Game.Shop.isOpen()) {
-      if (hoveredItem) { unhighlightItem(hoveredItem); hoveredItem = null; }
+      if (hoveredBox) { unhighlightGroup(hoveredBox.mesh); hoveredBox = null; }
       return false;
     }
     if (Game.Patients.hasInteraction()) {
-      if (hoveredItem) { unhighlightItem(hoveredItem); hoveredItem = null; }
+      if (hoveredBox) { unhighlightGroup(hoveredBox.mesh); hoveredBox = null; }
+      return false;
+    }
+    if (heldBox) {
+      if (hoveredBox) { unhighlightGroup(hoveredBox.mesh); hoveredBox = null; }
+      return false;
+    }
+
+    interactRay.setFromCamera(screenCenter, camera);
+    var meshes = [];
+    for (var i = 0; i < groundBoxes.length; i++) {
+      if (groundBoxes[i].grounded && !groundBoxes[i].pickedUp) {
+        meshes.push(groundBoxes[i].mesh);
+      }
+    }
+
+    var hits = interactRay.intersectObjects(meshes, true);
+    var newHovered = hits.length > 0 ? getBoxFromMesh(hits[0].object) : null;
+
+    if (newHovered !== hoveredBox) {
+      if (hoveredBox) unhighlightGroup(hoveredBox.mesh);
+      if (newHovered) highlightGroup(newHovered.mesh);
+      hoveredBox = newHovered;
+    }
+
+    if (hoveredBox) {
+      hintEl.textContent = 'ЛКМ — Взять препарат (' + hoveredBox.remaining + ' шт.)  |  E — Поднять коробку';
+      hintEl.style.display = 'block';
+      return true;
+    }
+    return false;
+  }
+
+  // --- Consumable Interaction (hover + LMB pickup hint) ---
+
+  function updateInteraction() {
+    if (!controls.isLocked || Game.Patients.isPopupOpen() || Game.Shop.isOpen()) {
+      if (hoveredItem) { unhighlightGroup(hoveredItem.mesh); hoveredItem = null; }
+      return false;
+    }
+    if (Game.Patients.hasInteraction()) {
+      if (hoveredItem) { unhighlightGroup(hoveredItem.mesh); hoveredItem = null; }
       return false;
     }
 
@@ -230,12 +508,12 @@
       }
     }
 
-    var hits = interactRay.intersectObjects(meshes);
+    var hits = interactRay.intersectObjects(meshes, true);
     var newHovered = hits.length > 0 ? getItemFromMesh(hits[0].object) : null;
 
     if (newHovered !== hoveredItem) {
-      if (hoveredItem) unhighlightItem(hoveredItem);
-      if (newHovered) highlightItem(newHovered);
+      if (hoveredItem) unhighlightGroup(hoveredItem.mesh);
+      if (newHovered) highlightGroup(newHovered.mesh);
       hoveredItem = newHovered;
     }
 
@@ -247,10 +525,16 @@
     return false;
   }
 
+  // --- Public API ---
+
   window.Game.Consumables = {
     TYPES: CONSUMABLE_TYPES,
 
     hasInteraction: function() { return !!hoveredItem; },
+    hasBoxInteraction: function() { return !!hoveredBox; },
+    isHoldingBox: function() { return !!heldBox; },
+
+    createMesh: function(type) { return createConsumableMesh(type); },
 
     countGroundItems: function(type) {
       var count = 0;
@@ -260,8 +544,21 @@
       return count;
     },
 
+    countBoxItems: function(type) {
+      var count = 0;
+      for (var i = 0; i < groundBoxes.length; i++) {
+        if (groundBoxes[i].type === type && !groundBoxes[i].pickedUp) count += groundBoxes[i].remaining;
+      }
+      if (heldBox && heldBox.type === type) count += heldBox.remaining;
+      return count;
+    },
+
     spawnInDeliveryZone: function(type) {
       spawnInDeliveryZone(type);
+    },
+
+    spawnBoxInDeliveryZone: function(type) {
+      spawnBoxInDeliveryZone(type);
     },
 
     dropFromPlayer: function(type) {
@@ -280,20 +577,59 @@
       screenCenter = new THREE.Vector2(0, 0);
       physicsRay = new THREE.Raycaster();
       hintEl = document.getElementById('interact-hint');
+      heldBoxHintEl = document.getElementById('held-box-hint');
 
       createDeliveryZone();
 
-      // Pickup on click
+      // --- LMB: take from held box / pickup ground item ---
       document.addEventListener('mousedown', function(e) {
         if (e.button !== 0 || !controls.isLocked) return;
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
         if (Game.Patients.hasInteraction()) return;
-        if (!hoveredItem) return;
 
+        // If holding a box, LMB takes item from box
+        if (heldBox) {
+          if (Game.Cashier && Game.Cashier.isPopupOpen()) return;
+          if (heldBox.remaining <= 0) return;
+          if (Game.Inventory.addItem(heldBox.type)) {
+            heldBox.remaining--;
+            if (heldBox.remaining <= 0) {
+              scene.remove(heldBox.mesh);
+              var idx = groundBoxes.indexOf(heldBox);
+              if (idx !== -1) groundBoxes.splice(idx, 1);
+              heldBox = null;
+            }
+          } else {
+            Game.Inventory.showNotification('Инвентарь полон');
+          }
+          return;
+        }
+
+        // Take item from grounded box on LMB
+        if (hoveredBox) {
+          if (hoveredBox.remaining <= 0) return;
+          if (Game.Inventory.addItem(hoveredBox.type)) {
+            hoveredBox.remaining--;
+            if (hoveredBox.remaining <= 0) {
+              scene.remove(hoveredBox.mesh);
+              unhighlightGroup(hoveredBox.mesh);
+              var idx = groundBoxes.indexOf(hoveredBox);
+              if (idx !== -1) groundBoxes.splice(idx, 1);
+              hoveredBox = null;
+              hintEl.style.display = 'none';
+            }
+          } else {
+            Game.Inventory.showNotification('Инвентарь полон');
+          }
+          return;
+        }
+
+        // Normal item pickup
+        if (!hoveredItem) return;
         if (Game.Inventory.addItem(hoveredItem.type)) {
           hoveredItem.pickedUp = true;
           scene.remove(hoveredItem.mesh);
-          unhighlightItem(hoveredItem);
+          unhighlightGroup(hoveredItem.mesh);
           hoveredItem = null;
           hintEl.style.display = 'none';
         } else {
@@ -301,23 +637,55 @@
         }
       });
 
-      // Drop on G key (KeyG works for both EN 'G' and RU 'П')
+      // --- G key: throw held box / drop from inventory ---
       document.addEventListener('keydown', function(e) {
         if (e.code !== 'KeyG') return;
         if (!controls.isLocked) return;
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
 
+        // Priority: throw held box
+        if (heldBox) {
+          throwHeldBox();
+          return;
+        }
+
+        // Otherwise drop from inventory
         var type = Game.Inventory.getActive();
         if (!type) return;
-
         Game.Inventory.removeActive();
         dropFromPlayer(type);
+      });
+
+      // --- E key: pick up box ---
+      document.addEventListener('keydown', function(e) {
+        if (e.code !== 'KeyE') return;
+        if (!controls.isLocked) return;
+        if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
+        if (heldBox) return;
+        if (!hoveredBox) return;
+
+        heldBox = hoveredBox;
+        heldBox.pickedUp = true;
+        unhighlightGroup(hoveredBox.mesh);
+        hoveredBox = null;
+        hintEl.style.display = 'none';
       });
     },
 
     update: function(delta) {
       updatePhysics(delta);
-      updateInteraction();
+      updateHeldBox();
+
+      // Interaction priority: patients > boxes(E) > consumables(LMB) > shelves > cashier
+      var boxInteracted = updateBoxInteraction();
+      if (!boxInteracted && !heldBox) {
+        updateInteraction();
+      } else if (!boxInteracted) {
+        // Holding box but not hovering a box — clear item hover
+        if (hoveredItem) { unhighlightGroup(hoveredItem.mesh); hoveredItem = null; }
+      }
+
+      updateHeldBoxHints();
     }
   };
 })();

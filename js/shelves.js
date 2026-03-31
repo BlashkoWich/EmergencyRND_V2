@@ -133,12 +133,9 @@
 
   function placeItemOnShelf(slot, type) {
     var info = Game.Consumables.TYPES[type];
-    var geo = new THREE.BoxGeometry(info.size.x, info.size.y, info.size.z);
-    var mat = new THREE.MeshStandardMaterial({ color: info.color, roughness: 0.5 });
-    var mesh = new THREE.Mesh(geo, mat);
+    var mesh = Game.Consumables.createMesh(type);
     mesh.position.copy(slot.pos);
     mesh.position.y += info.size.y / 2;
-    mesh.castShadow = true;
     scene.add(mesh);
 
     slot.item = type;
@@ -150,7 +147,11 @@
       if (hoveredShelf) { unhighlightShelf(hoveredShelf); hoveredShelf = null; }
       return false;
     }
-    if (Game.Patients.hasInteraction() || Game.Consumables.hasInteraction()) {
+    if (Game.Patients.hasInteraction() || Game.Consumables.hasInteraction() || Game.Consumables.hasBoxInteraction()) {
+      if (hoveredShelf) { unhighlightShelf(hoveredShelf); hoveredShelf = null; }
+      return false;
+    }
+    if (Game.Consumables.isHoldingBox()) {
       if (hoveredShelf) { unhighlightShelf(hoveredShelf); hoveredShelf = null; }
       return false;
     }
@@ -209,7 +210,8 @@
       document.addEventListener('mousedown', function(e) {
         if (e.button !== 0 || !controls.isLocked) return;
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
-        if (Game.Patients.hasInteraction() || Game.Consumables.hasInteraction()) return;
+        if (Game.Patients.hasInteraction() || Game.Consumables.hasInteraction() || Game.Consumables.hasBoxInteraction()) return;
+        if (Game.Consumables.isHoldingBox()) return;
         if (!hoveredShelf) return;
 
         var type = Game.Inventory.getActive();

@@ -78,7 +78,11 @@
 
     // Show/hide drop hint based on active slot content
     if (hintDropEl) {
-      hintDropEl.style.display = slots[activeSlot] ? 'inline' : 'none';
+      if (Game.Consumables && Game.Consumables.isHoldingBox()) {
+        hintDropEl.style.display = 'none';
+      } else {
+        hintDropEl.style.display = slots[activeSlot] ? 'inline' : 'none';
+      }
     }
   }
 

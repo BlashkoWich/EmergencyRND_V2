@@ -42,6 +42,17 @@ canvas { display: block; }
   pointer-events: none; display: none; white-space: nowrap;
 }
 
+/* --- Held box hint --- */
+#held-box-hint {
+  position: fixed; top: calc(50% + 55px); left: 50%; z-index: 5;
+  transform: translateX(-50%);
+  color: #fff; font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 0.85rem; background: rgba(0,0,0,0.55);
+  padding: 4px 12px; border-radius: 4px;
+  pointer-events: none; display: none; white-space: nowrap;
+  text-align: center; line-height: 1.4;
+}
+
 /* --- Patient popup --- */
 #patient-popup {
   position: fixed; top: 50%; left: 50%; z-index: 20;

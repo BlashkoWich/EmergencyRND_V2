@@ -153,7 +153,7 @@
     prevHovered = nowHovered;
 
     if (hoveredTerminal) {
-      if (!Game.Patients.hasInteraction() && !Game.Consumables.hasInteraction() && !Game.Shelves.hasInteraction()) {
+      if (!Game.Patients.hasInteraction() && !Game.Consumables.hasInteraction() && !Game.Consumables.hasBoxInteraction() && !Game.Consumables.isHoldingBox() && !Game.Shelves.hasInteraction()) {
         hintEl.textContent = '\u041B\u041A\u041C \u2014 \u041E\u043F\u043B\u0430\u0442\u0430';
         hintEl.style.display = 'block';
       }

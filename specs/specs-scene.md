@@ -91,7 +91,18 @@ CONSUMABLE_TYPES = {
   antihistamine: { name: 'Антигистаминное',   color: 0x33aa55, size: {x:0.14, y:0.07, z:0.10} }
 }
 ```
-- BoxGeometry с соответствующим размером, MeshStandardMaterial (roughness 0.5), castShadow
+Каждая модель — `THREE.Group` с несколькими примитивами:
+- **Стрепсилс** — блистер: BoxGeometry основа + 6 SphereGeometry полусфер (2×3) + фольга снизу
+- **Обезболивающее** — флакон: CylinderGeometry тело + белая крышка + белая этикетка-полоса
+- **Антигистаминное** — коробочка: BoxGeometry + белый крестик "+" на передней грани
+- `group.userData.consumableType = type`
+
+### Box 3D Model (коробка препаратов)
+- BoxGeometry(0.8, 0.6, 0.6), цвет коробки = цвет препарата (roughness 0.6)
+- Тёмная окантовка сверху (цвет × 0.7)
+- Canvas-текстура 512×512 на передней И задней гранях: белая этикетка, цветной мед. крест, название (52px bold), "×10" (72px bold), "препараты" (32px)
+- Надписи: `PlaneGeometry(0.68, 0.51)`, offset +0.005 от грани, `polygonOffset: true`, `userData.isLabel = true` (пропускаются при highlight)
+- `group.userData.isBox = true`, `group.userData.boxType = type`
 
 ### Cashier Desk 3D Model
 - **Стол**: BoxGeometry(0.8, 0.8, 0.6), деревянный цвет (0x8B6F47), позиция (3.5, 0.4, -9.5)
