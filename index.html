@@ -10,11 +10,50 @@
   <div id="crosshair"></div>
   <div id="interact-hint">Нажмите ЛКМ для взаимодействия</div>
   <div id="patient-popup">
-    <h2 id="popup-name"></h2>
-    <div class="info-row">Симптом: <span id="popup-symptom"></span></div>
-    <div class="info-row">Диагноз: <span id="popup-diagnosis"></span></div>
-    <div class="info-row">Тяжесть: <span id="popup-severity"></span></div>
-    <div class="info-row">Препарат: <span id="popup-supply-icon" style="display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:middle;margin-right:6px;border:1px solid rgba(255,255,255,0.3)"></span><span id="popup-supply"></span></div>
+    <div id="popup-severity-band"></div>
+    <div class="popup-header">
+      <h2 id="popup-name"></h2>
+      <div class="popup-meta">
+        <span class="popup-meta-item"><span class="meta-label">Возраст:</span> <span id="popup-age"></span></span>
+        <span class="popup-meta-item"><span class="meta-label">Тяжесть:</span> <span id="popup-severity"></span></span>
+      </div>
+    </div>
+    <div class="popup-vitals">
+      <div class="vital-cell">
+        <div class="vital-label">ТЕМП</div>
+        <div class="vital-value" id="popup-temp"></div>
+      </div>
+      <div class="vital-cell">
+        <div class="vital-label">ПУЛЬС</div>
+        <div class="vital-value" id="popup-pulse"></div>
+      </div>
+      <div class="vital-cell">
+        <div class="vital-label">АД</div>
+        <div class="vital-value" id="popup-bp"></div>
+      </div>
+    </div>
+    <div class="popup-hp-container">
+      <div class="popup-hp-label">Состояние <span id="popup-hp-text"></span></div>
+      <div class="popup-hp-track"><div class="popup-hp-fill" id="popup-hp-fill"></div></div>
+    </div>
+    <div class="popup-clinical">
+      <div class="clinical-block complaint-block">
+        <div class="clinical-label">Жалоба</div>
+        <div class="clinical-value" id="popup-complaint"></div>
+      </div>
+      <div class="clinical-block">
+        <div class="clinical-label">Симптом</div>
+        <div class="clinical-value" id="popup-symptom"></div>
+      </div>
+      <div class="clinical-block">
+        <div class="clinical-label">Диагноз</div>
+        <div class="clinical-value" id="popup-diagnosis"></div>
+      </div>
+      <div class="clinical-block">
+        <div class="clinical-label">Назначение</div>
+        <div class="clinical-value"><span id="popup-supply-icon"></span><span id="popup-supply"></span></div>
+      </div>
+    </div>
     <div class="buttons">
       <button id="btn-bed">На кровать <span id="bed-count" style="opacity:0.7"></span></button>
       <button id="btn-wait">В зону ожидания <span id="chair-count" style="opacity:0.7"></span></button>

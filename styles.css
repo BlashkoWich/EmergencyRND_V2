@@ -46,26 +46,95 @@ canvas { display: block; }
 #patient-popup {
   position: fixed; top: 50%; left: 50%; z-index: 20;
   transform: translate(-50%, -50%);
-  background: #1a2a3a; color: #e0e8f0;
+  background: #0f1e2e; color: #d0dbe6;
   font-family: 'Segoe UI', Arial, sans-serif;
-  padding: 28px 32px; border-radius: 12px;
-  min-width: 320px; display: none;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  border-radius: 10px; overflow: hidden;
+  min-width: 390px; max-width: 420px; display: none;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(122,191,255,0.1);
 }
-#patient-popup h2 { font-size: 1.3rem; margin-bottom: 14px; font-weight: 500; }
-#patient-popup .info-row { margin-bottom: 8px; font-size: 0.92rem; opacity: 0.9; }
-#patient-popup .info-row span { color: #7abfff; font-weight: 600; }
-#patient-popup .buttons { display: flex; gap: 12px; margin-top: 20px; }
+
+/* Severity color band */
+#popup-severity-band {
+  height: 4px; width: 100%;
+}
+#popup-severity-band.severe { background: linear-gradient(90deg, #ff4444, #cc2222); }
+#popup-severity-band.medium { background: linear-gradient(90deg, #ffcc00, #dd9900); }
+#popup-severity-band.mild { background: linear-gradient(90deg, #44cc44, #22aa22); }
+
+/* Header */
+.popup-header { padding: 16px 24px 10px; }
+#patient-popup h2 {
+  font-size: 1.25rem; margin: 0 0 8px; font-weight: 600;
+  letter-spacing: 0.02em; color: #fff;
+}
+.popup-meta { display: flex; gap: 20px; font-size: 0.82rem; }
+.popup-meta-item { opacity: 0.8; }
+.meta-label { opacity: 0.6; }
+.popup-meta-item span:last-child { font-weight: 600; }
+
+/* Vitals row */
+.popup-vitals {
+  display: flex; gap: 1px;
+  background: #0a1520; margin: 0 1px;
+}
+.vital-cell {
+  flex: 1; background: #152535; padding: 10px 12px; text-align: center;
+}
+.vital-label {
+  font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em;
+  opacity: 0.5; margin-bottom: 4px;
+}
+.vital-value {
+  font-family: 'Courier New', monospace; font-size: 1.05rem; font-weight: 700;
+  color: #7abfff;
+}
+.vital-value.vital-warning { color: #ffcc00; }
+.vital-value.vital-critical { color: #ff4444; }
+
+/* HP bar */
+.popup-hp-container { padding: 10px 24px 6px; }
+.popup-hp-label {
+  font-size: 0.72rem; opacity: 0.6; margin-bottom: 5px;
+  display: flex; justify-content: space-between;
+}
+#popup-hp-text { font-family: 'Courier New', monospace; font-weight: 700; opacity: 1; }
+.popup-hp-track {
+  height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden;
+}
+.popup-hp-fill {
+  height: 100%; border-radius: 3px; transition: width 0.3s ease;
+}
+
+/* Clinical section */
+.popup-clinical { padding: 8px 24px 4px; }
+.clinical-block {
+  padding: 7px 0 7px 12px; margin-bottom: 4px;
+  border-left: 2px solid rgba(122,191,255,0.2);
+}
+.clinical-label {
+  font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em;
+  opacity: 0.45; margin-bottom: 2px;
+}
+.clinical-value { font-size: 0.88rem; color: #c0d8f0; line-height: 1.4; }
+.complaint-block .clinical-value { font-style: italic; color: #a0b8d0; }
+#popup-supply-icon {
+  display: inline-block; width: 12px; height: 12px; border-radius: 50%;
+  vertical-align: middle; margin-right: 8px;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+
+/* Buttons */
+#patient-popup .buttons { display: flex; gap: 8px; padding: 12px 24px 18px; }
 #patient-popup .buttons button {
   flex: 1; padding: 10px 0; border: none; border-radius: 6px;
-  font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.2s;
+  font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: background 0.2s;
 }
-#btn-bed { background: #2a8a5a; color: #fff; }
-#btn-bed:hover { background: #33a06a; }
-#btn-wait { background: #5a7a9a; color: #fff; }
-#btn-wait:hover { background: #6a8aaa; }
-#btn-dismiss { background: #6a6a6a; color: #fff; }
-#btn-dismiss:hover { background: #7a7a7a; }
+#btn-bed { background: #1a6b42; color: #fff; }
+#btn-bed:hover { background: #228b55; }
+#btn-wait { background: #2a4a6a; color: #fff; }
+#btn-wait:hover { background: #3a5a7a; }
+#btn-dismiss { background: #3a3a4a; color: #ccc; }
+#btn-dismiss:hover { background: #4a4a5a; }
 
 /* --- Shop popup --- */
 #shop-popup {

@@ -7,18 +7,36 @@
   var SURNAMES = ['Иванов','Петров','Сидоров','Козлов','Новиков','Морозов','Волков','Соколов','Лебедев','Попов',
                   'Иванова','Петрова','Сидорова','Козлова','Новикова','Морозова','Волкова','Соколова','Лебедева','Попова'];
   var MEDICAL_DATA = {
-    painkiller: {
-      symptoms: ['Сильная головная боль','Острая боль в спине','Боль в суставах','Мигрень','Зубная боль'],
-      diagnoses: ['Мышечный спазм','Остеохондроз','Невралгия','Перенапряжение','Воспаление сустава']
-    },
-    antihistamine: {
-      symptoms: ['Кожная сыпь','Отёк лица','Зуд по всему телу','Слезоточивость','Чихание и насморк'],
-      diagnoses: ['Аллергическая реакция','Крапивница','Поллиноз','Пищевая аллергия','Контактный дерматит']
-    },
-    strepsils: {
-      symptoms: ['Сильная боль в горле','Сухой кашель','Першение в горле','Осиплость голоса','Затруднённое глотание'],
-      diagnoses: ['Фарингит','Ларингит','Тонзиллит','Простуда','ОРВИ']
-    }
+    painkiller: { cases: [
+      { symptom: 'Пульсирующая боль в височной области', diagnosis: 'Мигрень с аурой', complaint: 'Свет режет глаза, голова раскалывается уже второй час' },
+      { symptom: 'Острая стреляющая боль в пояснице', diagnosis: 'Люмбаго', complaint: 'Наклонился за сумкой и не могу разогнуться' },
+      { symptom: 'Опухший болезненный коленный сустав', diagnosis: 'Острый бурсит', complaint: 'Колено распухло после пробежки, не могу согнуть ногу' },
+      { symptom: 'Острая боль в челюсти, отдающая в ухо', diagnosis: 'Пульпит', complaint: 'Зуб разболелся ночью, до утра терпеть невозможно' },
+      { symptom: 'Жгучая боль между лопатками', diagnosis: 'Межрёберная невралгия', complaint: 'Больно дышать, при повороте простреливает насквозь' },
+      { symptom: 'Боль в ноге, отдающая в стопу', diagnosis: 'Ишиас', complaint: 'Ногу тянет от поясницы до пятки, не могу сидеть' },
+      { symptom: 'Скованность и боль в шее', diagnosis: 'Шейный миозит', complaint: 'Продуло шею, голову повернуть не могу' },
+      { symptom: 'Приступообразная боль в правом подреберье', diagnosis: 'Жёлчная колика', complaint: 'После жирной еды скрутило живот справа, тошнит' }
+    ]},
+    antihistamine: { cases: [
+      { symptom: 'Множественные волдыри и покраснение кожи', diagnosis: 'Острая крапивница', complaint: 'Весь покрылся красными пятнами после ужина в ресторане' },
+      { symptom: 'Отёк губы после приёма лекарства', diagnosis: 'Ангиоотёк (медикаментозный)', complaint: 'Выпил таблетку и губа начала распухать' },
+      { symptom: 'Покраснение и слезотечение из обоих глаз', diagnosis: 'Аллергический конъюнктивит', complaint: 'Глаза красные и чешутся, всё расплывается' },
+      { symptom: 'Мокнущие зудящие пятна на сгибах локтей', diagnosis: 'Обострение атопического дерматита', complaint: 'Руки расчесал до крови, ничего не помогает' },
+      { symptom: 'Заложенность носа, чихание сериями', diagnosis: 'Сезонный аллергический ринит', complaint: 'Чихаю без остановки, нос не дышит вообще' },
+      { symptom: 'Красные пузырьки на коже после контакта с растением', diagnosis: 'Контактный дерматит', complaint: 'Потрогал какой-то куст — руки покрылись волдырями' },
+      { symptom: 'Свистящее дыхание и чувство стеснения в груди', diagnosis: 'Аллергический бронхоспазм', complaint: 'Дышать тяжело, в груди как будто обруч' },
+      { symptom: 'Распухшее место укуса с нарастающим зудом', diagnosis: 'Аллергия на укус насекомого', complaint: 'Оса ужалила, место опухло и расползается' }
+    ]},
+    strepsils: { cases: [
+      { symptom: 'Резкая боль при глотании, белый налёт на миндалинах', diagnosis: 'Гнойная ангина', complaint: 'Горло огнём горит, глотать невозможно' },
+      { symptom: 'Полная потеря голоса', diagnosis: 'Острый ларингит', complaint: 'Проснулся утром — голос пропал полностью' },
+      { symptom: 'Надсадный сухой кашель и саднение за грудиной', diagnosis: 'Острый трахеит', complaint: 'Кашляю без остановки, горло всё саднит изнутри' },
+      { symptom: 'Красное воспалённое горло и температура', diagnosis: 'Острый фарингит', complaint: 'Горло красное, больно даже воду пить' },
+      { symptom: 'Боль в горле с одной стороны, трудно открыть рот', diagnosis: 'Паратонзиллярный инфильтрат', complaint: 'С одной стороны горла всё опухло, рот открыть не могу' },
+      { symptom: 'Першение и ком в горле, усиление после еды', diagnosis: 'Ларингофарингеальный рефлюкс', complaint: 'Постоянно першит, после еды как будто ком в горле' },
+      { symptom: 'Боль в горле и увеличенные лимфоузлы на шее', diagnosis: 'Инфекционный мононуклеоз', complaint: 'Горло болит уже неделю, шея опухла' },
+      { symptom: 'Сухость и жжение в горле, осиплость к вечеру', diagnosis: 'Гранулёзный фарингит', complaint: 'К вечеру голос садится, горло сухое и жжёт' }
+    ]}
   };
   var CONSUMABLE_KEYS = Object.keys(MEDICAL_DATA);
   var BODY_COLORS = [0x4477aa, 0x44aa77, 0xaa7744, 0x7744aa, 0xaa4466, 0x5599bb, 0x88aa44];
@@ -101,6 +119,23 @@
   var HP_RECOVERY_RATE = 3.0;
 
   function randomFrom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  function randomRange(min, max) { return min + Math.random() * (max - min); }
+  function randomInt(min, max) { return Math.floor(randomRange(min, max + 1)); }
+
+  function generateVitals(severityKey) {
+    var ranges = {
+      severe: { tempMin: 38.5, tempMax: 39.8, sysMin: 150, sysMax: 180, diaMin: 95, diaMax: 110, pulseMin: 100, pulseMax: 130 },
+      medium: { tempMin: 37.2, tempMax: 38.4, sysMin: 130, sysMax: 150, diaMin: 85, diaMax: 95, pulseMin: 80, pulseMax: 100 },
+      mild:   { tempMin: 36.4, tempMax: 37.2, sysMin: 110, sysMax: 130, diaMin: 70, diaMax: 85, pulseMin: 65, pulseMax: 80 }
+    };
+    var r = ranges[severityKey] || ranges.mild;
+    return {
+      temp: Math.round(randomRange(r.tempMin, r.tempMax) * 10) / 10,
+      bpSys: randomInt(r.sysMin, r.sysMax),
+      bpDia: randomInt(r.diaMin, r.diaMax),
+      pulse: randomInt(r.pulseMin, r.pulseMax)
+    };
+  }
 
   // --- Module state ---
   var THREE, scene, camera, controls;
@@ -117,6 +152,8 @@
 
   // --- UI elements ---
   var hintEl, popupEl, popupName, popupSymptom, popupDiagnosis, popupSupply, popupSupplyIcon, popupSeverity;
+  var popupAge, popupComplaint, popupTemp, popupPulse, popupBp;
+  var popupSeverityBand, popupHpFill, popupHpText;
   var btnBed, btnWait, btnDismiss, bedCount, chairCount;
 
   // --- Interaction raycaster ---
@@ -211,6 +248,7 @@
 
     var consumableType = randomFrom(CONSUMABLE_KEYS);
     var data = MEDICAL_DATA[consumableType];
+    var medCase = randomFrom(data.cases);
     var roll = Math.random();
     var severity = roll < 0.60 ? SEVERITIES[2] : roll < 0.85 ? SEVERITIES[1] : SEVERITIES[0];
 
@@ -218,8 +256,11 @@
       id: patientIdCounter++,
       name: randomFrom(NAMES),
       surname: randomFrom(SURNAMES),
-      symptom: randomFrom(data.symptoms),
-      diagnosis: randomFrom(data.diagnoses),
+      age: randomInt(18, 75),
+      symptom: medCase.symptom,
+      diagnosis: medCase.diagnosis,
+      complaint: medCase.complaint,
+      vitals: generateVitals(severity.key),
       requiredConsumable: consumableType,
       mesh: mesh,
       state: 'queued',
@@ -368,18 +409,48 @@
     var wasWaiting = patient.state === 'waiting';
     patient.state = 'interacting';
     patient._wasWaiting = wasWaiting;
+
+    // Header
     popupName.textContent = patient.name + ' ' + patient.surname;
+    popupAge.textContent = patient.age + ' лет';
+
+    // Severity
+    var sevColors = { severe: '#ff4444', medium: '#ffcc00', mild: '#44cc44' };
+    popupSeverity.textContent = patient.severity.label;
+    popupSeverity.style.color = sevColors[patient.severity.key] || '#7abfff';
+    popupSeverityBand.className = patient.severity.key;
+
+    // Vitals
+    var v = patient.vitals;
+    popupTemp.textContent = v.temp.toFixed(1) + '\u00B0C';
+    popupTemp.className = 'vital-value' + (v.temp >= 39.0 ? ' vital-critical' : v.temp >= 37.5 ? ' vital-warning' : '');
+    popupPulse.textContent = v.pulse + ' уд/м';
+    popupPulse.className = 'vital-value' + (v.pulse >= 110 ? ' vital-critical' : v.pulse >= 90 ? ' vital-warning' : '');
+    popupBp.textContent = v.bpSys + '/' + v.bpDia;
+    popupBp.className = 'vital-value' + (v.bpSys >= 160 ? ' vital-critical' : v.bpSys >= 140 ? ' vital-warning' : '');
+
+    // HP bar
+    var hpPct = Math.max(0, Math.round(patient.hp / patient.maxHp * 100));
+    popupHpText.textContent = hpPct + '%';
+    popupHpFill.style.width = hpPct + '%';
+    var hpColor = hpPct > 60 ? '#32cd32' : hpPct > 30 ? '#ffc800' : '#dc2828';
+    popupHpFill.style.background = hpColor;
+    popupHpText.style.color = hpColor;
+
+    // Clinical data
+    popupComplaint.textContent = '\u00AB' + patient.complaint + '\u00BB';
     popupSymptom.textContent = patient.symptom;
     popupDiagnosis.textContent = patient.diagnosis;
-    popupSeverity.textContent = patient.severity.label;
-    var sevColors = { severe: '#ff4444', medium: '#ffcc00', mild: '#44cc44' };
-    popupSeverity.style.color = sevColors[patient.severity.key] || '#7abfff';
+
+    // Required consumable
     var typeInfo = Game.Consumables.TYPES[patient.requiredConsumable];
     popupSupply.textContent = typeInfo.name;
     var c = typeInfo.color;
     popupSupplyIcon.style.backgroundColor = 'rgb(' + ((c >> 16) & 255) + ',' + ((c >> 8) & 255) + ',' + (c & 255) + ')';
+
     popupEl.style.display = 'block';
 
+    // Bed/chair availability
     var freeBeds = beds.filter(function(b) { return !b.occupied; }).length;
     var freeChairs = waitingChairs.filter(function(c) { return !c.occupied; }).length;
     btnBed.disabled = freeBeds === 0;
@@ -1067,6 +1138,14 @@
       popupSupply = document.getElementById('popup-supply');
       popupSupplyIcon = document.getElementById('popup-supply-icon');
       popupSeverity = document.getElementById('popup-severity');
+      popupAge = document.getElementById('popup-age');
+      popupComplaint = document.getElementById('popup-complaint');
+      popupTemp = document.getElementById('popup-temp');
+      popupPulse = document.getElementById('popup-pulse');
+      popupBp = document.getElementById('popup-bp');
+      popupSeverityBand = document.getElementById('popup-severity-band');
+      popupHpFill = document.getElementById('popup-hp-fill');
+      popupHpText = document.getElementById('popup-hp-text');
       btnBed = document.getElementById('btn-bed');
       btnWait = document.getElementById('btn-wait');
       btnDismiss = document.getElementById('btn-dismiss');
