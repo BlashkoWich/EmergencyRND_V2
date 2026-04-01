@@ -81,7 +81,10 @@ CONSUMABLE_KEYS: ['painkiller', 'antihistamine', 'strepsils']
 
 ## Queue System
 - Очередь перед ресепшном по оси Z
-- **Максимум 2 пациента в очереди** — если очередь полна, новый пациент не появляется, уведомление "Пациент не смог зайти из-за того, что очередь переполнена"
+- **Динамический максимум очереди**: базовый лимит 2, увеличивается на 1 за каждый купленный предмет мебели (сверх начальных 5), максимум 10
+  - Формула: `maxQueue = min(2 + totalFurniture - 5, 10)`, минимум 2
+  - Начальное состояние: 2 кровати + 3 стула = 5 → maxQueue = 2
+- Если очередь полна, новый пациент не появляется, уведомление "Пациент не смог зайти из-за того, что очередь переполнена"
 - Позиция в очереди: `getQueuePosition(index)` → `(0, 0, -7.5 + index)`
   - index 0 → z=-7.5 (ближе к стойке)
   - index 1 → z=-6.5
@@ -91,7 +94,7 @@ CONSUMABLE_KEYS: ['painkiller', 'antihistamine', 'strepsils']
 ## Spawning
 - Первый пациент появляется сразу при загрузке, телепортируется на позицию очереди `(0, 0, -7.5)` (параметр `instant=true`)
 - Далее каждые `SPAWN_INTERVAL = 10` секунд (таймер в animation loop)
-- Если `queue.length >= 2` → спавн не происходит, уведомление о переполнении
+- Если `queue.length >= maxQueue` → спавн не происходит, уведомление о переполнении (maxQueue = min(2 + totalFurniture - 5, 10), min 2)
 - Точка появления обычных пациентов: `(0, 0, 1)` — у входа
 - `spawnPatient(instant)` — если `instant=true`, пациент сразу ставится на queueTarget
 - При создании выбирается случайный тип из `CONSUMABLE_KEYS`, затем случайный case из `MEDICAL_DATA[type].cases[]` (symptom, diagnosis, complaint — связный кейс)
@@ -104,6 +107,8 @@ CONSUMABLE_KEYS: ['painkiller', 'antihistamine', 'strepsils']
 - 15% — `severe` (Тяжёлое, startHp=30)
 
 ## Destination Slots
+- Слоты мебели управляются системой `Game.Furniture` (динамические, не статические)
+- Начальные слоты (от world.js):
 ```js
 beds = [
   { pos: Vector3(-4.5, 0, -9), occupied: bool },
@@ -115,7 +120,10 @@ waitingChairs = [
   { pos: Vector3(5.5, 0, -4.4), occupied: bool }
 ]
 ```
-- Позиции слотов смещены от мебели (x=-4.5 для кроватей, x=5.5 для стульев) чтобы пациент стоял рядом
+- Позиции слотов смещены от мебели: bed slotOffset +1.0 по X, chair slotOffset -1.0 по X
+- При перемещении мебели слоты автоматически пересчитываются
+- Пациенты используют только indoor слоты (`Game.Furniture.getIndoorBeds()` / `getIndoorChairs()`)
+- Новая мебель добавляется через покупку в магазине и перенос внутрь здания
 
 ## Interaction (Raycasting)
 - `interactRay`: Raycaster, far=5, направление из центра экрана (`screenCenter = Vector2(0,0)`)
@@ -139,9 +147,12 @@ waitingChairs = [
      - Диагноз (или "????" красным если needsDiagnosis)
      - Назначение (цветной кружок + название препарата, или "????" красным)
      - При needsDiagnosis: подсказка "Необходим: [инструмент]" (оранжевым)
-4. Кнопки:
-   - "На кровать (X/2)" — проверяет `beds.find(b => !b.occupied)`, disabled если нет свободных
-   - "В зону ожидания (X/3)" — проверяет `waitingChairs.find(c => !c.occupied)`, **скрыта если пациент уже в зоне ожидания**
+4. **Предупреждение об outdoor мебели** (`#outdoor-warning`):
+   - Если есть хотя бы одна кровать или стул на улице → показывается: "Пока кровать/стул на улице — их нельзя использовать"
+   - Скрыто если вся мебель внутри здания
+5. Кнопки:
+   - "На кровать (X/N)" — проверяет `Game.Furniture.getIndoorBeds()`, disabled если нет свободных indoor кроватей
+   - "В зону ожидания (X/N)" — проверяет `Game.Furniture.getIndoorChairs()`, **скрыта если пациент уже в зоне ожидания**
    - "Подождать" — закрывает попап, возвращает пациента в прежнее состояние (queued или waiting)
 5. Клик по кнопке размещения → `sendPatient(patient, dest, slot)`:
    - state → `walking`, targetPos установлен, slot.occupied = true
@@ -339,8 +350,10 @@ patientIdCounter         // автоинкремент ID
 hoveredPatient           // текущий пациент под прицелом (или null)
 popupPatient             // пациент в открытом попапе (или null)
 spawnTimer               // таймер спавна (сбрасывается каждые SPAWN_INTERVAL)
-beds[]                   // 2 слота кроватей { pos, occupied } — получены из World.setup()
-waitingChairs[]          // 3 слота стульев { pos, occupied } — получены из World.setup()
+beds[]                   // начальные слоты кроватей — получены из World.setup(), управляются Game.Furniture
+waitingChairs[]          // начальные слоты стульев — получены из World.setup(), управляются Game.Furniture
+// Для работы с мебелью используются Game.Furniture.getIndoorBeds()/getIndoorChairs()
+// isBed проверка: Game.Furniture.isBedSlot(destination)
 animations[]             // активные анимации лечения/ошибки
 healParticles[]          // активные лечебные частицы [{sprite, life, maxLife, vx, vy, vz}]
 healParticleTexture      // кешированная текстура частиц (одна на все)
