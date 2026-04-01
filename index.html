@@ -53,6 +53,7 @@
       <div id="popup-instrument-hint" style="display:none; padding: 7px 0 7px 12px; margin-bottom: 4px; border-left: 2px solid rgba(255,170,68,0.4); font-size: 0.88rem;"></div>
     </div>
     <div id="outdoor-warning" style="display:none; color:#ff8844; font-size:0.85rem; padding:4px 12px; border-left:2px solid rgba(255,136,68,0.4);"></div>
+    <div id="dirty-linen-warning" style="display:none; color:#cc8844; font-size:0.85rem; padding:4px 12px; border-left:2px solid rgba(204,136,68,0.4);"></div>
     <div class="buttons">
       <button id="btn-bed">На кровать <span id="bed-count" style="opacity:0.7"></span></button>
       <button id="btn-wait">В зону ожидания <span id="chair-count" style="opacity:0.7"></span></button>
@@ -62,7 +63,7 @@
   <div id="shop-popup">
     <h2>Магазин</h2>
     <div id="shop-tabs">
-      <button class="shop-tab active" data-tab="consumables">Препараты</button>
+      <button class="shop-tab active" data-tab="consumables">Расходники</button>
       <button class="shop-tab" data-tab="instruments">Инструменты</button>
       <button class="shop-tab" data-tab="furniture">Мебель</button>
       <button class="shop-tab" data-tab="upgrades">Прокачка</button>
@@ -81,6 +82,11 @@
       <div class="shop-item" data-type="antihistamine">
         <span class="shop-item-icon" style="background:#33aa55"></span>
         <span class="shop-item-name">Антигистаминное</span>
+        <button class="shop-buy-btn">Купить — $10</button>
+      </div>
+      <div class="shop-item" data-type="linen_clean">
+        <span class="shop-item-icon" style="background:#dde4f0"></span>
+        <span class="shop-item-name">Постельное бельё</span>
         <button class="shop-buy-btn">Купить — $10</button>
       </div>
     </div>
@@ -212,6 +218,7 @@
   <script src="js/inventory.js"></script>
   <script src="js/shop.js"></script>
   <script src="js/furniture.js"></script>
+  <script src="js/washing-machine.js"></script>
   <script src="js/shelves.js"></script>
   <script src="js/diagnostics.js"></script>
   <script src="js/shift.js"></script>
@@ -276,6 +283,7 @@
     Game.Consumables.setup(THREE, scene, camera, controls, collidables);
     Game.Inventory.setup();
     Game.Shop.setup(controls);
+    Game.WashingMachine.setup(THREE, scene, camera, controls, collidables);
     Game.Shelves.setup(THREE, scene, camera, controls, collidables);
     Game.Diagnostics.setup(controls);
     Game.Cashier.setup(THREE, scene, camera, controls, cashierDesk);
@@ -294,6 +302,7 @@
 
       Game.Patients.update(delta);
       Game.Furniture.update(delta);
+      Game.WashingMachine.update(delta);
       Game.Consumables.update(delta);
       Game.Shelves.update(delta);
       Game.Cashier.update(delta);

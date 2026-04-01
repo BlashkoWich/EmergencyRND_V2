@@ -548,7 +548,7 @@
     // Bed/chair availability (use dynamic furniture system)
     var indoorBeds = Game.Furniture.getIndoorBeds();
     var indoorChairs = Game.Furniture.getIndoorChairs();
-    var freeBeds = indoorBeds.filter(function(b) { return !b.occupied; }).length;
+    var freeBeds = indoorBeds.filter(function(b) { return !b.occupied && !Game.Furniture.isBedDirty(b); }).length;
     var freeChairs = indoorChairs.filter(function(c) { return !c.occupied; }).length;
     var outdoorBedCount = Game.Furniture.getOutdoorBedCount();
     var outdoorChairCount = Game.Furniture.getOutdoorChairCount();
@@ -574,6 +574,16 @@
       outdoorWarning.style.display = 'block';
     } else {
       outdoorWarning.style.display = 'none';
+    }
+
+    // Dirty linen warning
+    var dirtyWarning = document.getElementById('dirty-linen-warning');
+    var dirtyBedCount = Game.Furniture.getDirtyBedCount();
+    if (dirtyBedCount > 0) {
+      dirtyWarning.textContent = 'Грязное бельё на ' + dirtyBedCount + ' кроват' + (dirtyBedCount === 1 ? 'и' : 'ях') + ' — замените бельё';
+      dirtyWarning.style.display = 'block';
+    } else {
+      dirtyWarning.style.display = 'none';
     }
 
     // Show wait/dismiss button
@@ -1155,6 +1165,9 @@
     }
     if (patient.destination) {
       patient.destination.occupied = false;
+      if (Game.Furniture.isBedSlot(patient.destination)) {
+        Game.Furniture.markBedDirty(patient.destination);
+      }
       patient.destination = null;
     }
     patient.treated = false; // Stop recovery logic
@@ -1178,6 +1191,9 @@
     scene.remove(patient.mesh);
     if (patient.destination) {
       patient.destination.occupied = false;
+      if (Game.Furniture.isBedSlot(patient.destination)) {
+        Game.Furniture.markBedDirty(patient.destination);
+      }
     }
     var idx = patients.indexOf(patient);
     if (idx !== -1) patients.splice(idx, 1);
@@ -1559,7 +1575,7 @@
         var indoorBeds = Game.Furniture.getIndoorBeds();
         var slot = null;
         for (var i = 0; i < indoorBeds.length; i++) {
-          if (!indoorBeds[i].occupied) { slot = indoorBeds[i]; break; }
+          if (!indoorBeds[i].occupied && !Game.Furniture.isBedDirty(indoorBeds[i])) { slot = indoorBeds[i]; break; }
         }
         if (!slot) return;
         sendPatient(popupPatient, slot.pos, slot);
@@ -1602,7 +1618,12 @@
         var p = patients[i];
         if (p.indicator) { scene.remove(p.indicator); p.indicator = null; }
         if (p.healthBar) { scene.remove(p.healthBar); p.healthBar = null; }
-        if (p.destination) { p.destination.occupied = false; }
+        if (p.destination) {
+          p.destination.occupied = false;
+          if (Game.Furniture.isBedSlot(p.destination)) {
+            Game.Furniture.markBedDirty(p.destination);
+          }
+        }
         scene.remove(p.mesh);
       }
       patients.length = 0;

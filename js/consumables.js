@@ -4,7 +4,9 @@
   var CONSUMABLE_TYPES = {
     strepsils:     { name: 'Стрепсилс',        color: 0xcc3333, size: { x: 0.15, y: 0.08, z: 0.10 } },
     painkiller:    { name: 'Обезболивающее',    color: 0x3366cc, size: { x: 0.18, y: 0.06, z: 0.12 } },
-    antihistamine: { name: 'Антигистаминное',   color: 0x33aa55, size: { x: 0.14, y: 0.07, z: 0.10 } }
+    antihistamine: { name: 'Антигистаминное',   color: 0x33aa55, size: { x: 0.14, y: 0.07, z: 0.10 } },
+    linen_clean:   { name: 'Постельное бельё',  color: 0xeeeeff, size: { x: 0.20, y: 0.10, z: 0.15 } },
+    linen_dirty:   { name: 'Грязное бельё',     color: 0x887766, size: { x: 0.20, y: 0.10, z: 0.15 } }
   };
 
   var INSTRUMENT_TYPES = {
@@ -15,6 +17,10 @@
 
   function isInstrument(type) {
     return type && type.indexOf('instrument_') === 0;
+  }
+
+  function isLinen(type) {
+    return type === 'linen_clean' || type === 'linen_dirty';
   }
 
   var GRAVITY = -9.8;
@@ -128,6 +134,38 @@
       var crossV = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.05, 0.002), crossMat);
       crossV.position.set(0, 0, 0.026);
       group.add(crossV);
+
+    } else if (type === 'linen_clean') {
+      // Folded clean bedsheet — light blue/white stack
+      var sheetMat = new THREE.MeshStandardMaterial({ color: 0xdde4f0, roughness: 0.8 });
+      var sheet = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.08, 0.15), sheetMat);
+      sheet.castShadow = true;
+      group.add(sheet);
+      // Fold line
+      var foldMat = new THREE.MeshStandardMaterial({ color: 0xc8d0e0, roughness: 0.7 });
+      var fold = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.005, 0.002), foldMat);
+      fold.position.set(0, 0.043, 0);
+      group.add(fold);
+      // Top accent stripe
+      var stripeMat = new THREE.MeshStandardMaterial({ color: 0x99aacc, roughness: 0.6 });
+      var stripe = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.003, 0.04), stripeMat);
+      stripe.position.set(0, 0.042, 0.03);
+      group.add(stripe);
+
+    } else if (type === 'linen_dirty') {
+      // Folded dirty bedsheet — brownish/yellow tint
+      var dirtyMat = new THREE.MeshStandardMaterial({ color: 0x998870, roughness: 0.9 });
+      var dirtySheet = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.08, 0.15), dirtyMat);
+      dirtySheet.castShadow = true;
+      group.add(dirtySheet);
+      // Stain spots
+      var stainMat = new THREE.MeshStandardMaterial({ color: 0x776650, roughness: 0.9 });
+      var stain1 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.003, 0.03), stainMat);
+      stain1.position.set(-0.04, 0.042, 0.02);
+      group.add(stain1);
+      var stain2 = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.003, 0.04), stainMat);
+      stain2.position.set(0.05, 0.042, -0.03);
+      group.add(stain2);
     }
 
     group.userData.consumableType = type;
@@ -301,6 +339,16 @@
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(236, 34, 40, 12);
       ctx.fillRect(250, 28, 12, 64);
+    } else if (type === 'linen_clean') {
+      // Folded sheet icon
+      ctx.fillStyle = '#dde4f0';
+      ctx.beginPath();
+      ctx.roundRect(186, 24, 140, 72, 8);
+      ctx.fill();
+      ctx.strokeStyle = '#99aacc';
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(196, 48); ctx.lineTo(316, 48); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(196, 72); ctx.lineTo(316, 72); ctx.stroke();
     }
 
     // Drug name (large, bold)
@@ -326,7 +374,7 @@
     // Subtitle
     ctx.fillStyle = '#777';
     ctx.font = '32px Segoe UI, Arial, sans-serif';
-    ctx.fillText('препараты', 256, 410);
+    ctx.fillText(isLinen(type) ? 'расходники' : 'препараты', 256, 410);
 
     var tex = new THREE.CanvasTexture(canvas);
     var labelGeo = new THREE.PlaneGeometry(BOX_SIZE.x * 0.85, BOX_SIZE.y * 0.85);
@@ -655,6 +703,10 @@
       if (hoveredItem) { unhighlightGroup(hoveredItem.mesh); hoveredItem = null; }
       return false;
     }
+    if (Game.WashingMachine && Game.WashingMachine.hasInteraction()) {
+      if (hoveredItem) { unhighlightGroup(hoveredItem.mesh); hoveredItem = null; }
+      return false;
+    }
 
     interactRay.setFromCamera(screenCenter, camera);
     var meshes = [];
@@ -691,6 +743,7 @@
     hasBoxInteraction: function() { return !!hoveredBox; },
     isHoldingBox: function() { return !!heldBox; },
     isInstrument: function(type) { return isInstrument(type); },
+    isLinen: function(type) { return isLinen(type); },
 
     createMesh: function(type) { return isInstrument(type) ? createInstrumentMesh(type) : createConsumableMesh(type); },
 
@@ -727,6 +780,20 @@
       dropFromPlayer(type);
     },
 
+    spawnAtPosition: function(type, position) {
+      var mesh = isInstrument(type) ? createInstrumentMesh(type) : createConsumableMesh(type);
+      mesh.position.copy(position);
+      mesh.rotation.y = Math.random() * Math.PI * 2;
+      scene.add(mesh);
+      groundItems.push({
+        type: type,
+        mesh: mesh,
+        velocity: new THREE.Vector3(0, 0, 0),
+        grounded: true,
+        pickedUp: false
+      });
+    },
+
     setup: function(_THREE, _scene, _camera, _controls, _collidables) {
       THREE = _THREE;
       scene = _scene;
@@ -749,6 +816,8 @@
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
         if (Game.Diagnostics && Game.Diagnostics.isActive()) return;
         if (Game.Patients.hasInteraction()) return;
+        if (Game.WashingMachine && Game.WashingMachine.hasInteraction()) return;
+        if (Game.Furniture && Game.Furniture.tryLinenReplace()) return;
 
         // If holding a box, LMB takes item from box
         if (heldBox) {
@@ -825,6 +894,7 @@
         if (!controls.isLocked) return;
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
         if (Game.Furniture && (Game.Furniture.isCarrying() || Game.Furniture.hasInteraction())) return;
+        if (Game.WashingMachine && Game.WashingMachine.hasInteraction()) return;
         if (heldBox) return;
         if (!hoveredBox) return;
 

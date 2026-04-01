@@ -142,6 +142,40 @@
     });
   }
 
+  // --- Dirty bed overlay ---
+
+  function createDirtyOverlay(item) {
+    var overlayMat = new THREE.MeshStandardMaterial({
+      color: 0xaa8844, transparent: true, opacity: 0.5, roughness: 0.9
+    });
+    var overlay = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.02, 0.8), overlayMat);
+    overlay.position.y = 0.63;
+    item.group.add(overlay);
+    item.dirtyOverlay = overlay;
+  }
+
+  function setDirty(item, dirty) {
+    if (dirty) {
+      item.isDirty = true;
+      if (!item.dirtyOverlay) createDirtyOverlay(item);
+    } else {
+      item.isDirty = false;
+      if (item.dirtyOverlay) {
+        item.group.remove(item.dirtyOverlay);
+        item.dirtyOverlay.geometry.dispose();
+        item.dirtyOverlay.material.dispose();
+        item.dirtyOverlay = null;
+      }
+    }
+  }
+
+  function getBedItemBySlot(slot) {
+    for (var i = 0; i < furnitureItems.length; i++) {
+      if (furnitureItems[i].type === 'bed' && furnitureItems[i].slot === slot) return furnitureItems[i];
+    }
+    return null;
+  }
+
   // --- Lookup ---
 
   function getFurnitureFromMesh(hitObject) {
@@ -229,6 +263,10 @@
       if (hoveredFurniture) { unhighlightGroup(hoveredFurniture.group); hoveredFurniture = null; }
       return;
     }
+    if (Game.WashingMachine && Game.WashingMachine.hasInteraction()) {
+      if (hoveredFurniture) { unhighlightGroup(hoveredFurniture.group); hoveredFurniture = null; }
+      return;
+    }
 
     interactRay.setFromCamera(screenCenter, camera);
     var meshes = [];
@@ -248,7 +286,13 @@
     }
 
     if (hoveredFurniture) {
-      hintEl.textContent = 'Нажми E чтобы переместить';
+      if (hoveredFurniture.isDirty && Game.Inventory.getActive() === 'linen_clean') {
+        hintEl.textContent = 'ЛКМ — Заменить бельё';
+      } else if (hoveredFurniture.isDirty) {
+        hintEl.textContent = 'Нужно чистое бельё для замены';
+      } else {
+        hintEl.textContent = 'Нажми E чтобы переместить';
+      }
       hintEl.style.display = 'block';
     }
   }
@@ -306,6 +350,28 @@
     carriedFurniture = null;
   }
 
+  // --- Linen replacement (LMB on dirty bed) ---
+
+  function tryLinenReplace() {
+    if (!hoveredFurniture || !hoveredFurniture.isDirty) return false;
+    if (Game.Inventory.getActive() !== 'linen_clean') return false;
+    if (!controls.isLocked) return false;
+    if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return false;
+    if (Game.Cashier && Game.Cashier.isPopupOpen()) return false;
+    if (Game.Diagnostics && Game.Diagnostics.isActive()) return false;
+
+    // Remove clean linen from inventory
+    Game.Inventory.removeActive();
+    // Make bed clean
+    setDirty(hoveredFurniture, false);
+    // Add dirty linen to inventory (or drop on floor)
+    if (!Game.Inventory.addItem('linen_dirty')) {
+      Game.Consumables.dropFromPlayer('linen_dirty');
+    }
+    Game.Inventory.showNotification('Бельё заменено!', 'rgba(34, 139, 34, 0.85)');
+    return true;
+  }
+
   // --- E key handler ---
 
   function onKeyDown(e) {
@@ -314,6 +380,7 @@
     if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
     if (Game.Cashier && Game.Cashier.isPopupOpen()) return;
     if (Game.Diagnostics && Game.Diagnostics.isActive()) return;
+    if (Game.WashingMachine && Game.WashingMachine.hasInteraction()) return;
 
     if (carriedFurniture) {
       placeFurniture();
@@ -354,7 +421,9 @@
           group: bm.group,
           collisionBox: bm.collisionBox,
           slot: { pos: new THREE.Vector3(), occupied: false },
-          isIndoors: true
+          isIndoors: true,
+          isDirty: false,
+          dirtyOverlay: null
         };
         updateSlotPosition(item);
         furnitureItems.push(item);
@@ -389,7 +458,9 @@
         group: meshData.group,
         collisionBox: meshData.collisionBox,
         slot: { pos: new THREE.Vector3(), occupied: false },
-        isIndoors: false
+        isIndoors: false,
+        isDirty: false,
+        dirtyOverlay: null
       };
       updateSlotPosition(item);
       furnitureItems.push(item);
@@ -466,6 +537,31 @@
     },
 
     hasInteraction: function() { return !!hoveredFurniture; },
-    isCarrying: function() { return !!carriedFurniture; }
+    isCarrying: function() { return !!carriedFurniture; },
+
+    markBedDirty: function(slot) {
+      var item = getBedItemBySlot(slot);
+      if (item) setDirty(item, true);
+    },
+
+    markBedClean: function(slot) {
+      var item = getBedItemBySlot(slot);
+      if (item) setDirty(item, false);
+    },
+
+    isBedDirty: function(slot) {
+      var item = getBedItemBySlot(slot);
+      return item ? item.isDirty : false;
+    },
+
+    getDirtyBedCount: function() {
+      var count = 0;
+      for (var i = 0; i < furnitureItems.length; i++) {
+        if (furnitureItems[i].type === 'bed' && furnitureItems[i].isIndoors && furnitureItems[i].isDirty) count++;
+      }
+      return count;
+    },
+
+    tryLinenReplace: function() { return tryLinenReplace(); }
   };
 })();
