@@ -193,7 +193,7 @@
   var popupPatient = null;
   var spawnTimer = 0;
   var SPAWN_INTERVAL = 10;
-  var PATIENT_SPEED = 2.0;
+  var PATIENT_SPEED = 3.5;
   var animations = [];
 
   // --- UI elements ---
@@ -1266,6 +1266,14 @@
         }
         updateHealthBarTexture(p);
       } else {
+        // Skip decay while walking to destination or during active minigame
+        if (p.state === 'walking') continue;
+        if (p.state === 'queued' && p.queueTarget) {
+          var dx = p.queueTarget.x - p.mesh.position.x;
+          var dz = p.queueTarget.z - p.mesh.position.z;
+          if (dx * dx + dz * dz > 0.01) continue;
+        }
+        if (Game.Diagnostics && Game.Diagnostics.isActive() && Game.Diagnostics.getPatient() === p) continue;
         // Decay: -1 HP every 3 sec
         p.hpDecayTimer += delta;
         while (p.hpDecayTimer >= HP_DECAY_INTERVAL) {

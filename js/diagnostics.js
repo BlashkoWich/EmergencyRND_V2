@@ -880,6 +880,7 @@
     },
 
     isActive: function() { return active; },
+    getPatient: function() { return currentPatient; },
 
     update: function(delta) {
       // Mini-game runs its own animation loop
