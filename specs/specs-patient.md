@@ -171,6 +171,9 @@ waitingChairs = [
   - `mild` (Лёгкое) → стартовое HP = 80
 - Максимальное HP = 100
 - **Деградация HP**: каждые 3 секунды, пока `treated === false`, пациент теряет 1 HP
+  - **HP НЕ падает** пока пациент идёт к зоне ожидания (state=`walking`), идёт к кровати (state=`walking`), или во время активной мини-игры диагностики
+  - Заморозка при ходьбе: state=`walking` или (state=`queued` и ещё не дошёл до позиции в очереди)
+  - Заморозка при мини-игре: `Game.Diagnostics.isActive()` и `Game.Diagnostics.getPatient() === patient`
   - При HP ≤ 0 → пациент удаляется (`removePatient()`), кровать помечается грязной (`markBedDirty`), уведомление "Пациент ушел, не дождавшись помощи"
 - **Восстановление HP**: после применения правильного препарата (`treated = true`), HP растёт на 3 ед/сек
   - При HP ≥ 100 → пациент выписывается, направляется к кассе (`dischargePatient()`), уведомление "Пациент выписан! Направлен на оплату." (зелёное)
@@ -252,7 +255,7 @@ waitingChairs = [
   - `'shake'` — тряска (sin-осцилляция x ±0.05, 8 колебаний за 0.3с) + красная вспышка, по завершении сброс позиции и `animating=false`
 
 ## Patient Movement
-- Базовая скорость: `PATIENT_SPEED = 2.0` ед/сек
+- Базовая скорость: `PATIENT_SPEED = 3.5` ед/сек
 - Скорость зависит от тяжести: `getPatientSpeed(patient)` = `PATIENT_SPEED * WALK_SPEED[severity]`
   - severe: ×0.35, medium: ×0.65, mild: ×0.9, normal (после выздоровления): ×1.0
 - Функция `moveToward(pos, target, maxDist)`: линейное перемещение по XZ
@@ -367,7 +370,7 @@ healParticleTexture      // кешированная текстура части
 ## Constants (Game.Patients)
 ```js
 SPAWN_INTERVAL = 10      // секунды между спавнами
-PATIENT_SPEED = 2.0      // базовая ед/сек (умножается на WALK_SPEED[severity])
+PATIENT_SPEED = 3.5      // базовая ед/сек (умножается на WALK_SPEED[severity])
 WALK_SPEED = { severe: 0.35, medium: 0.65, mild: 0.9, normal: 1.0 }
 STRIDE_LEN = 1.1         // мировых единиц на полный шаговый цикл
 LEG_SWING = 0.4          // амплитуда ног (рад)

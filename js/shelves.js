@@ -346,7 +346,7 @@
     var newHoveredSlot = null;
 
     // Try take mode first: raycast against item meshes on shelves
-    if (!activeItem && allItemMeshes.length > 0) {
+    if (!Game.Inventory.isFull() && allItemMeshes.length > 0) {
       var itemHits = interactRay.intersectObjects(allItemMeshes, false);
       if (itemHits.length > 0) {
         var result = getSlotFromItemMesh(itemHits[0].object);
@@ -384,14 +384,20 @@
     hoveredSlot = newHoveredSlot;
 
     if (hoveredShelf) {
+      var hints = [];
       if (shelfMode === 'take' && hoveredSlot) {
         var itemInfo = getItemInfo(hoveredSlot.item);
-        hintEl.textContent = 'Взять ' + itemInfo.name + ' на ЛКМ';
-      } else {
-        hintEl.textContent = 'Положить на ЛКМ';
+        hints.push('Взять ' + itemInfo.name + ' на ЛКМ');
       }
-      hintEl.style.display = 'block';
-      return true;
+      var activeItem = Game.Inventory.getActive();
+      if (activeItem && hasAvailableSlot(hoveredShelf, activeItem)) {
+        hints.push('Положить на E');
+      }
+      if (hints.length > 0) {
+        hintEl.textContent = hints.join('  |  ');
+        hintEl.style.display = 'block';
+        return true;
+      }
     }
     return false;
   }
@@ -414,30 +420,37 @@
       createShelf(-5.5, -11.5, 0, collidables);
       createShelf(-4.2, -11.5, 0, collidables);
 
-      // Place/take item on shelf on click
+      // Take item from shelf on LMB
       document.addEventListener('mousedown', function(e) {
         if (e.button !== 0 || !controls.isLocked) return;
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
         if (Game.Patients.hasInteraction() || Game.Consumables.hasInteraction() || Game.Consumables.hasBoxInteraction()) return;
         if (Game.Consumables.isHoldingBox()) return;
-        if (!hoveredShelf || !shelfMode) return;
+        if (!hoveredShelf || shelfMode !== 'take') return;
 
-        if (shelfMode === 'place') {
-          var type = Game.Inventory.getActive();
-          if (!type) return;
-          var slot = findSlotForType(hoveredShelf, type);
-          if (!slot) return;
-          Game.Inventory.removeActive();
-          placeItemOnShelf(slot, type);
-        } else if (shelfMode === 'take') {
-          if (!hoveredSlot) return;
-          var type = hoveredSlot.item;
-          if (Game.Inventory.addItem(type)) {
-            takeItemFromShelf(hoveredSlot);
-          } else {
-            Game.Inventory.showNotification('Инвентарь полон');
-          }
+        if (!hoveredSlot) return;
+        var type = hoveredSlot.item;
+        if (Game.Inventory.addItem(type)) {
+          takeItemFromShelf(hoveredSlot);
+        } else {
+          Game.Inventory.showNotification('Инвентарь полон');
         }
+      });
+
+      // Place item on shelf on E
+      document.addEventListener('keydown', function(e) {
+        if (e.code !== 'KeyE' || !controls.isLocked) return;
+        if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
+        if (Game.Patients.hasInteraction() || Game.Consumables.hasInteraction() || Game.Consumables.hasBoxInteraction()) return;
+        if (Game.Consumables.isHoldingBox()) return;
+        if (!hoveredShelf) return;
+
+        var type = Game.Inventory.getActive();
+        if (!type) return;
+        var slot = findSlotForType(hoveredShelf, type);
+        if (!slot) return;
+        Game.Inventory.removeActive();
+        placeItemOnShelf(slot, type);
       });
     },
 

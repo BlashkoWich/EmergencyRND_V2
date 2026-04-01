@@ -126,6 +126,7 @@ INSTRUMENT_TYPES = {
 Game.Diagnostics.setup(controls)
 Game.Diagnostics.startMinigame(patient, instrumentType)
 Game.Diagnostics.isActive() → boolean
+Game.Diagnostics.getPatient() → patient|null  // текущий пациент в мини-игре
 Game.Diagnostics.update(delta)
 ```
 
