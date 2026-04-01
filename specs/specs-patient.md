@@ -5,10 +5,11 @@
 NAMES:    20 русских имён (10 муж + 10 жен)
 SURNAMES: 20 русских фамилий (10 муж + 10 жен)
 MEDICAL_DATA: структурированный объект по типам препаратов, каждый содержит массив cases[]:
-  Каждый case = { symptom, diagnosis, complaint } — связный медицинский кейс
-  painkiller:     8 кейсов (мигрень с аурой, люмбаго, бурсит, пульпит, невралгия, ишиас, миозит, жёлчная колика)
-  antihistamine:  8 кейсов (крапивница, ангиоотёк, конъюнктивит, дерматит, ринит, контактный дерматит, бронхоспазм, укус насекомого)
-  strepsils:      8 кейсов (гнойная ангина, ларингит, трахеит, фарингит, паратонзиллярный инфильтрат, рефлюкс, мононуклеоз, гранулёзный фарингит)
+  Каждый case = { diagnosis, complaint } — связный медицинский кейс (поле symptom удалено)
+  Жалобы тематически связаны с инструментом диагностики для данного типа:
+  painkiller:     20 кейсов (боли, нервы, суставы, мышцы — диагностика рефлекс-молотком)
+  antihistamine:  20 кейсов (нос, пазухи, заложенность, аллергический ринит — диагностика риноскопом)
+  strepsils:      20 кейсов (горло, кашель, хрипы, дыхание — диагностика фонендоскопом)
 CONSUMABLE_KEYS: ['painkiller', 'antihistamine', 'strepsils']
 ```
 
@@ -19,9 +20,13 @@ CONSUMABLE_KEYS: ['painkiller', 'antihistamine', 'strepsils']
   name: string,            // из NAMES
   surname: string,         // из SURNAMES
   age: number,             // случайный возраст 18-75
-  symptom: string,         // из MEDICAL_DATA[type].cases[].symptom
-  diagnosis: string,       // из MEDICAL_DATA[type].cases[].diagnosis
-  complaint: string,       // из MEDICAL_DATA[type].cases[].complaint — жалоба от первого лица
+  symptom: null,           // не используется (удалено)
+  diagnosis: string,       // из MEDICAL_DATA[type].cases[].diagnosis (null если needsDiagnosis)
+  complaint: string,       // из MEDICAL_DATA[type].cases[].complaint — жалоба от первого лица (всегда видна)
+  needsDiagnosis: boolean, // true у 20% пациентов — требуется диагностика инструментом
+  requiredInstrument: string|null, // 'instrument_hammer'|'instrument_rhinoscope'|'instrument_stethoscope'
+  hiddenDiagnosis: string|null,    // скрытый диагноз (до диагностики)
+  hiddenConsumable: string|null,   // скрытый тип препарата (до диагностики)
   vitals: {                // витальные показатели, зависят от тяжести
     temp: number,          // температура (°C), 1 знак после запятой
     bpSys: number,         // систолическое давление
@@ -131,9 +136,9 @@ waitingChairs = [
    - **HP-бар**: горизонтальная полоса с процентом, цвет: зелёный >60%, жёлтый 30-60%, красный ≤30%
    - **Клинический блок** (с левой акцентной линией 2px):
      - Жалоба (курсивом в «кавычках» — от первого лица пациента)
-     - Симптом
-     - Диагноз
-     - Назначение (цветной кружок + название препарата)
+     - Диагноз (или "????" красным если needsDiagnosis)
+     - Назначение (цветной кружок + название препарата, или "????" красным)
+     - При needsDiagnosis: подсказка "Необходим: [инструмент]" (оранжевым)
 4. Кнопки:
    - "На кровать (X/2)" — проверяет `beds.find(b => !b.occupied)`, disabled если нет свободных
    - "В зону ожидания (X/3)" — проверяет `waitingChairs.find(c => !c.occupied)`, **скрыта если пациент уже в зоне ожидания**

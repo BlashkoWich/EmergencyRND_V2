@@ -7,6 +7,16 @@
     antihistamine: { name: 'Антигистаминное',   color: 0x33aa55, size: { x: 0.14, y: 0.07, z: 0.10 } }
   };
 
+  var INSTRUMENT_TYPES = {
+    instrument_stethoscope: { name: 'Фонендоскоп', color: 0x8866cc, size: { x: 0.72, y: 0.40, z: 0.40 } },
+    instrument_hammer:   { name: 'Рефлекс-молоток', color: 0xcc8844, size: { x: 0.64, y: 0.56, z: 0.24 } },
+    instrument_rhinoscope:  { name: 'Риноскоп',    color: 0x44aacc, size: { x: 0.64, y: 0.32, z: 0.32 } }
+  };
+
+  function isInstrument(type) {
+    return type && type.indexOf('instrument_') === 0;
+  }
+
   var GRAVITY = -9.8;
   var GROUND_Y = 0;
   var DELIVERY_ZONE = { cx: 0, cz: 5, hw: 1.5, hd: 1.0 };
@@ -124,6 +134,99 @@
     return group;
   }
 
+  // --- Instrument 3D Models ---
+
+  function createInstrumentMesh(type) {
+    var info = INSTRUMENT_TYPES[type];
+    var group = new THREE.Group();
+
+    if (type === 'instrument_stethoscope') {
+      // Stethoscope: chest piece disk + tube + earpiece
+      var diskMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3, metalness: 0.6 });
+      var disk = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.01, 16), diskMat);
+      disk.position.y = 0;
+      disk.castShadow = true;
+      group.add(disk);
+
+      var tubeMat = new THREE.MeshStandardMaterial({ color: info.color, roughness: 0.5 });
+      var tube = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.12, 8), tubeMat);
+      tube.position.y = 0.065;
+      tube.castShadow = true;
+      group.add(tube);
+
+      // Y-split earpieces
+      var earL = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.04, 6), tubeMat);
+      earL.position.set(-0.015, 0.14, 0);
+      earL.rotation.z = 0.4;
+      group.add(earL);
+      var earR = new THREE.Mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.04, 6), tubeMat);
+      earR.position.set(0.015, 0.14, 0);
+      earR.rotation.z = -0.4;
+      group.add(earR);
+
+      // Ear tips
+      var tipMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.4 });
+      var tipL = new THREE.Mesh(new THREE.SphereGeometry(0.008, 6, 4), tipMat);
+      tipL.position.set(-0.025, 0.155, 0);
+      group.add(tipL);
+      var tipR = new THREE.Mesh(new THREE.SphereGeometry(0.008, 6, 4), tipMat);
+      tipR.position.set(0.025, 0.155, 0);
+      group.add(tipR);
+
+    } else if (type === 'instrument_hammer') {
+      // Reflex hammer: handle + rubber head
+      var handleMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.5, metalness: 0.3 });
+      var handle = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.14, 8), handleMat);
+      handle.castShadow = true;
+      group.add(handle);
+
+      // Rubber triangular head (flattened cylinder on its side)
+      var headMat = new THREE.MeshStandardMaterial({ color: info.color, roughness: 0.7 });
+      var head = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.012, 12), headMat);
+      head.position.y = 0.075;
+      head.rotation.z = Math.PI / 2;
+      head.castShadow = true;
+      group.add(head);
+
+      // Small metal band at junction
+      var bandMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3, metalness: 0.5 });
+      var band = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.008, 8), bandMat);
+      band.position.y = 0.065;
+      group.add(band);
+
+    } else if (type === 'instrument_rhinoscope') {
+      // Rhinoscope: cylinder body + cone tip + light
+      var bodyMat = new THREE.MeshStandardMaterial({ color: info.color, roughness: 0.4, metalness: 0.3 });
+      var body = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.12, 10), bodyMat);
+      body.castShadow = true;
+      group.add(body);
+
+      // Handle grip
+      var gripMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.7 });
+      var grip = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.04, 8), gripMat);
+      grip.position.y = -0.04;
+      group.add(grip);
+
+      // Cone tip
+      var tipMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.3, metalness: 0.5 });
+      var tip = new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.03, 8), tipMat);
+      tip.position.y = 0.075;
+      tip.castShadow = true;
+      group.add(tip);
+
+      // Light at tip (emissive)
+      var lightMat = new THREE.MeshStandardMaterial({ color: 0xffffcc, emissive: 0xffffcc, emissiveIntensity: 0.5, roughness: 0.2 });
+      var light = new THREE.Mesh(new THREE.SphereGeometry(0.006, 6, 4), lightMat);
+      light.position.y = 0.092;
+      group.add(light);
+    }
+
+    group.scale.set(4, 4, 4);
+    group.userData.consumableType = type;
+    group.userData.isInstrument = true;
+    return group;
+  }
+
   // --- Box 3D Model ---
 
   function createBoxMesh(type) {
@@ -160,10 +263,45 @@
     ctx.roundRect(20, 20, 472, 472, 16);
     ctx.stroke();
 
-    // Medical cross icon (large)
-    ctx.fillStyle = colorHex;
-    ctx.fillRect(216, 50, 80, 24);
-    ctx.fillRect(236, 30, 40, 64);
+    // Type-specific icon
+    if (type === 'strepsils') {
+      // Blister with pills
+      ctx.fillStyle = colorHex;
+      ctx.beginPath();
+      ctx.roundRect(166, 30, 180, 60, 10);
+      ctx.fill();
+      ctx.fillStyle = '#ee5555';
+      for (var pr = 0; pr < 2; pr++) {
+        for (var pc = 0; pc < 3; pc++) {
+          ctx.beginPath();
+          ctx.arc(196 + pc * 50, 48 + pr * 24, 9, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    } else if (type === 'painkiller') {
+      // Pill bottle
+      ctx.fillStyle = colorHex;
+      ctx.beginPath();
+      ctx.roundRect(216, 28, 80, 66, 8);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.roundRect(210, 24, 92, 18, 4);
+      ctx.fill();
+      ctx.fillStyle = '#eee';
+      ctx.beginPath();
+      ctx.roundRect(222, 56, 68, 24, 4);
+      ctx.fill();
+    } else if (type === 'antihistamine') {
+      // Box with cross
+      ctx.fillStyle = colorHex;
+      ctx.beginPath();
+      ctx.roundRect(196, 24, 120, 72, 8);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(236, 34, 40, 12);
+      ctx.fillRect(250, 28, 12, 64);
+    }
 
     // Drug name (large, bold)
     ctx.fillStyle = '#111';
@@ -256,8 +394,25 @@
     });
   }
 
+  function spawnInstrumentInDeliveryZone(type) {
+    var mesh = createInstrumentMesh(type);
+    var x = DELIVERY_ZONE.cx + (Math.random() - 0.5) * 2 * DELIVERY_ZONE.hw;
+    var z = DELIVERY_ZONE.cz + (Math.random() - 0.5) * 2 * DELIVERY_ZONE.hd;
+    mesh.position.set(x, 3.0, z);
+    mesh.rotation.y = Math.random() * Math.PI * 2;
+    scene.add(mesh);
+
+    groundItems.push({
+      type: type,
+      mesh: mesh,
+      velocity: new THREE.Vector3(0, 0, 0),
+      grounded: false,
+      pickedUp: false
+    });
+  }
+
   function dropFromPlayer(type) {
-    var mesh = createConsumableMesh(type);
+    var mesh = isInstrument(type) ? createInstrumentMesh(type) : createConsumableMesh(type);
     var forward = new THREE.Vector3();
     camera.getWorldDirection(forward);
     var spawnPos = camera.position.clone().add(forward.clone().multiplyScalar(0.8));
@@ -363,8 +518,9 @@
     for (var i = 0; i < groundItems.length; i++) {
       var item = groundItems[i];
       if (item.grounded || item.pickedUp) continue;
-      var halfH = CONSUMABLE_TYPES[item.type].size.y / 2;
-      var halfW = CONSUMABLE_TYPES[item.type].size.x / 2;
+      var typeInfo = CONSUMABLE_TYPES[item.type] || INSTRUMENT_TYPES[item.type];
+      var halfH = typeInfo.size.y / 2;
+      var halfW = typeInfo.size.x / 2;
       applyItemPhysics(item, halfH, halfW, delta, downDir);
     }
 
@@ -529,12 +685,14 @@
 
   window.Game.Consumables = {
     TYPES: CONSUMABLE_TYPES,
+    INSTRUMENT_TYPES: INSTRUMENT_TYPES,
 
     hasInteraction: function() { return !!hoveredItem; },
     hasBoxInteraction: function() { return !!hoveredBox; },
     isHoldingBox: function() { return !!heldBox; },
+    isInstrument: function(type) { return isInstrument(type); },
 
-    createMesh: function(type) { return createConsumableMesh(type); },
+    createMesh: function(type) { return isInstrument(type) ? createInstrumentMesh(type) : createConsumableMesh(type); },
 
     countGroundItems: function(type) {
       var count = 0;
@@ -561,6 +719,10 @@
       spawnBoxInDeliveryZone(type);
     },
 
+    spawnInstrumentInDeliveryZone: function(type) {
+      spawnInstrumentInDeliveryZone(type);
+    },
+
     dropFromPlayer: function(type) {
       dropFromPlayer(type);
     },
@@ -585,6 +747,7 @@
       document.addEventListener('mousedown', function(e) {
         if (e.button !== 0 || !controls.isLocked) return;
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
+        if (Game.Diagnostics && Game.Diagnostics.isActive()) return;
         if (Game.Patients.hasInteraction()) return;
 
         // If holding a box, LMB takes item from box

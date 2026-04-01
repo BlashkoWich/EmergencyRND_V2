@@ -6,39 +6,85 @@
                'Мария','Анна','Елена','Ольга','Наталья','Татьяна','Светлана','Ирина','Екатерина','Юлия'];
   var SURNAMES = ['Иванов','Петров','Сидоров','Козлов','Новиков','Морозов','Волков','Соколов','Лебедев','Попов',
                   'Иванова','Петрова','Сидорова','Козлова','Новикова','Морозова','Волкова','Соколова','Лебедева','Попова'];
+  // MEDICAL_DATA: complaints are designed to hint at the diagnostic instrument needed
+  // painkiller → рефлекс-молоток: боль, нервы, рефлексы, суставы, мышцы
+  // antihistamine → риноскоп: нос, пазухи, заложенность, отёки слизистой
+  // strepsils → фонендоскоп: горло, дыхание, хрипы, кашель, грудная клетка
   var MEDICAL_DATA = {
     painkiller: { cases: [
-      { symptom: 'Пульсирующая боль в височной области', diagnosis: 'Мигрень с аурой', complaint: 'Свет режет глаза, голова раскалывается уже второй час' },
-      { symptom: 'Острая стреляющая боль в пояснице', diagnosis: 'Люмбаго', complaint: 'Наклонился за сумкой и не могу разогнуться' },
-      { symptom: 'Опухший болезненный коленный сустав', diagnosis: 'Острый бурсит', complaint: 'Колено распухло после пробежки, не могу согнуть ногу' },
-      { symptom: 'Острая боль в челюсти, отдающая в ухо', diagnosis: 'Пульпит', complaint: 'Зуб разболелся ночью, до утра терпеть невозможно' },
-      { symptom: 'Жгучая боль между лопатками', diagnosis: 'Межрёберная невралгия', complaint: 'Больно дышать, при повороте простреливает насквозь' },
-      { symptom: 'Боль в ноге, отдающая в стопу', diagnosis: 'Ишиас', complaint: 'Ногу тянет от поясницы до пятки, не могу сидеть' },
-      { symptom: 'Скованность и боль в шее', diagnosis: 'Шейный миозит', complaint: 'Продуло шею, голову повернуть не могу' },
-      { symptom: 'Приступообразная боль в правом подреберье', diagnosis: 'Жёлчная колика', complaint: 'После жирной еды скрутило живот справа, тошнит' }
+      { diagnosis: 'Мигрень с аурой', complaint: 'Голова раскалывается, свет режет глаза, уже второй час не отпускает' },
+      { diagnosis: 'Люмбаго', complaint: 'Наклонился за сумкой — спину заклинило, не могу разогнуться' },
+      { diagnosis: 'Острый бурсит', complaint: 'Колено распухло после пробежки, согнуть ногу не получается' },
+      { diagnosis: 'Пульпит', complaint: 'Зуб разболелся среди ночи, боль отдаёт в ухо, терпеть невозможно' },
+      { diagnosis: 'Межрёберная невралгия', complaint: 'При повороте простреливает между лопатками, больно дышать' },
+      { diagnosis: 'Ишиас', complaint: 'Ногу тянет от поясницы до самой пятки, не могу ни сидеть ни стоять' },
+      { diagnosis: 'Шейный миозит', complaint: 'Продуло шею, голову повернуть вообще не могу' },
+      { diagnosis: 'Жёлчная колика', complaint: 'После жирной еды скрутило живот справа, тошнит' },
+      { diagnosis: 'Тендинит ахиллова сухожилия', complaint: 'Пятка болит при каждом шаге, утром вообще встать не могу' },
+      { diagnosis: 'Плантарный фасциит', complaint: 'Стопа горит огнём, особенно после сна — первые шаги невыносимы' },
+      { diagnosis: 'Защемление локтевого нерва', complaint: 'Пальцы на руке немеют и покалывают, локоть ноет' },
+      { diagnosis: 'Острый радикулит', complaint: 'Стреляет в пояснице при каждом движении, ногу тянет вниз' },
+      { diagnosis: 'Миофасциальный синдром', complaint: 'Мышцы на спине как каменные, при нажатии простреливает в руку' },
+      { diagnosis: 'Артрит лучезапястного сустава', complaint: 'Запястье опухло и болит, не могу взять даже кружку' },
+      { diagnosis: 'Посттравматическая невропатия', complaint: 'После удара рука плохо слушается, пальцы немеют' },
+      { diagnosis: 'Головная боль напряжения', complaint: 'Голову как тисками сдавило, обруч на лбу, ноет уже с утра' },
+      { diagnosis: 'Цервикобрахиалгия', complaint: 'Шея заболела и отдаёт в плечо, рука тяжёлая и немеет' },
+      { diagnosis: 'Эпикондилит', complaint: 'Локоть болит при каждом повороте ручки двери, не могу ничего поднять' },
+      { diagnosis: 'Коксартроз', complaint: 'Тазобедренный сустав ноет постоянно, хромаю уже неделю' },
+      { diagnosis: 'Фибромиалгия', complaint: 'Всё тело ломит, мышцы болят везде, особенно по утрам' }
     ]},
     antihistamine: { cases: [
-      { symptom: 'Множественные волдыри и покраснение кожи', diagnosis: 'Острая крапивница', complaint: 'Весь покрылся красными пятнами после ужина в ресторане' },
-      { symptom: 'Отёк губы после приёма лекарства', diagnosis: 'Ангиоотёк (медикаментозный)', complaint: 'Выпил таблетку и губа начала распухать' },
-      { symptom: 'Покраснение и слезотечение из обоих глаз', diagnosis: 'Аллергический конъюнктивит', complaint: 'Глаза красные и чешутся, всё расплывается' },
-      { symptom: 'Мокнущие зудящие пятна на сгибах локтей', diagnosis: 'Обострение атопического дерматита', complaint: 'Руки расчесал до крови, ничего не помогает' },
-      { symptom: 'Заложенность носа, чихание сериями', diagnosis: 'Сезонный аллергический ринит', complaint: 'Чихаю без остановки, нос не дышит вообще' },
-      { symptom: 'Красные пузырьки на коже после контакта с растением', diagnosis: 'Контактный дерматит', complaint: 'Потрогал какой-то куст — руки покрылись волдырями' },
-      { symptom: 'Свистящее дыхание и чувство стеснения в груди', diagnosis: 'Аллергический бронхоспазм', complaint: 'Дышать тяжело, в груди как будто обруч' },
-      { symptom: 'Распухшее место укуса с нарастающим зудом', diagnosis: 'Аллергия на укус насекомого', complaint: 'Оса ужалила, место опухло и расползается' }
+      { diagnosis: 'Сезонный аллергический ринит', complaint: 'Чихаю без остановки, нос заложен полностью, не продохнуть' },
+      { diagnosis: 'Вазомоторный ринит', complaint: 'Нос течёт ручьём без причины, постоянно заложен то с одной стороны, то с другой' },
+      { diagnosis: 'Аллергический синусит', complaint: 'Нос забит, давит над бровями и в переносице, голова тяжёлая' },
+      { diagnosis: 'Полипозный риносинусит', complaint: 'В носу как будто что-то мешает дышать, запахи не чувствую вообще' },
+      { diagnosis: 'Круглогодичный ринит', complaint: 'Нос не дышит уже месяц, капли не помогают, всё время слизь в горле' },
+      { diagnosis: 'Острый аллергический ринит', complaint: 'Погладил кошку — нос тут же заложило, глаза слезятся, чихаю' },
+      { diagnosis: 'Аллергический фронтит', complaint: 'Лоб давит, нос забит, наклонюсь — боль в пазухах усиливается' },
+      { diagnosis: 'Медикаментозный ринит', complaint: 'Подсел на капли для носа, без них вообще не дышу, а с ними всё хуже' },
+      { diagnosis: 'Аллергический этмоидит', complaint: 'Между глаз давит, нос заложен, из носа густая слизь' },
+      { diagnosis: 'Гипертрофический ринит', complaint: 'Одна ноздря не дышит совсем уже давно, вторая еле-еле' },
+      { diagnosis: 'Аллергический ринофарингит', complaint: 'Нос заложен, слизь стекает в горло, из-за этого подкашливаю' },
+      { diagnosis: 'Сфеноидит', complaint: 'Боль глубоко в носу, отдаёт в затылок, нос заложен постоянно' },
+      { diagnosis: 'Аллергический гайморит', complaint: 'Щёки болят, нос не дышит, высмаркиваюсь — но заложенность не проходит' },
+      { diagnosis: 'Атрофический ринит', complaint: 'В носу сухо и корки, дышать больно, иногда кровит' },
+      { diagnosis: 'Пылевая аллергия', complaint: 'Дома нос закладывает, чихаю от пыли, на улице легче' },
+      { diagnosis: 'Реактивная ринопатия', complaint: 'На холоде нос сразу течёт и закладывает, в тепле проходит' },
+      { diagnosis: 'Аллергия на плесень', complaint: 'В сыром помещении нос забивается, чихаю, глаза чешутся' },
+      { diagnosis: 'Озена', complaint: 'Из носа неприятный запах, корки, нос сухой и не дышит' },
+      { diagnosis: 'Аллергический пансинусит', complaint: 'Вся голова как в тисках, нос заложен, давит на лоб и щёки' },
+      { diagnosis: 'Профессиональный ринит', complaint: 'На работе нос закладывает от химикатов, дома нормально' }
     ]},
     strepsils: { cases: [
-      { symptom: 'Резкая боль при глотании, белый налёт на миндалинах', diagnosis: 'Гнойная ангина', complaint: 'Горло огнём горит, глотать невозможно' },
-      { symptom: 'Полная потеря голоса', diagnosis: 'Острый ларингит', complaint: 'Проснулся утром — голос пропал полностью' },
-      { symptom: 'Надсадный сухой кашель и саднение за грудиной', diagnosis: 'Острый трахеит', complaint: 'Кашляю без остановки, горло всё саднит изнутри' },
-      { symptom: 'Красное воспалённое горло и температура', diagnosis: 'Острый фарингит', complaint: 'Горло красное, больно даже воду пить' },
-      { symptom: 'Боль в горле с одной стороны, трудно открыть рот', diagnosis: 'Паратонзиллярный инфильтрат', complaint: 'С одной стороны горла всё опухло, рот открыть не могу' },
-      { symptom: 'Першение и ком в горле, усиление после еды', diagnosis: 'Ларингофарингеальный рефлюкс', complaint: 'Постоянно першит, после еды как будто ком в горле' },
-      { symptom: 'Боль в горле и увеличенные лимфоузлы на шее', diagnosis: 'Инфекционный мононуклеоз', complaint: 'Горло болит уже неделю, шея опухла' },
-      { symptom: 'Сухость и жжение в горле, осиплость к вечеру', diagnosis: 'Гранулёзный фарингит', complaint: 'К вечеру голос садится, горло сухое и жжёт' }
+      { diagnosis: 'Гнойная ангина', complaint: 'Горло огнём горит, глотать невозможно, в горле что-то хрипит' },
+      { diagnosis: 'Острый ларингит', complaint: 'Голос пропал полностью, в груди першит и сипит при дыхании' },
+      { diagnosis: 'Острый трахеит', complaint: 'Кашляю без остановки, за грудиной саднит, дыхание с хрипом' },
+      { diagnosis: 'Острый фарингит', complaint: 'Горло красное, больно даже воду пить, при дыхании чувствую хрип' },
+      { diagnosis: 'Паратонзиллярный инфильтрат', complaint: 'С одной стороны горла всё опухло, рот открыть не могу, дышу с трудом' },
+      { diagnosis: 'Ларингофарингеальный рефлюкс', complaint: 'Постоянно першит в горле, после еды ком и жжение за грудиной' },
+      { diagnosis: 'Инфекционный мононуклеоз', complaint: 'Горло болит уже неделю, шея опухла, дышать тяжело' },
+      { diagnosis: 'Гранулёзный фарингит', complaint: 'К вечеру голос садится, горло сухое, кашель сиплый' },
+      { diagnosis: 'Острый бронхит', complaint: 'Кашель глубокий, в груди булькает, мокрота не отходит' },
+      { diagnosis: 'Бронхоспазм', complaint: 'Дышать тяжело, на выдохе свист, грудь сдавило' },
+      { diagnosis: 'Пневмония (начальная)', complaint: 'Кашель с мокротой, в груди справа что-то хрипит, температура' },
+      { diagnosis: 'Плеврит', complaint: 'При глубоком вдохе колет в боку, дышу поверхностно, боюсь вдохнуть' },
+      { diagnosis: 'Ларинготрахеит', complaint: 'Голос сел, кашель лающий, в горле свербит, за грудиной жжёт' },
+      { diagnosis: 'Обструктивный бронхит', complaint: 'Дыхание со свистом, кашель не проходит, задыхаюсь при ходьбе' },
+      { diagnosis: 'Трахеобронхит', complaint: 'Кашель сухой надрывный, саднит от горла до середины груди' },
+      { diagnosis: 'Эпиглоттит', complaint: 'Горло болит так сильно что слюну сглотнуть не могу, голос гнусавый' },
+      { diagnosis: 'Бронхиальная астма (приступ)', complaint: 'Вдохнуть не могу, на выдохе свист, в груди всё сжалось' },
+      { diagnosis: 'Коклюш', complaint: 'Приступы кашля до рвоты, между ними свистящий вдох, не могу остановиться' },
+      { diagnosis: 'Катаральная ангина', complaint: 'Горло покраснело, глотать больно, дышу ртом — нос свободен' },
+      { diagnosis: 'Аденоидит', complaint: 'Дышу ртом, храплю ночью, голос гнусавый, в горле слизь' }
     ]}
   };
   var CONSUMABLE_KEYS = Object.keys(MEDICAL_DATA);
+
+  var INSTRUMENT_MAP = {
+    painkiller:    'instrument_hammer',
+    antihistamine: 'instrument_rhinoscope',
+    strepsils:     'instrument_stethoscope'
+  };
   var BODY_COLORS = [0x4477aa, 0x44aa77, 0xaa7744, 0x7744aa, 0xaa4466, 0x5599bb, 0x88aa44];
 
   // --- Walk speed multiplier per severity ---
@@ -251,17 +297,23 @@
     var medCase = randomFrom(data.cases);
     var roll = Math.random();
     var severity = roll < 0.60 ? SEVERITIES[2] : roll < 0.85 ? SEVERITIES[1] : SEVERITIES[0];
+    var needsDiagnosis = Math.random() < 0.2;
 
     var patient = {
       id: patientIdCounter++,
       name: randomFrom(NAMES),
       surname: randomFrom(SURNAMES),
       age: randomInt(18, 75),
-      symptom: medCase.symptom,
-      diagnosis: medCase.diagnosis,
+      symptom: null,
+      diagnosis: needsDiagnosis ? null : medCase.diagnosis,
       complaint: medCase.complaint,
       vitals: generateVitals(severity.key),
-      requiredConsumable: consumableType,
+      requiredConsumable: needsDiagnosis ? null : consumableType,
+      needsDiagnosis: needsDiagnosis,
+      requiredInstrument: needsDiagnosis ? INSTRUMENT_MAP[consumableType] : null,
+      hiddenSymptom: null,
+      hiddenDiagnosis: needsDiagnosis ? medCase.diagnosis : null,
+      hiddenConsumable: needsDiagnosis ? consumableType : null,
       mesh: mesh,
       state: 'queued',
       targetPos: null,
@@ -352,6 +404,10 @@
       hintEl.style.display = 'none';
       return;
     }
+    if (Game.Diagnostics && Game.Diagnostics.isActive()) {
+      hintEl.style.display = 'none';
+      return;
+    }
 
     interactRay.setFromCamera(screenCenter, camera);
 
@@ -385,13 +441,26 @@
     } else if (hoveredPatient.state === 'atBed') {
       if (hoveredPatient.treated) {
         hintEl.textContent = 'Пациент лечится...';
+      } else if (hoveredPatient.needsDiagnosis) {
+        var activeType = Game.Inventory.getActive();
+        if (activeType && activeType === hoveredPatient.requiredInstrument) {
+          var instrName = Game.Consumables.INSTRUMENT_TYPES[activeType].name;
+          hintEl.textContent = 'ЛКМ — Диагностика (' + instrName + ')';
+        } else if (activeType && Game.Consumables.isInstrument(activeType)) {
+          var neededInstr = Game.Consumables.INSTRUMENT_TYPES[hoveredPatient.requiredInstrument];
+          hintEl.textContent = 'Нужен инструмент (' + neededInstr.name + ')';
+        } else {
+          var neededInstr = Game.Consumables.INSTRUMENT_TYPES[hoveredPatient.requiredInstrument];
+          hintEl.textContent = 'Нужен инструмент (' + neededInstr.name + ')';
+        }
       } else {
         var activeType = Game.Inventory.getActive();
-        if (activeType) {
+        if (activeType && !Game.Consumables.isInstrument(activeType)) {
           var typeName = Game.Consumables.TYPES[activeType].name;
           hintEl.textContent = 'ЛКМ — Применить ' + typeName;
         } else {
-          hintEl.textContent = 'Нужен препарат';
+          var neededConsumable = Game.Consumables.TYPES[hoveredPatient.requiredConsumable];
+          hintEl.textContent = 'Нужен препарат (' + neededConsumable.name + ')';
         }
       }
       hintEl.style.display = 'block';
@@ -439,13 +508,36 @@
 
     // Clinical data
     popupComplaint.textContent = '\u00AB' + patient.complaint + '\u00BB';
-    popupDiagnosis.textContent = patient.diagnosis;
 
-    // Required consumable
-    var typeInfo = Game.Consumables.TYPES[patient.requiredConsumable];
-    popupSupply.textContent = typeInfo.name;
-    var c = typeInfo.color;
-    popupSupplyIcon.style.backgroundColor = 'rgb(' + ((c >> 16) & 255) + ',' + ((c >> 8) & 255) + ',' + (c & 255) + ')';
+    var popupInstrumentHint = document.getElementById('popup-instrument-hint');
+
+    if (patient.needsDiagnosis) {
+      popupDiagnosis.textContent = '????';
+      popupDiagnosis.style.color = '#ff4444';
+      popupSupply.textContent = '????';
+      popupSupply.style.color = '#ff4444';
+      popupSupplyIcon.style.display = 'none';
+
+      // Show required instrument
+      if (popupInstrumentHint) {
+        var instrInfo = Game.Consumables.INSTRUMENT_TYPES[patient.requiredInstrument];
+        popupInstrumentHint.textContent = 'Необходим: ' + instrInfo.name;
+        popupInstrumentHint.style.display = 'block';
+        popupInstrumentHint.style.color = '#ffaa44';
+      }
+    } else {
+      popupDiagnosis.textContent = patient.diagnosis;
+      popupDiagnosis.style.color = '';
+      popupSupply.style.color = '';
+      popupSupplyIcon.style.display = '';
+      if (popupInstrumentHint) popupInstrumentHint.style.display = 'none';
+
+      // Required consumable
+      var typeInfo = Game.Consumables.TYPES[patient.requiredConsumable];
+      popupSupply.textContent = typeInfo.name;
+      var c = typeInfo.color;
+      popupSupplyIcon.style.backgroundColor = 'rgb(' + ((c >> 16) & 255) + ',' + ((c >> 8) & 255) + ',' + (c & 255) + ')';
+    }
 
     popupEl.style.display = 'block';
 
@@ -509,36 +601,158 @@
   }
 
   // --- Bed indicator ---
+  function drawIndicatorIcon(ctx, type) {
+    // Draw specific item icon on a 64x64 canvas (centered)
+    ctx.save();
+    if (type === 'strepsils') {
+      // Blister pack with pills
+      ctx.fillStyle = '#cc3333';
+      ctx.beginPath();
+      ctx.roundRect(10, 20, 44, 24, 4);
+      ctx.fill();
+      ctx.fillStyle = '#ee5555';
+      for (var row = 0; row < 2; row++) {
+        for (var col = 0; col < 3; col++) {
+          ctx.beginPath();
+          ctx.arc(19 + col * 13, 27 + row * 11, 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+    } else if (type === 'painkiller') {
+      // Pill bottle
+      ctx.fillStyle = '#3366cc';
+      ctx.beginPath();
+      ctx.roundRect(20, 14, 24, 38, 3);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.roundRect(18, 10, 28, 10, 2);
+      ctx.fill();
+      ctx.fillStyle = '#dde';
+      ctx.beginPath();
+      ctx.roundRect(23, 30, 18, 12, 2);
+      ctx.fill();
+      ctx.fillStyle = '#3366cc';
+      ctx.font = 'bold 9px Segoe UI';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('Rx', 32, 37);
+    } else if (type === 'antihistamine') {
+      // Green box with white cross
+      ctx.fillStyle = '#33aa55';
+      ctx.beginPath();
+      ctx.roundRect(12, 12, 40, 40, 4);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.roundRect(26, 16, 12, 32, 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.roundRect(16, 26, 32, 12, 2);
+      ctx.fill();
+    } else if (type === 'instrument_stethoscope') {
+      // Stethoscope
+      ctx.strokeStyle = '#8866cc';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(32, 48);
+      ctx.lineTo(32, 28);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(32, 28);
+      ctx.lineTo(22, 18);
+      ctx.moveTo(32, 28);
+      ctx.lineTo(42, 18);
+      ctx.stroke();
+      // Chest piece
+      ctx.beginPath();
+      ctx.arc(32, 50, 5, 0, Math.PI * 2);
+      ctx.fillStyle = '#aaa';
+      ctx.fill();
+      // Ear tips
+      ctx.fillStyle = '#555';
+      ctx.beginPath();
+      ctx.arc(20, 16, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(44, 16, 3, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (type === 'instrument_hammer') {
+      // Reflex hammer
+      ctx.strokeStyle = '#666';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(32, 20);
+      ctx.lineTo(32, 50);
+      ctx.stroke();
+      ctx.fillStyle = '#cc8844';
+      ctx.beginPath();
+      ctx.ellipse(32, 18, 12, 6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#aa6622';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    } else if (type === 'instrument_rhinoscope') {
+      // Rhinoscope
+      ctx.fillStyle = '#44aacc';
+      ctx.beginPath();
+      ctx.roundRect(26, 20, 12, 28, 2);
+      ctx.fill();
+      ctx.fillStyle = '#555';
+      ctx.beginPath();
+      ctx.roundRect(25, 42, 14, 10, 2);
+      ctx.fill();
+      ctx.fillStyle = '#ccc';
+      ctx.beginPath();
+      ctx.moveTo(26, 20);
+      ctx.lineTo(38, 20);
+      ctx.lineTo(32, 12);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#ffffaa';
+      ctx.beginPath();
+      ctx.arc(32, 12, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
   function createBedIndicator(patient) {
-    var typeInfo = Game.Consumables.TYPES[patient.requiredConsumable];
     var canvas = document.createElement('canvas');
     canvas.width = 64; canvas.height = 64;
     var ctx = canvas.getContext('2d');
 
-    // Draw colored circle
-    var hex = typeInfo.color;
-    var r = (hex >> 16) & 255, g = (hex >> 8) & 255, b = hex & 255;
+    var itemType, bgColor;
+    if (patient.needsDiagnosis) {
+      itemType = patient.requiredInstrument;
+      var instrInfo = Game.Consumables.INSTRUMENT_TYPES[itemType];
+      bgColor = instrInfo.color;
+    } else {
+      itemType = patient.requiredConsumable;
+      var typeInfo = Game.Consumables.TYPES[itemType];
+      bgColor = typeInfo.color;
+    }
+
+    var r = (bgColor >> 16) & 255, g = (bgColor >> 8) & 255, b = bgColor & 255;
+
+    // Background circle with slight dark tint
     ctx.beginPath();
-    ctx.arc(32, 32, 28, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
+    ctx.arc(32, 32, 30, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(' + Math.floor(r * 0.3) + ',' + Math.floor(g * 0.3) + ',' + Math.floor(b * 0.3) + ',0.85)';
     ctx.fill();
-    ctx.strokeStyle = '#ffffff';
+    ctx.strokeStyle = 'rgb(' + r + ',' + g + ',' + b + ')';
     ctx.lineWidth = 3;
     ctx.stroke();
 
-    // Draw "+" symbol
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 5;
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(32, 18); ctx.lineTo(32, 46);
-    ctx.moveTo(18, 32); ctx.lineTo(46, 32);
-    ctx.stroke();
+    // Draw the actual item icon
+    drawIndicatorIcon(ctx, itemType);
 
     var texture = new THREE.CanvasTexture(canvas);
     var mat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
     var sprite = new THREE.Sprite(mat);
-    sprite.scale.set(0.3, 0.3, 1);
+    sprite.scale.set(0.4, 0.4, 1);
     sprite.position.copy(patient.mesh.position);
     sprite.position.y = 2.0;
     scene.add(sprite);
@@ -860,7 +1074,9 @@
       if (p.indicator) {
         p.indicator.position.x = p.mesh.position.x;
         p.indicator.position.z = p.mesh.position.z;
-        p.indicator.position.y = (isLying ? 1.5 : 2.0) + Math.sin(t + p.id) * 0.08;
+        p.indicator.position.y = isLying ? 1.5 : 2.0;
+        var pulse = 0.4 + Math.sin(t + p.id) * 0.06;
+        p.indicator.scale.set(pulse, pulse, 1);
       }
       if (p.healthBar) {
         p.healthBar.position.x = p.mesh.position.x;
@@ -1111,10 +1327,121 @@
     }
   }
 
+  function revealDiagnosis(patient) {
+    patient.needsDiagnosis = false;
+    patient.symptom = null;
+    patient.diagnosis = patient.hiddenDiagnosis;
+    patient.requiredConsumable = patient.hiddenConsumable;
+    patient.requiredInstrument = null;
+    // Update bed indicator to show consumable instead of instrument
+    if (patient.indicator) {
+      scene.remove(patient.indicator);
+      patient.indicator = null;
+    }
+    if (patient.state === 'atBed') {
+      createBedIndicator(patient);
+    }
+    Game.Inventory.showNotification('Диагноз установлен!', 'rgba(34, 139, 34, 0.85)');
+  }
+
+  // Animated reveal: open popup showing ???? then animate to real data
+  function revealDiagnosisAnimated(patient) {
+    // First show popup with ???? (needsDiagnosis still true visually)
+    var savedState = patient.state;
+    // Temporarily keep needsDiagnosis true for popup display
+    openPopup(patient);
+
+    // Hide action buttons during reveal animation
+    btnBed.style.display = 'none';
+    btnWait.style.display = 'none';
+    btnDismiss.style.display = 'none';
+
+    var popupInstrumentHint = document.getElementById('popup-instrument-hint');
+
+    // Elements to animate: diagnosis, supply
+    var fields = [
+      { el: popupDiagnosis, newText: patient.hiddenDiagnosis },
+      { el: popupSupply, newText: Game.Consumables.TYPES[patient.hiddenConsumable].name }
+    ];
+
+    // Phase 1 (after 0.4s): fade out ????
+    setTimeout(function() {
+      for (var i = 0; i < fields.length; i++) {
+        if (fields[i].el) {
+          fields[i].el.style.transition = 'opacity 0.4s';
+          fields[i].el.style.opacity = '0';
+        }
+      }
+      if (popupInstrumentHint) {
+        popupInstrumentHint.style.transition = 'opacity 0.4s';
+        popupInstrumentHint.style.opacity = '0';
+      }
+    }, 400);
+
+    // Phase 2 (after 0.9s): swap text, set color, fade in
+    setTimeout(function() {
+      for (var i = 0; i < fields.length; i++) {
+        var f = fields[i];
+        if (f.el) {
+          f.el.textContent = f.newText;
+          f.el.style.color = '#44ff88';
+        }
+      }
+      // Show supply icon
+      var typeInfo = Game.Consumables.TYPES[patient.hiddenConsumable];
+      var c = typeInfo.color;
+      popupSupplyIcon.style.display = '';
+      popupSupplyIcon.style.backgroundColor = 'rgb(' + ((c >> 16) & 255) + ',' + ((c >> 8) & 255) + ',' + (c & 255) + ')';
+
+      if (popupInstrumentHint) popupInstrumentHint.style.display = 'none';
+
+      for (var i = 0; i < fields.length; i++) {
+        if (fields[i].el) {
+          fields[i].el.style.opacity = '1';
+        }
+      }
+    }, 900);
+
+    // Phase 3 (after 2s): apply real data, show close button
+    setTimeout(function() {
+      // Temporarily restore state so revealDiagnosis can create the bed indicator
+      patient.state = savedState;
+      revealDiagnosis(patient);
+      patient.state = 'interacting';
+
+      // Reset color transitions
+      for (var i = 0; i < fields.length; i++) {
+        if (fields[i].el) {
+          fields[i].el.style.transition = '';
+          fields[i].el.style.color = '';
+        }
+      }
+
+      // Show "Понятно" button
+      var buttonsDiv = popupEl.querySelector('.buttons');
+      btnBed.style.display = 'none';
+      btnWait.style.display = 'none';
+      btnDismiss.style.display = 'none';
+
+      var okBtn = document.createElement('button');
+      okBtn.textContent = 'Понятно';
+      okBtn.style.cssText = 'flex:1; padding:10px 0; border:none; border-radius:6px; font-size:0.88rem; font-weight:600; cursor:pointer; background:#1a6b42; color:#fff;';
+      buttonsDiv.appendChild(okBtn);
+
+      okBtn.addEventListener('click', function() {
+        buttonsDiv.removeChild(okBtn);
+        closePopup();
+        patient.state = savedState;
+      });
+    }, 2000);
+  }
+
   window.Game.Patients = {
     hasInteraction: function() { return !!hoveredPatient || !!popupPatient; },
     isPopupOpen: function() { return !!popupPatient; },
     getHoveredPatient: function() { return hoveredPatient; },
+    revealDiagnosis: function(patient) { revealDiagnosis(patient); },
+    revealDiagnosisAnimated: function(patient) { revealDiagnosisAnimated(patient); },
 
     setup: function(_THREE, _scene, _camera, _controls, _beds, _waitingChairs) {
       THREE = _THREE;
@@ -1154,12 +1481,30 @@
       document.addEventListener('mousedown', function(e) {
         if (e.button !== 0 || !controls.isLocked) return;
         if (popupPatient) return;
+        if (Game.Diagnostics && Game.Diagnostics.isActive()) return;
         if (!hoveredPatient) return;
 
         if (hoveredPatient.state === 'atBed') {
           if (hoveredPatient.treated) return;
+
+          // Undiagnosed patient — need instrument first
+          if (hoveredPatient.needsDiagnosis) {
+            var activeType = Game.Inventory.getActive();
+            if (!activeType || !Game.Consumables.isInstrument(activeType)) {
+              Game.Inventory.showNotification('Нужен диагностический инструмент');
+              return;
+            }
+            if (activeType !== hoveredPatient.requiredInstrument) {
+              Game.Inventory.showNotification('Нужен другой инструмент');
+              return;
+            }
+            // Start mini-game (instrument NOT consumed)
+            Game.Diagnostics.startMinigame(hoveredPatient, activeType);
+            return;
+          }
+
           var activeType = Game.Inventory.getActive();
-          if (!activeType) {
+          if (!activeType || Game.Consumables.isInstrument(activeType)) {
             Game.Inventory.showNotification('Выберите препарат в инвентаре');
             return;
           }

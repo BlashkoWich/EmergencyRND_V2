@@ -64,6 +64,7 @@
       controls.addEventListener('unlock', function() {
         if (Game.Shop && Game.Shop.isOpen()) return;
         if (Game.Patients && Game.Patients.isPopupOpen()) return;
+        if (Game.Diagnostics && Game.Diagnostics.isActive()) return;
         overlay.style.display = 'flex';
         crosshairEl.style.display = 'none';
         document.getElementById('interact-hint').style.display = 'none';

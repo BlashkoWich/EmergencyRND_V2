@@ -50,6 +50,7 @@
         <div class="clinical-label">Назначение</div>
         <div class="clinical-value"><span id="popup-supply-icon"></span><span id="popup-supply"></span></div>
       </div>
+      <div id="popup-instrument-hint" style="display:none; padding: 7px 0 7px 12px; margin-bottom: 4px; border-left: 2px solid rgba(255,170,68,0.4); font-size: 0.88rem;"></div>
     </div>
     <div class="buttons">
       <button id="btn-bed">На кровать <span id="bed-count" style="opacity:0.7"></span></button>
@@ -58,21 +59,44 @@
     </div>
   </div>
   <div id="shop-popup">
-    <h2>Магазин препаратов</h2>
-    <div class="shop-item" data-type="strepsils">
-      <span class="shop-item-icon" style="background:#cc3333"></span>
-      <span class="shop-item-name">Стрепсилс</span>
-      <button class="shop-buy-btn">Купить — $10</button>
+    <h2>Магазин</h2>
+    <div id="shop-tabs">
+      <button class="shop-tab active" data-tab="consumables">Препараты</button>
+      <button class="shop-tab" data-tab="instruments">Инструменты</button>
     </div>
-    <div class="shop-item" data-type="painkiller">
-      <span class="shop-item-icon" style="background:#3366cc"></span>
-      <span class="shop-item-name">Обезболивающее</span>
-      <button class="shop-buy-btn">Купить — $10</button>
+    <div id="shop-tab-consumables" class="shop-tab-content">
+      <div class="shop-item" data-type="strepsils">
+        <span class="shop-item-icon" style="background:#cc3333"></span>
+        <span class="shop-item-name">Стрепсилс</span>
+        <button class="shop-buy-btn">Купить — $10</button>
+      </div>
+      <div class="shop-item" data-type="painkiller">
+        <span class="shop-item-icon" style="background:#3366cc"></span>
+        <span class="shop-item-name">Обезболивающее</span>
+        <button class="shop-buy-btn">Купить — $10</button>
+      </div>
+      <div class="shop-item" data-type="antihistamine">
+        <span class="shop-item-icon" style="background:#33aa55"></span>
+        <span class="shop-item-name">Антигистаминное</span>
+        <button class="shop-buy-btn">Купить — $10</button>
+      </div>
     </div>
-    <div class="shop-item" data-type="antihistamine">
-      <span class="shop-item-icon" style="background:#33aa55"></span>
-      <span class="shop-item-name">Антигистаминное</span>
-      <button class="shop-buy-btn">Купить — $10</button>
+    <div id="shop-tab-instruments" class="shop-tab-content" style="display:none">
+      <div class="shop-item shop-instrument-item" data-type="instrument_stethoscope">
+        <span class="shop-item-icon" style="background:#8866cc"></span>
+        <span class="shop-item-name">Фонендоскоп</span>
+        <button class="shop-buy-btn">Купить — $1</button>
+      </div>
+      <div class="shop-item shop-instrument-item" data-type="instrument_hammer">
+        <span class="shop-item-icon" style="background:#cc8844"></span>
+        <span class="shop-item-name">Рефлекс-молоток</span>
+        <button class="shop-buy-btn">Купить — $1</button>
+      </div>
+      <div class="shop-item shop-instrument-item" data-type="instrument_rhinoscope">
+        <span class="shop-item-icon" style="background:#44aacc"></span>
+        <span class="shop-item-name">Риноскоп</span>
+        <button class="shop-buy-btn">Купить — $1</button>
+      </div>
     </div>
     <button id="shop-close">✕</button>
   </div>
@@ -117,6 +141,14 @@
     <p style="margin-top:0.5rem; opacity:0.6; font-size:0.85rem;">Q — магазин &nbsp;|&nbsp; 1-6 — инвентарь &nbsp;|&nbsp; E — коробка &nbsp;|&nbsp; ЛКМ — взаимодействие</p>
   </div>
 
+  <div id="diagnostics-overlay" style="display:none">
+    <button id="diagnostics-close">&#10005;</button>
+    <div id="diagnostics-title"></div>
+    <canvas id="diagnostics-canvas"></canvas>
+    <div id="diagnostics-controls"></div>
+    <div id="diagnostics-status"></div>
+  </div>
+
   <script src="js/helpers.js"></script>
   <script src="js/world.js"></script>
   <script src="js/patients.js"></script>
@@ -125,6 +157,7 @@
   <script src="js/inventory.js"></script>
   <script src="js/shop.js"></script>
   <script src="js/shelves.js"></script>
+  <script src="js/diagnostics.js"></script>
   <script src="js/cashier.js"></script>
 
   <script type="importmap">
@@ -185,6 +218,7 @@
     Game.Inventory.setup();
     Game.Shop.setup(controls);
     Game.Shelves.setup(THREE, scene, camera, controls, collidables);
+    Game.Diagnostics.setup(controls);
     Game.Cashier.setup(THREE, scene, camera, controls, cashierDesk);
 
     // --- Animation loop ---
