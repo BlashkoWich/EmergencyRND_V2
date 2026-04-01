@@ -541,12 +541,17 @@
 
     popupEl.style.display = 'block';
 
-    // Bed/chair availability
-    var freeBeds = beds.filter(function(b) { return !b.occupied; }).length;
-    var freeChairs = waitingChairs.filter(function(c) { return !c.occupied; }).length;
+    // Bed/chair availability (use dynamic furniture system)
+    var indoorBeds = Game.Furniture.getIndoorBeds();
+    var indoorChairs = Game.Furniture.getIndoorChairs();
+    var freeBeds = indoorBeds.filter(function(b) { return !b.occupied; }).length;
+    var freeChairs = indoorChairs.filter(function(c) { return !c.occupied; }).length;
+    var outdoorBedCount = Game.Furniture.getOutdoorBedCount();
+    var outdoorChairCount = Game.Furniture.getOutdoorChairCount();
+
     btnBed.disabled = freeBeds === 0;
     btnBed.style.opacity = freeBeds > 0 ? '1' : '0.4';
-    bedCount.textContent = '(' + freeBeds + '/' + beds.length + ')';
+    bedCount.textContent = '(' + freeBeds + '/' + indoorBeds.length + ')';
 
     // Hide waiting button if patient is already waiting, show otherwise
     if (wasWaiting) {
@@ -555,7 +560,16 @@
       btnWait.style.display = '';
       btnWait.disabled = freeChairs === 0;
       btnWait.style.opacity = freeChairs > 0 ? '1' : '0.4';
-      chairCount.textContent = '(' + freeChairs + '/' + waitingChairs.length + ')';
+      chairCount.textContent = '(' + freeChairs + '/' + indoorChairs.length + ')';
+    }
+
+    // Outdoor furniture warning
+    var outdoorWarning = document.getElementById('outdoor-warning');
+    if (outdoorBedCount > 0 || outdoorChairCount > 0) {
+      outdoorWarning.textContent = 'Пока кровать/стул на улице — их нельзя использовать';
+      outdoorWarning.style.display = 'block';
+    } else {
+      outdoorWarning.style.display = 'none';
     }
 
     // Show wait/dismiss button
@@ -1269,7 +1283,7 @@
         }
         isMoving = !arrived;
         if (arrived) {
-          var isBed = p.destination && beds.indexOf(p.destination) !== -1;
+          var isBed = p.destination && Game.Furniture.isBedSlot(p.destination);
           p.state = isBed ? 'atBed' : 'waiting';
           p.targetPos = null;
           p.anim.targetPose = isBed ? 'lying' : 'sitting';
@@ -1527,9 +1541,10 @@
       // Popup buttons
       btnBed.addEventListener('click', function() {
         if (!popupPatient) return;
+        var indoorBeds = Game.Furniture.getIndoorBeds();
         var slot = null;
-        for (var i = 0; i < beds.length; i++) {
-          if (!beds[i].occupied) { slot = beds[i]; break; }
+        for (var i = 0; i < indoorBeds.length; i++) {
+          if (!indoorBeds[i].occupied) { slot = indoorBeds[i]; break; }
         }
         if (!slot) return;
         sendPatient(popupPatient, slot.pos, slot);
@@ -1537,9 +1552,10 @@
 
       btnWait.addEventListener('click', function() {
         if (!popupPatient) return;
+        var indoorChairs = Game.Furniture.getIndoorChairs();
         var slot = null;
-        for (var i = 0; i < waitingChairs.length; i++) {
-          if (!waitingChairs[i].occupied) { slot = waitingChairs[i]; break; }
+        for (var i = 0; i < indoorChairs.length; i++) {
+          if (!indoorChairs[i].occupied) { slot = indoorChairs[i]; break; }
         }
         if (!slot) return;
         sendPatient(popupPatient, slot.pos, slot);
@@ -1567,7 +1583,9 @@
       spawnTimer += delta;
       if (spawnTimer >= SPAWN_INTERVAL) {
         spawnTimer = 0;
-        if (queue.length >= 2) {
+        var maxQueue = Math.min(2 + Game.Furniture.getAllBeds().length + Game.Furniture.getAllChairs().length - 5, 10);
+        if (maxQueue < 2) maxQueue = 2;
+        if (queue.length >= maxQueue) {
           Game.Inventory.showNotification('Пациент не смог зайти из-за того, что очередь переполнена');
         } else {
           spawnPatient();

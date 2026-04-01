@@ -824,6 +824,7 @@
         if (e.code !== 'KeyE') return;
         if (!controls.isLocked) return;
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
+        if (Game.Furniture && (Game.Furniture.isCarrying() || Game.Furniture.hasInteraction())) return;
         if (heldBox) return;
         if (!hoveredBox) return;
 
@@ -839,9 +840,13 @@
       updatePhysics(delta);
       updateHeldBox();
 
-      // Interaction priority: patients > boxes(E) > consumables(LMB) > shelves > cashier
-      var boxInteracted = updateBoxInteraction();
-      if (!boxInteracted && !heldBox) {
+      // Interaction priority: patients > furniture(E) > boxes(E) > consumables(LMB) > shelves > cashier
+      var furnitureBlocks = Game.Furniture && (Game.Furniture.hasInteraction() || Game.Furniture.isCarrying());
+      var boxInteracted = furnitureBlocks ? false : updateBoxInteraction();
+      if (furnitureBlocks) {
+        if (hoveredBox) { unhighlightGroup(hoveredBox.mesh); hoveredBox = null; }
+        if (hoveredItem) { unhighlightGroup(hoveredItem.mesh); hoveredItem = null; }
+      } else if (!boxInteracted && !heldBox) {
         updateInteraction();
       } else if (!boxInteracted) {
         // Holding box but not hovering a box — clear item hover

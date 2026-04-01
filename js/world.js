@@ -94,6 +94,7 @@
       var chairMat = new THREE.MeshStandardMaterial({ color: 0x3366aa, roughness: 0.6 });
       var chairLegMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3, metalness: 0.5 });
 
+      var chairMeshes = [];
       function createChair(x, z, rotY) {
         var g = new THREE.Group();
         var seat = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.5), chairMat);
@@ -111,6 +112,7 @@
         scene.add(g);
         var box = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.0, 0.6), new THREE.MeshBasicMaterial({ visible: false }));
         box.position.set(x, 0.5, z); scene.add(box); collidables.push(box);
+        chairMeshes.push({ group: g, collisionBox: box });
       }
 
       createChair(6.5, -2, -Math.PI / 2);
@@ -124,6 +126,7 @@
       var mattressMat = new THREE.MeshStandardMaterial({ color: 0x88bbaa, roughness: 0.7 });
       var pillowMat = new THREE.MeshStandardMaterial({ color: 0xddeedd, roughness: 0.8 });
 
+      var bedMeshes = [];
       function createBed(x, z, rotY) {
         var g = new THREE.Group();
         var frame = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.5, 0.9), bedFrameMat);
@@ -139,6 +142,7 @@
         scene.add(g);
         var box = new THREE.Mesh(new THREE.BoxGeometry(2.1, 1.0, 1.0), new THREE.MeshBasicMaterial({ visible: false }));
         box.position.set(x, 0.5, z); scene.add(box); collidables.push(box);
+        bedMeshes.push({ group: g, collisionBox: box });
       }
 
       createBed(-5.5, -9, 0);
@@ -277,6 +281,8 @@
           { pos: new THREE.Vector3(5.5, 0, -3.2), occupied: false },
           { pos: new THREE.Vector3(5.5, 0, -4.4), occupied: false }
         ],
+        bedMeshes: bedMeshes,
+        chairMeshes: chairMeshes,
         cashierDesk: {
           terminalMeshes: [terminalBody, terminalScreen, keypadArea],
           patientPos: new THREE.Vector3(3.5, 0, -8.0)

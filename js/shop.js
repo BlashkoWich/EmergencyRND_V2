@@ -39,7 +39,8 @@
       var tabs = shopEl.querySelectorAll('.shop-tab');
       var tabContents = {
         consumables: document.getElementById('shop-tab-consumables'),
-        instruments: document.getElementById('shop-tab-instruments')
+        instruments: document.getElementById('shop-tab-instruments'),
+        furniture: document.getElementById('shop-tab-furniture')
       };
       for (var t = 0; t < tabs.length; t++) {
         (function(tab) {
@@ -102,6 +103,26 @@
             Game.Cashier.spend(1);
             Game.Consumables.spawnInstrumentInDeliveryZone(t);
             updateCounts();
+          });
+        })(itemEl.querySelector('.shop-buy-btn'), type);
+      }
+
+      // --- Furniture buy buttons ---
+      var furnitureItems = document.querySelectorAll('#shop-tab-furniture .shop-item');
+      var furniturePrices = { bed: 25, chair: 15 };
+      for (var i = 0; i < furnitureItems.length; i++) {
+        var itemEl = furnitureItems[i];
+        var type = itemEl.dataset.type;
+        (function(btn, t) {
+          var price = furniturePrices[t];
+          btn.addEventListener('click', function() {
+            var balance = Game.Cashier.getBalance();
+            if (balance < price) {
+              Game.Inventory.showNotification('Недостаточно средств!');
+              return;
+            }
+            Game.Cashier.spend(price);
+            Game.Furniture.spawnFurniture(t);
           });
         })(itemEl.querySelector('.shop-buy-btn'), type);
       }
