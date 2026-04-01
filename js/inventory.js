@@ -1,8 +1,9 @@
 (function() {
   window.Game = window.Game || {};
 
-  var slots = [null, null, null, null, null, null];
+  var slots = [null, null, null, null, null, null]; // each slot: {type, count} or null
   var activeSlot = 0;
+  var maxStack = 5; // base stack size for consumables (instruments don't stack)
   var barEl, slotEls, notificationEl, hintsEl, hintShopEl, hintDropEl, activeNameEl;
   var notificationTimer = null;
   var iconCache = {}; // type -> dataURL
@@ -245,6 +246,11 @@
       item.className = 'inv-item';
       slot.appendChild(item);
 
+      var countBadge = document.createElement('span');
+      countBadge.className = 'inv-count';
+      countBadge.style.display = 'none';
+      slot.appendChild(countBadge);
+
       var label = document.createElement('span');
       label.className = 'inv-label';
       label.textContent = String(i + 1);
@@ -285,11 +291,14 @@
     for (var i = 0; i < 6; i++) {
       var el = slotEls[i];
       var itemEl = el.querySelector('.inv-item');
+      var countEl = el.querySelector('.inv-count');
       el.className = 'inv-slot' + (i === activeSlot ? ' active' : '');
 
       if (slots[i]) {
-        var info = types[slots[i]] || instrTypes[slots[i]];
-        var icon = generateIcon(slots[i]);
+        var slotType = slots[i].type;
+        var slotCount = slots[i].count;
+        var info = types[slotType] || instrTypes[slotType];
+        var icon = generateIcon(slotType);
         if (icon) {
           itemEl.style.backgroundImage = 'url(' + icon + ')';
           itemEl.style.backgroundSize = 'cover';
@@ -300,18 +309,29 @@
         }
         itemEl.style.display = 'block';
         itemEl.title = info.name;
+
+        // Show count badge for stackable items (consumables only, count > 1)
+        if (countEl) {
+          if (!slotType.startsWith('instrument_') && slotCount > 1) {
+            countEl.textContent = slotCount;
+            countEl.style.display = 'flex';
+          } else {
+            countEl.style.display = 'none';
+          }
+        }
       } else {
         itemEl.style.display = 'none';
         itemEl.style.backgroundImage = '';
         itemEl.title = '';
+        if (countEl) countEl.style.display = 'none';
       }
     }
 
     // Active item name
     if (activeNameEl) {
-      var activeType = slots[activeSlot];
-      if (activeType) {
-        var activeInfo = types[activeType] || instrTypes[activeType];
+      var activeData = slots[activeSlot];
+      if (activeData) {
+        var activeInfo = types[activeData.type] || instrTypes[activeData.type];
         activeNameEl.textContent = activeInfo.name;
         activeNameEl.style.display = 'block';
       } else {
@@ -354,9 +374,21 @@
     },
 
     addItem: function(type) {
+      var isInstrument = type.startsWith('instrument_');
+      // For consumables: try to stack into existing slot first
+      if (!isInstrument) {
+        for (var i = 0; i < 6; i++) {
+          if (slots[i] && slots[i].type === type && slots[i].count < maxStack) {
+            slots[i].count++;
+            refreshUI();
+            return true;
+          }
+        }
+      }
+      // Find empty slot
       for (var i = 0; i < 6; i++) {
         if (slots[i] === null) {
-          slots[i] = type;
+          slots[i] = { type: type, count: 1 };
           refreshUI();
           return true;
         }
@@ -365,16 +397,21 @@
     },
 
     removeActive: function() {
-      var type = slots[activeSlot];
-      if (type) {
-        slots[activeSlot] = null;
+      var data = slots[activeSlot];
+      if (data) {
+        var type = data.type;
+        data.count--;
+        if (data.count <= 0) {
+          slots[activeSlot] = null;
+        }
         refreshUI();
+        return type;
       }
-      return type;
+      return null;
     },
 
     getActive: function() {
-      return slots[activeSlot];
+      return slots[activeSlot] ? slots[activeSlot].type : null;
     },
 
     getActiveIndex: function() {
@@ -391,9 +428,17 @@
     countType: function(type) {
       var count = 0;
       for (var i = 0; i < 6; i++) {
-        if (slots[i] === type) count++;
+        if (slots[i] && slots[i].type === type) count += slots[i].count;
       }
       return count;
+    },
+
+    setMaxStack: function(n) {
+      maxStack = n;
+    },
+
+    getMaxStack: function() {
+      return maxStack;
     },
 
     showNotification: function(text, color) {

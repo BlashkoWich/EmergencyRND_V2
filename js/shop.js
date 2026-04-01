@@ -5,6 +5,13 @@
   var shopEl;
   var isShopOpen = false;
   var countEls = {}; // type -> span element
+  var upgradeLevel = 0; // 0=base(5), 1=10, 2=15, 3=20
+  var upgradeLevels = [
+    { price: 50, stack: 10 },
+    { price: 100, stack: 15 },
+    { price: 200, stack: 20 }
+  ];
+  var upgradeButtons = []; // [{btn, item}]
 
   function updateCounts() {
     var types = Game.Consumables.TYPES;
@@ -27,6 +34,27 @@
     }
   }
 
+  function refreshUpgradeButtons() {
+    for (var i = 0; i < upgradeButtons.length; i++) {
+      var entry = upgradeButtons[i];
+      var btn = entry.btn;
+      var level = entry.level;
+      if (level < upgradeLevel) {
+        // Already purchased
+        btn.textContent = 'Куплено \u2713';
+        btn.classList.add('disabled');
+      } else if (level === upgradeLevel) {
+        // Available for purchase
+        btn.textContent = 'Купить — $' + upgradeLevels[level].price;
+        btn.classList.remove('disabled');
+      } else {
+        // Locked — need previous level first
+        btn.textContent = 'Сначала купите ур. ' + level;
+        btn.classList.add('disabled');
+      }
+    }
+  }
+
   window.Game.Shop = {
     isOpen: function() { return isShopOpen; },
 
@@ -40,7 +68,8 @@
       var tabContents = {
         consumables: document.getElementById('shop-tab-consumables'),
         instruments: document.getElementById('shop-tab-instruments'),
-        furniture: document.getElementById('shop-tab-furniture')
+        furniture: document.getElementById('shop-tab-furniture'),
+        upgrades: document.getElementById('shop-tab-upgrades')
       };
       for (var t = 0; t < tabs.length; t++) {
         (function(tab) {
@@ -127,6 +156,34 @@
         })(itemEl.querySelector('.shop-buy-btn'), type);
       }
 
+      // --- Upgrade buy buttons ---
+      var upgradeItems = document.querySelectorAll('#shop-tab-upgrades .shop-upgrade-item');
+      for (var i = 0; i < upgradeItems.length; i++) {
+        var itemEl = upgradeItems[i];
+        var btn = itemEl.querySelector('.shop-buy-btn');
+        upgradeButtons.push({ btn: btn, item: itemEl, level: i });
+        (function(btn, level) {
+          btn.addEventListener('click', function() {
+            if (upgradeLevel !== level) return; // not available yet
+            var price = upgradeLevels[level].price;
+            var balance = Game.Cashier.getBalance();
+            if (balance < price) {
+              Game.Inventory.showNotification('Недостаточно средств!');
+              return;
+            }
+            Game.Cashier.spend(price);
+            upgradeLevel = level + 1;
+            Game.Inventory.setMaxStack(upgradeLevels[level].stack);
+            Game.Inventory.showNotification(
+              'Теперь можно хранить ' + upgradeLevels[level].stack + ' препаратов в слоте!',
+              'rgba(34, 139, 34, 0.85)'
+            );
+            refreshUpgradeButtons();
+          });
+        })(btn, i);
+      }
+      refreshUpgradeButtons();
+
       // Close button
       closeBtn.addEventListener('click', function() {
         shopEl.style.display = 'none';
@@ -150,6 +207,7 @@
           shopEl.style.display = 'block';
           controls.unlock();
           updateCounts();
+          refreshUpgradeButtons();
         }
       });
     }
