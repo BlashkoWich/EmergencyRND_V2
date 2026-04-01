@@ -115,6 +115,26 @@
     <button id="shop-close">✕</button>
   </div>
   <div id="balance-hud">Баланс: <span id="balance-value">$100</span></div>
+  <div id="time-hud">
+    <span id="day-value">День 1</span>
+    <span id="time-value">08:00</span>
+  </div>
+  <div id="task-container">
+    <div id="task-mascot"></div>
+    <div id="task-bubble">
+      <div id="task-text">Откройте смену!</div>
+    </div>
+  </div>
+  <div id="day-end-popup">
+    <h2>Итоги дня <span id="day-end-number">1</span></h2>
+    <div class="day-stats">
+      <div class="stat-row"><span>Вылечено пациентов:</span><span id="stat-served">0</span></div>
+      <div class="stat-row"><span>Потеряно пациентов:</span><span id="stat-lost">0</span></div>
+      <div class="stat-row"><span>Заработано:</span><span id="stat-earned">$0</span></div>
+      <div class="stat-row"><span>Потрачено:</span><span id="stat-spent">$0</span></div>
+    </div>
+    <button id="day-end-next">Перейти в следующий день</button>
+  </div>
   <div id="cashier-popup">
     <button id="terminal-close">&#10005;</button>
     <div class="terminal-body">
@@ -173,6 +193,7 @@
   <script src="js/furniture.js"></script>
   <script src="js/shelves.js"></script>
   <script src="js/diagnostics.js"></script>
+  <script src="js/shift.js"></script>
   <script src="js/cashier.js"></script>
 
   <script type="importmap">
@@ -237,6 +258,7 @@
     Game.Shelves.setup(THREE, scene, camera, controls, collidables);
     Game.Diagnostics.setup(controls);
     Game.Cashier.setup(THREE, scene, camera, controls, cashierDesk);
+    Game.Shift.setup(THREE, scene, camera, controls, collidables);
 
     // --- Animation loop ---
     const clock = new THREE.Clock();
@@ -254,6 +276,7 @@
       Game.Consumables.update(delta);
       Game.Shelves.update(delta);
       Game.Cashier.update(delta);
+      Game.Shift.update(delta);
 
       renderer.render(scene, camera);
     }

@@ -93,8 +93,10 @@ Game.Cashier.update(delta)
 Game.Cashier.isPopupOpen()     // → boolean
 Game.Cashier.hasInteraction()  // → boolean (hover на терминал/пациента)
 Game.Cashier.getBalance()      // → number
-Game.Cashier.spend(amount)     // списание средств с баланса
+Game.Cashier.spend(amount)     // списание средств с баланса (+ trackSpending)
 Game.Cashier.addPatientToQueue(patient)  // добавить пациента в очередь на оплату
+Game.Cashier.clearQueue()      // очистка очереди (при переходе между днями)
+Game.Cashier.hasPatients()     // → boolean (есть ли пациенты на кассе/в очереди)
 ```
 
 ### Internal State

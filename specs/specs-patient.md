@@ -92,11 +92,11 @@ CONSUMABLE_KEYS: ['painkiller', 'antihistamine', 'strepsils']
 - Пациенты в очереди повёрнуты на `Math.PI` (лицом к стойке)
 
 ## Spawning
-- Первый пациент появляется сразу при загрузке, телепортируется на позицию очереди `(0, 0, -7.5)` (параметр `instant=true`)
-- Далее каждые `SPAWN_INTERVAL = 10` секунд (таймер в animation loop)
+- Пациенты спавнятся ТОЛЬКО когда смена открыта (`Game.Shift.isOpen() === true`)
+- Первый пациент спавнится при открытии смены через `Game.Patients.spawnFirstPatient()` — заходит пешком (НЕ телепорт)
+- Далее каждые `SPAWN_INTERVAL = 10` секунд (таймер в animation loop, только при открытой смене)
 - Если `queue.length >= maxQueue` → спавн не происходит, уведомление о переполнении (maxQueue = min(2 + totalFurniture - 5, 10), min 2)
-- Точка появления обычных пациентов: `(0, 0, 1)` — у входа
-- `spawnPatient(instant)` — если `instant=true`, пациент сразу ставится на queueTarget
+- Точка появления: `(0, 0, 1)` — у входа, пациент идёт пешком к очереди
 - При создании выбирается случайный тип из `CONSUMABLE_KEYS`, затем случайный case из `MEDICAL_DATA[type].cases[]` (symptom, diagnosis, complaint — связный кейс)
 - Генерируются витальные показатели через `generateVitals(severity.key)` — значения коррелируют с тяжестью
 - Случайный возраст 18-75 через `randomInt(18, 75)`

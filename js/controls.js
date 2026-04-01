@@ -65,6 +65,7 @@
         if (Game.Shop && Game.Shop.isOpen()) return;
         if (Game.Patients && Game.Patients.isPopupOpen()) return;
         if (Game.Diagnostics && Game.Diagnostics.isActive()) return;
+        if (Game.Shift && Game.Shift.isPopupOpen()) return;
         overlay.style.display = 'flex';
         crosshairEl.style.display = 'none';
         document.getElementById('interact-hint').style.display = 'none';

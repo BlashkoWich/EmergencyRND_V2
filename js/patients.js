@@ -541,6 +541,10 @@
 
     popupEl.style.display = 'block';
 
+    // Reset button visibility (may have been hidden by diagnosis reveal)
+    btnBed.style.display = '';
+    btnDismiss.style.display = '';
+
     // Bed/chair availability (use dynamic furniture system)
     var indoorBeds = Game.Furniture.getIndoorBeds();
     var indoorChairs = Game.Furniture.getIndoorChairs();
@@ -1156,6 +1160,8 @@
     patient.treated = false; // Stop recovery logic
     patient.anim.recovered = true;
     patient.anim.targetPose = 'standing';
+    // Track served
+    if (Game.Shift) Game.Shift.trackPatientServed();
     // Send to cashier
     Game.Cashier.addPatientToQueue(patient);
   }
@@ -1253,6 +1259,7 @@
             p.hp = 0;
             updateHealthBarTexture(p);
             Game.Inventory.showNotification('Пациент ушел, не дождавшись помощи');
+            if (Game.Shift) Game.Shift.trackPatientLost();
             removePatient(p);
             break;
           }
@@ -1453,6 +1460,14 @@
   window.Game.Patients = {
     hasInteraction: function() { return !!hoveredPatient || !!popupPatient; },
     isPopupOpen: function() { return !!popupPatient; },
+    getPatientCount: function() { return patients.length; },
+    getActivePatientCount: function() {
+      var count = 0;
+      for (var i = 0; i < patients.length; i++) {
+        if (patients[i].state !== 'leaving') count++;
+      }
+      return count;
+    },
     getHoveredPatient: function() { return hoveredPatient; },
     revealDiagnosis: function(patient) { revealDiagnosis(patient); },
     revealDiagnosisAnimated: function(patient) { revealDiagnosisAnimated(patient); },
@@ -1574,22 +1589,50 @@
         closePopup();
       });
 
-      // Spawn first patient immediately
-      spawnPatient(true);
+      // Don't spawn first patient — shift system controls this
+    },
+
+    spawnFirstPatient: function() {
+      spawnPatient();
+    },
+
+    clearAll: function() {
+      // Remove all patients from scene
+      for (var i = patients.length - 1; i >= 0; i--) {
+        var p = patients[i];
+        if (p.indicator) { scene.remove(p.indicator); p.indicator = null; }
+        if (p.healthBar) { scene.remove(p.healthBar); p.healthBar = null; }
+        if (p.destination) { p.destination.occupied = false; }
+        scene.remove(p.mesh);
+      }
+      patients.length = 0;
+      queue.length = 0;
+      hoveredPatient = null;
+      popupPatient = null;
+      spawnTimer = 0;
+      // Remove heal particles
+      for (var j = healParticles.length - 1; j >= 0; j--) {
+        scene.remove(healParticles[j].mesh);
+      }
+      healParticles.length = 0;
     },
 
     update: function(delta) {
-      // Spawn patients
-      spawnTimer += delta;
-      if (spawnTimer >= SPAWN_INTERVAL) {
-        spawnTimer = 0;
-        var maxQueue = Math.min(2 + Game.Furniture.getAllBeds().length + Game.Furniture.getAllChairs().length - 5, 10);
-        if (maxQueue < 2) maxQueue = 2;
-        if (queue.length >= maxQueue) {
-          Game.Inventory.showNotification('Пациент не смог зайти из-за того, что очередь переполнена');
-        } else {
-          spawnPatient();
+      // Spawn patients only when shift is open
+      if (Game.Shift && Game.Shift.isOpen()) {
+        spawnTimer += delta;
+        if (spawnTimer >= SPAWN_INTERVAL) {
+          spawnTimer = 0;
+          var maxQueue = Math.min(2 + Game.Furniture.getAllBeds().length + Game.Furniture.getAllChairs().length - 5, 10);
+          if (maxQueue < 2) maxQueue = 2;
+          if (queue.length >= maxQueue) {
+            Game.Inventory.showNotification('Пациент не смог зайти из-за того, что очередь переполнена');
+          } else {
+            spawnPatient();
+          }
         }
+      } else {
+        spawnTimer = 0;
       }
 
       updatePatients(delta);

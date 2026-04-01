@@ -70,6 +70,7 @@
     if (parseInt(enteredAmount, 10) !== required) return;
 
     balance += required;
+    if (Game.Shift) Game.Shift.trackEarning(required);
     updateBalanceHUD();
     closeTerminal();
 
@@ -165,10 +166,26 @@
     getBalance: function() { return balance; },
     spend: function(amount) {
       balance -= amount;
+      if (Game.Shift) Game.Shift.trackSpending(amount);
       updateBalanceHUD();
     },
 
     hasInteraction: function() { return hoveredTerminal; },
+    hasPatients: function() { return !!currentPatient || cashierQueue.length > 0; },
+
+    clearQueue: function() {
+      // Remove all patients from cashier queue
+      for (var i = 0; i < cashierQueue.length; i++) {
+        var p = cashierQueue[i];
+        if (p.mesh) scene.remove(p.mesh);
+      }
+      if (currentPatient && currentPatient.mesh) {
+        scene.remove(currentPatient.mesh);
+      }
+      cashierQueue.length = 0;
+      currentPatient = null;
+      if (isOpen) closeTerminal();
+    },
 
     addPatientToQueue: function(patient) {
       if (!currentPatient) {
