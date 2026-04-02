@@ -186,6 +186,7 @@ waitingChairs = [
    - Удаляет indicator и healthBar
    - `patient.treated = false` (остановка логики восстановления)
    - `patient.anim.recovered = true` — скорость и походка становятся нормальными
+   - `removeIllnessVisuals(patient)` — убирает все визуальные индикаторы болезни (тинты, масштаб, доп. меши)
    - `patient.anim.targetPose = 'standing'` — пациент встаёт с кровати (плавный переход из lying), сдвигается на standing position
    - Вызывает `Game.Cashier.addPatientToQueue(patient)`
 2. Пациент получает `state = 'discharged'`, `targetPos` к кассе, идёт нормальной походкой
@@ -291,6 +292,54 @@ waitingChairs = [
   - `holdThroat`: hunch=0.15, одна рука у горла (shoulder=-1.4, elbow=-2.2), вторая свободна
   - `limp`: hunch=0.12, руки свободны, хромота
 
+## Illness Visual Indicators
+- При спавне пациента вызывается `applyIllnessVisuals(patient)` — добавляет визуальные отличия на 3D-модель в зависимости от типа болезни
+- При выписке (`dischargePatient`) вызывается `removeIllnessVisuals(patient)` — убирает все визуалы, пациент выглядит нормально
+- Также вызывается в `removePatient()` и `clearAll()` для корректной очистки памяти
+
+### Данные
+- `ILLNESS_REGION_MAP` — маппинг конкретных диагнозов на зоны тела (head, back, leg, arm, neck, stomach, teeth, chest, fullBody, throat, both)
+- `getIllnessRegion(consumableType, diagnosis)` — возвращает зону тела
+- `getIllnessSeverityScale(patient)` — severity → множитель: severe=1.0, medium=0.6, mild=0.3
+- Для `needsDiagnosis` пациентов используются `hiddenConsumable`/`hiddenDiagnosis` — визуально болезнь видна даже без поставленного диагноза
+
+### Хранение на пациенте
+```js
+mesh.userData.illnessVisuals = [{ mesh, parent, resetScale? }]  // добавленные меши и изменённые scale
+mesh.userData.illnessMaterials = [{ mesh, originalColor }]       // изменённые материалы (для восстановления)
+```
+
+### Визуальные эффекты по типам
+
+**Antihistamine (аллергия):**
+- Ярко-красная голова (сильный тинт 0xff0000)
+- Увеличенная голова (scale 1.1–1.3 по severity)
+- Красная кожа на всех руках (тинт 0xff3333)
+
+**Painkiller (боль) — зависит от зоны:**
+| Зона | Визуал |
+|------|--------|
+| head | Красная увеличенная голова (scale 1.15–1.35) |
+| back | Красный торс |
+| leg | Опухшие красные ноги (scale 1.2–1.7) |
+| arm | Опухшая красная рука (scale 1.3–1.7) + белая повязка-цилиндр |
+| neck | Белый шейный бандаж (CylinderGeometry) |
+| stomach | Зеленоватое тело и голова (тошнота) |
+| teeth | Увеличенная красноватая голова (асимметричный scale) |
+| chest | Красный торс |
+| fullBody | Красный тинт на всём теле (торс, голова, руки, ноги) |
+
+**Strepsils (горло/дыхание):**
+| Зона | Визуал |
+|------|--------|
+| throat | Красный цилиндр-шея (опухшая) + красное лицо |
+| chest | Красный торс + увеличенный (scale 1.0–1.15) |
+| both | Оба эффекта с 70% интенсивностью |
+
+### Масштабирование по severity
+- Влияет на: интенсивность цветовых тинтов, размер увеличения (scale), размер доп. мешей
+- Формула тинта: `color.lerp(targetColor, baseFactor + severityFactor * sev)`
+
 ## Pose Transitions (standing → sitting / lying)
 - Плавная интерполяция (smoothstep) за ~0.4с (`POSE_TRANSITION_SPEED = 2.5`)
 - **Sitting** (зона ожидания): bodyContainer опускается на 0.3, ноги сгибаются на -PI/2 (вперёд)
@@ -390,6 +439,7 @@ PARTICLE_LIFETIME = 1.2
 PARTICLE_SPEED = 0.6
 INJURY_POSES{}           // позы травм (holdStomach, holdBack, holdHead, holdThroat, limp)
 INJURY_MAP{}             // маппинг consumable type → возможные типы травм
+ILLNESS_REGION_MAP{}     // маппинг диагнозов → зона тела (head, back, leg, arm, neck, stomach, teeth, chest, fullBody, throat, both)
 // Витальные показатели (generateVitals):
 //   severe: temp 38.5-39.8, sys 150-180, dia 95-110, pulse 100-130
 //   medium: temp 37.2-38.4, sys 130-150, dia 85-95, pulse 80-100
