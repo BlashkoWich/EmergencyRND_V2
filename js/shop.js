@@ -235,13 +235,7 @@
         (function(btn, t) {
           btn.addEventListener('click', function() {
             if (!Game.Staff) return;
-            var balance = Game.Cashier.getBalance();
-            if (balance < 100) {
-              Game.Inventory.showNotification('Недостаточно средств!');
-              return;
-            }
-            var result = Game.Staff.hire(t);
-            if (result) Game.Cashier.spend(100);
+            Game.Staff.hire(t);
             refreshStaffList();
           });
         })(itemEl.querySelector('.staff-hire-btn'), type);

@@ -7,11 +7,11 @@
 
   // ====== STAFF TYPES ======
   var STAFF_TYPES = {
-    administrator: { name: 'Администратор', salary: 30, color: 0x2266aa, hatColor: 0x1a4a88 },
-    cashier:       { name: 'Кассир',        salary: 25, color: 0x22aa66, hatColor: 0x188844 },
-    diagnostician: { name: 'Диагност',      salary: 40, color: 0x8844cc, hatColor: 0x6633aa },
-    nurse:         { name: 'Медсестра',      salary: 35, color: 0xcc4488, hatColor: 0xaa3366 },
-    janitor:       { name: 'Уборщик',       salary: 20, color: 0x888844, hatColor: 0x666633 }
+    administrator: { name: 'Администратор', salary: 100, color: 0x2266aa, hatColor: 0x1a4a88 },
+    cashier:       { name: 'Кассир',        salary: 100, color: 0x22aa66, hatColor: 0x188844 },
+    diagnostician: { name: 'Диагност',      salary: 100, color: 0x8844cc, hatColor: 0x6633aa },
+    nurse:         { name: 'Медсестра',      salary: 100, color: 0xcc4488, hatColor: 0xaa3366 },
+    janitor:       { name: 'Уборщик',       salary: 100, color: 0x888844, hatColor: 0x666633 }
   };
 
   var STAFF_SPEED = 3.5;

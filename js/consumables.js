@@ -26,6 +26,7 @@
   var GRAVITY = -9.8;
   var GROUND_Y = 0;
   var DELIVERY_ZONE = { cx: 0, cz: 5, hw: 1.5, hd: 1.0 };
+  var TRASH_ZONE = { cx: 3, cz: 1.5, radius: 0.8 };
   var DROP_FORWARD_SPEED = 4.0;
   var DROP_UP_SPEED = 2.0;
 
@@ -42,6 +43,7 @@
   var interactRay, screenCenter;
   var hintEl, heldBoxHintEl;
   var deliveryZoneMesh;
+  var trashBinMesh;
   var physicsRay;
 
   function createDeliveryZone() {
@@ -67,6 +69,97 @@
     deliveryZoneMesh.rotation.x = -Math.PI / 2;
     deliveryZoneMesh.position.set(DELIVERY_ZONE.cx, 0.01, DELIVERY_ZONE.cz);
     scene.add(deliveryZoneMesh);
+  }
+
+  function createTrashBin() {
+    var group = new THREE.Group();
+
+    // Body — dark gray cylinder, slight taper
+    var bodyGeo = new THREE.CylinderGeometry(0.28, 0.22, 0.7, 14);
+    var bodyMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.6, metalness: 0.15 });
+    var body = new THREE.Mesh(bodyGeo, bodyMat);
+    body.position.y = 0.35;
+    body.castShadow = true;
+    group.add(body);
+
+    // Rim — torus at top
+    var rimGeo = new THREE.TorusGeometry(0.28, 0.025, 8, 18);
+    var rimMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.3, metalness: 0.4 });
+    var rim = new THREE.Mesh(rimGeo, rimMat);
+    rim.rotation.x = Math.PI / 2;
+    rim.position.y = 0.7;
+    group.add(rim);
+
+    // Red accent stripe
+    var stripeGeo = new THREE.CylinderGeometry(0.26, 0.26, 0.06, 14);
+    var stripeMat = new THREE.MeshStandardMaterial({ color: 0xcc3333, roughness: 0.5 });
+    var stripe = new THREE.Mesh(stripeGeo, stripeMat);
+    stripe.position.y = 0.55;
+    group.add(stripe);
+
+    // Inner void (dark top to look open)
+    var innerGeo = new THREE.CylinderGeometry(0.24, 0.19, 0.68, 14);
+    var innerMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9 });
+    var inner = new THREE.Mesh(innerGeo, innerMat);
+    inner.position.y = 0.36;
+    group.add(inner);
+
+    group.position.set(TRASH_ZONE.cx, 0, TRASH_ZONE.cz);
+    scene.add(group);
+    trashBinMesh = group;
+
+    // Collision box
+    var colBox = new THREE.Mesh(
+      new THREE.BoxGeometry(0.65, 0.8, 0.65),
+      new THREE.MeshBasicMaterial({ visible: false })
+    );
+    colBox.position.set(TRASH_ZONE.cx, 0.4, TRASH_ZONE.cz);
+    scene.add(colBox);
+    collidables.push(colBox);
+
+    // Ground zone indicator
+    var canvas = document.createElement('canvas');
+    canvas.width = 128; canvas.height = 128;
+    var ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'rgba(200, 60, 60, 0.18)';
+    ctx.fillRect(0, 0, 128, 128);
+    ctx.strokeStyle = '#cc3333';
+    ctx.lineWidth = 4;
+    ctx.setLineDash([10, 6]);
+    ctx.strokeRect(4, 4, 120, 120);
+    ctx.fillStyle = '#cc3333';
+    ctx.font = 'bold 22px Segoe UI, Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('\u041C\u0423\u0421\u041E\u0420', 64, 64);
+
+    var tex = new THREE.CanvasTexture(canvas);
+    var zoneMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.4, 1.4),
+      new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false })
+    );
+    zoneMesh.rotation.x = -Math.PI / 2;
+    zoneMesh.position.set(TRASH_ZONE.cx, 0.01, TRASH_ZONE.cz);
+    scene.add(zoneMesh);
+
+    // Sign on wall
+  }
+
+  function markBoxEmpty(box) {
+    if (box.empty) return;
+    box.empty = true;
+    // Flatten the box visually
+    box.mesh.scale.y = 0.5;
+    box.mesh.position.y = box.mesh.position.y - BOX_SIZE.y * 0.25;
+    // Fade materials to gray
+    box.mesh.traverse(function(child) {
+      if (child.isMesh && child.material) {
+        child.material = child.material.clone();
+        child.material.color.set(0x888888);
+        child.material.opacity = 0.7;
+        child.material.transparent = true;
+      }
+    });
   }
 
   // --- Medical 3D Models ---
@@ -577,6 +670,30 @@
       if (box.grounded || box.pickedUp) continue;
       applyItemPhysics(box, BOX_SIZE.y / 2, BOX_SIZE.x / 2, delta, downDir);
     }
+
+    // Trash bin collision — destroy items/boxes that land in the zone
+    var tr = TRASH_ZONE.radius * TRASH_ZONE.radius;
+    for (var i = groundItems.length - 1; i >= 0; i--) {
+      var it = groundItems[i];
+      if (it.pickedUp) continue;
+      var p = it.mesh.position;
+      var dx = p.x - TRASH_ZONE.cx, dz = p.z - TRASH_ZONE.cz;
+      if (dx * dx + dz * dz < tr && p.y < 1.0) {
+        scene.remove(it.mesh);
+        groundItems.splice(i, 1);
+      }
+    }
+    for (var i = groundBoxes.length - 1; i >= 0; i--) {
+      var bx = groundBoxes[i];
+      if (bx.pickedUp) continue;
+      var p = bx.mesh.position;
+      var dx = p.x - TRASH_ZONE.cx, dz = p.z - TRASH_ZONE.cz;
+      if (dx * dx + dz * dz < tr && p.y < 1.0) {
+        scene.remove(bx.mesh);
+        groundBoxes.splice(i, 1);
+        if (hoveredBox === bx) { hoveredBox = null; hintEl.style.display = 'none'; }
+      }
+    }
   }
 
   // --- Highlight / Unhighlight ---
@@ -644,7 +761,9 @@
 
   function updateHeldBoxHints() {
     if (heldBox && controls.isLocked) {
-      heldBoxHintEl.innerHTML = 'ЛКМ — Взять препарат (осталось: ' + heldBox.remaining + ')<br>G — Бросить коробку';
+      heldBoxHintEl.innerHTML = heldBox.empty
+        ? 'G — Выбросить в мусорку'
+        : 'ЛКМ — Взять препарат (осталось: ' + heldBox.remaining + ')<br>G — Бросить коробку';
       heldBoxHintEl.style.display = 'block';
     } else {
       heldBoxHintEl.style.display = 'none';
@@ -685,7 +804,9 @@
     }
 
     if (hoveredBox) {
-      hintEl.textContent = 'ЛКМ — Взять препарат (' + hoveredBox.remaining + ' шт.)  |  E — Поднять коробку';
+      hintEl.textContent = hoveredBox.empty
+        ? 'E — Поднять пустую коробку'
+        : 'ЛКМ — Взять препарат (' + hoveredBox.remaining + ' шт.)  |  E — Поднять коробку';
       hintEl.style.display = 'block';
       return true;
     }
@@ -850,6 +971,7 @@
       heldBoxHintEl = document.getElementById('held-box-hint');
 
       createDeliveryZone();
+      createTrashBin();
 
       // --- LMB: take from held box / pickup ground item ---
       document.addEventListener('mousedown', function(e) {
@@ -867,10 +989,7 @@
           if (Game.Inventory.addItem(heldBox.type)) {
             heldBox.remaining--;
             if (heldBox.remaining <= 0) {
-              scene.remove(heldBox.mesh);
-              var idx = groundBoxes.indexOf(heldBox);
-              if (idx !== -1) groundBoxes.splice(idx, 1);
-              heldBox = null;
+              markBoxEmpty(heldBox);
             }
           } else {
             Game.Inventory.showNotification('Инвентарь полон');
@@ -884,12 +1003,7 @@
           if (Game.Inventory.addItem(hoveredBox.type)) {
             hoveredBox.remaining--;
             if (hoveredBox.remaining <= 0) {
-              scene.remove(hoveredBox.mesh);
-              unhighlightGroup(hoveredBox.mesh);
-              var idx = groundBoxes.indexOf(hoveredBox);
-              if (idx !== -1) groundBoxes.splice(idx, 1);
-              hoveredBox = null;
-              hintEl.style.display = 'none';
+              markBoxEmpty(hoveredBox);
             }
           } else {
             Game.Inventory.showNotification('Инвентарь полон');
