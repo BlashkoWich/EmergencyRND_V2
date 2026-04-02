@@ -236,6 +236,7 @@
 
   function onMouseDown(e) {
     if (e.button !== 0 || !controls.isLocked) return;
+    if (Game.Furniture.isCarrying()) return;
     if (!isHovered || isWashing) return;
     if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
     if (Game.Cashier && Game.Cashier.isPopupOpen()) return;
@@ -258,6 +259,7 @@
   function onKeyDown(e) {
     if (e.code !== 'KeyE') return;
     if (!controls.isLocked || !isHovered) return;
+    if (Game.Furniture.isCarrying()) return;
     if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
     if (Game.Cashier && Game.Cashier.isPopupOpen()) return;
     if (Game.Diagnostics && Game.Diagnostics.isActive()) return;
@@ -290,6 +292,18 @@
 
       document.addEventListener('mousedown', onMouseDown);
       document.addEventListener('keydown', onKeyDown);
+
+      // Register as draggable fixture
+      Game.Furniture.registerFixture({
+        type: 'washingMachine',
+        group: machineGroup,
+        collisionBox: machineCollision,
+        canPickUp: function() { return !isWashing; },
+        onMoved: function(pos) {
+          MACHINE_X = pos.x;
+          MACHINE_Z = pos.z;
+        }
+      });
     },
 
     update: function(delta) {

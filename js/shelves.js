@@ -70,6 +70,7 @@
     // Shelf data with 9 slots (3 per board, 3 boards)
     var shelfData = {
       mesh: group,
+      collisionBox: box,
       highlightParts: [],
       slots: []
     };
@@ -324,6 +325,12 @@
       hoveredShelf = null; hoveredSlot = null; shelfMode = null;
       return false;
     }
+    if (Game.Furniture.isCarrying()) {
+      if (hoveredShelf && shelfMode === 'place') unhighlightShelf(hoveredShelf);
+      if (hoveredSlot && shelfMode === 'take') unhighlightItemMesh(hoveredSlot.itemMesh);
+      hoveredShelf = null; hoveredSlot = null; shelfMode = null;
+      return false;
+    }
     if (Game.Patients.hasInteraction() || Game.Consumables.hasInteraction() || Game.Consumables.hasBoxInteraction()) {
       if (hoveredShelf && shelfMode === 'place') unhighlightShelf(hoveredShelf);
       if (hoveredSlot && shelfMode === 'take') unhighlightItemMesh(hoveredSlot.itemMesh);
@@ -446,9 +453,52 @@
       createShelf(-5.5, -11.5, 0, collidables);
       createShelf(-4.2, -11.5, 0, collidables);
 
+      // Register shelves as draggable fixtures
+      var boardYs = [0.3, 0.7, 1.1];
+      var slotXOffsets = [-0.35, 0, 0.35];
+      for (var si = 0; si < shelves.length; si++) {
+        (function(shelfData) {
+          Game.Furniture.registerFixture({
+            type: 'shelf',
+            group: shelfData.mesh,
+            collisionBox: shelfData.collisionBox,
+            onMoved: function(pos, rotY) {
+              shelfData.mesh.updateMatrixWorld(true);
+              var idx = 0;
+              for (var bi = 0; bi < boardYs.length; bi++) {
+                for (var sj = 0; sj < slotXOffsets.length; sj++) {
+                  var localPos = new THREE.Vector3(slotXOffsets[sj], boardYs[bi] + 0.04, 0.05);
+                  var worldPos = localPos.clone();
+                  shelfData.mesh.localToWorld(worldPos);
+                  shelfData.slots[idx].pos.copy(worldPos);
+                  // Reposition item mesh if exists
+                  if (shelfData.slots[idx].itemMesh) {
+                    var info = getItemInfo(shelfData.slots[idx].item);
+                    var isInstrument = Game.Consumables.isInstrument(shelfData.slots[idx].item);
+                    var itemH = isInstrument ? info.size.y * INSTRUMENT_SHELF_SCALE : info.size.y;
+                    shelfData.slots[idx].itemMesh.position.copy(worldPos);
+                    shelfData.slots[idx].itemMesh.position.y += itemH / 2;
+                  }
+                  // Reposition count sprite
+                  if (shelfData.slots[idx].countSprite) {
+                    var info2 = getItemInfo(shelfData.slots[idx].item);
+                    var isInst2 = Game.Consumables.isInstrument(shelfData.slots[idx].item);
+                    var h2 = isInst2 ? info2.size.y * INSTRUMENT_SHELF_SCALE : info2.size.y;
+                    shelfData.slots[idx].countSprite.position.copy(worldPos);
+                    shelfData.slots[idx].countSprite.position.y += h2 + 0.08;
+                  }
+                  idx++;
+                }
+              }
+            }
+          });
+        })(shelves[si]);
+      }
+
       // Take item from shelf on LMB
       document.addEventListener('mousedown', function(e) {
         if (e.button !== 0 || !controls.isLocked) return;
+        if (Game.Furniture.isCarrying()) return;
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
         if (Game.Patients.hasInteraction() || Game.Consumables.hasInteraction() || Game.Consumables.hasBoxInteraction()) return;
         if (Game.Consumables.isHoldingBox()) return;
@@ -466,6 +516,7 @@
       // Place item on shelf on E
       document.addEventListener('keydown', function(e) {
         if (e.code !== 'KeyE' || !controls.isLocked) return;
+        if (Game.Furniture.isCarrying()) return;
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
         if (Game.Patients.hasInteraction() || Game.Consumables.hasInteraction() || Game.Consumables.hasBoxInteraction()) return;
         if (Game.Consumables.isHoldingBox()) return;

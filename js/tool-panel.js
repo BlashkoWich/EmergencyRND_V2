@@ -17,6 +17,7 @@
 
   var THREE, scene, camera, controls;
   var panelGroup = null;
+  var panelCollisionBox = null;
   var slots = [];
   var hoveredSlot = null;
   var panelMode = null; // 'place' or 'take'
@@ -127,13 +128,13 @@
     });
 
     // Collision box
-    var collisionBox = new THREE.Mesh(
+    panelCollisionBox = new THREE.Mesh(
       new THREE.BoxGeometry(PANEL_WIDTH + 0.1, PANEL_HEIGHT + 0.1, 0.3),
       new THREE.MeshBasicMaterial({ visible: false })
     );
-    collisionBox.position.set(PANEL_X, PANEL_Y_BOTTOM + PANEL_HEIGHT / 2, PANEL_Z);
-    scene.add(collisionBox);
-    collidables.push(collisionBox);
+    panelCollisionBox.position.set(PANEL_X, PANEL_Y_BOTTOM + PANEL_HEIGHT / 2, PANEL_Z);
+    scene.add(panelCollisionBox);
+    collidables.push(panelCollisionBox);
 
     // Wall sign
     Game.Helpers.createSign(THREE, scene, 'ИНСТРУМЕНТЫ', PANEL_X, PANEL_Y_BOTTOM + PANEL_HEIGHT + 0.25, -11.78, 0);
@@ -239,6 +240,10 @@
 
   function updateInteraction() {
     if (!controls.isLocked || Game.Patients.isPopupOpen() || Game.Shop.isOpen()) {
+      clearInteraction();
+      return false;
+    }
+    if (Game.Furniture.isCarrying()) {
       clearInteraction();
       return false;
     }
@@ -360,9 +365,35 @@
         placeItemOnSlot(slots[i]);
       }
 
+      // Register as draggable fixture
+      Game.Furniture.registerFixture({
+        type: 'toolPanel',
+        group: panelGroup,
+        collisionBox: panelCollisionBox,
+        onMoved: function(pos, rotY) {
+          PANEL_X = pos.x;
+          PANEL_Z = pos.z;
+          panelGroup.updateMatrixWorld(true);
+          // Recompute slot world positions
+          for (var si = 0; si < SLOT_DEFS.length; si++) {
+            var def = SLOT_DEFS[si];
+            var localPos = new THREE.Vector3(0, def.yOffset, PANEL_DEPTH / 2 + 0.08);
+            var worldPos = localPos.clone();
+            panelGroup.localToWorld(worldPos);
+            slots[si].pos.copy(worldPos);
+            // Reposition item mesh
+            if (slots[si].itemMesh) {
+              slots[si].itemMesh.position.copy(worldPos);
+              slots[si].itemMesh.rotation.z = 0.15;
+            }
+          }
+        }
+      });
+
       // Take instrument from panel on LMB
       document.addEventListener('mousedown', function(e) {
         if (e.button !== 0 || !controls.isLocked) return;
+        if (Game.Furniture.isCarrying()) return;
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
         if (Game.Patients.hasInteraction() || Game.Consumables.hasInteraction() || Game.Consumables.hasBoxInteraction()) return;
         if (Game.Consumables.isHoldingBox()) return;
@@ -380,6 +411,7 @@
       // Place instrument on panel on E
       document.addEventListener('keydown', function(e) {
         if (e.code !== 'KeyE' || !controls.isLocked) return;
+        if (Game.Furniture.isCarrying()) return;
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
         if (Game.Patients.hasInteraction() || Game.Consumables.hasInteraction() || Game.Consumables.hasBoxInteraction()) return;
         if (Game.Consumables.isHoldingBox()) return;

@@ -4,6 +4,11 @@
   var THREE, scene, camera, controls;
   var terminalMeshes = [];
   var patientPos;
+  var cashierDeskGroup = null;
+  var cashierCollisionBox = null;
+  // Offset from desk center to patient position (computed in setup)
+  var patientOffsetX = 0;
+  var patientOffsetZ = 0;
   var balance = 350;
   var cashierQueue = [];
   var currentPatient = null;
@@ -36,7 +41,7 @@
   var screenBreakdownEl, screenXpEl;
 
   function getQueuePosition(index) {
-    return new THREE.Vector3(3.5, 0, -8.0 + index * 1.0);
+    return new THREE.Vector3(patientPos.x, 0, patientPos.z + index * 1.0);
   }
 
   function updateBalanceHUD() {
@@ -153,6 +158,10 @@
 
   function updateHoverDetection() {
     if (isOpen || !controls.isLocked) {
+      hoveredTerminal = false;
+      return;
+    }
+    if (Game.Furniture.isCarrying()) {
       hoveredTerminal = false;
       return;
     }
@@ -303,6 +312,12 @@
       controls = _controls;
       terminalMeshes = cashierDesk.terminalMeshes;
       patientPos = cashierDesk.patientPos;
+      cashierDeskGroup = cashierDesk.group;
+      cashierCollisionBox = cashierDesk.collisionBox;
+
+      // Store offset from desk center to patient position
+      patientOffsetX = patientPos.x - cashierDeskGroup.position.x;
+      patientOffsetZ = patientPos.z - cashierDeskGroup.position.z;
 
       interactRay = new THREE.Raycaster();
       interactRay.far = 3;
@@ -348,6 +363,7 @@
       // Click to open terminal
       document.addEventListener('mousedown', function(e) {
         if (e.button !== 0 || !controls.isLocked) return;
+        if (Game.Furniture.isCarrying()) return;
         if (isOpen) return;
         if (Game.Patients.isPopupOpen()) return;
         if (Game.Shop.isOpen()) return;
@@ -362,6 +378,27 @@
       if (closeBtn) {
         closeBtn.addEventListener('click', function() {
           closeTerminal();
+        });
+      }
+
+      // Register cashier desk as draggable fixture
+      if (cashierDeskGroup && cashierCollisionBox) {
+        Game.Furniture.registerFixture({
+          type: 'cashierDesk',
+          group: cashierDeskGroup,
+          collisionBox: cashierCollisionBox,
+          canPickUp: function() { return !currentPatient; },
+          onMoved: function(pos) {
+            // Update patient position relative to new desk position
+            patientPos.set(pos.x + patientOffsetX, 0, pos.z + patientOffsetZ);
+            // Update targets for queued patients
+            if (currentPatient && (currentPatient.state === 'discharged' || currentPatient.state === 'atCashier')) {
+              currentPatient.targetPos = patientPos.clone();
+            }
+            for (var qi = 0; qi < cashierQueue.length; qi++) {
+              cashierQueue[qi].targetPos = getQueuePosition(qi + 1);
+            }
+          }
         });
       }
     },

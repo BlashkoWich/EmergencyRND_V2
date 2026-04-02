@@ -1412,9 +1412,33 @@
       baskets.dirty.mesh = dirtyData.mesh;
       baskets.dirty.collisionBox = dirtyData.collisionBox;
 
+      // Register baskets as draggable fixtures
+      (function() {
+        var basketKeys = ['clean', 'dirty'];
+        var basketTypes = { clean: 'basketClean', dirty: 'basketDirty' };
+        for (var b = 0; b < basketKeys.length; b++) {
+          (function(key) {
+            var basket = baskets[key];
+            Game.Furniture.registerFixture({
+              type: basketTypes[key],
+              group: basket.mesh,
+              collisionBox: basket.collisionBox,
+              onMoved: function(pos) {
+                basket.pos.set(pos.x, pos.y, pos.z);
+                // Reposition count sprite
+                if (basket.countSprite) {
+                  basket.countSprite.position.set(pos.x, 0.8, pos.z);
+                }
+              }
+            });
+          })(basketKeys[b]);
+        }
+      })();
+
       // Basket LMB handler (take)
       document.addEventListener('mousedown', function(e) {
         if (e.button !== 0 || !controls.isLocked) return;
+        if (Game.Furniture.isCarrying()) return;
         if (!hoveredBasket || basketMode !== 'take') return;
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
         if (Game.Cashier && Game.Cashier.isPopupOpen()) return;
@@ -1429,6 +1453,7 @@
       // Basket E handler (place)
       document.addEventListener('keydown', function(e) {
         if (e.code !== 'KeyE' || !controls.isLocked) return;
+        if (Game.Furniture.isCarrying()) return;
         if (!hoveredBasket) return;
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
         if (Game.Cashier && Game.Cashier.isPopupOpen()) return;

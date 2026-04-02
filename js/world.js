@@ -242,30 +242,31 @@
       }
 
       // --- Cashier desk (right of reception) ---
+      var cashierDeskGroup = new THREE.Group();
+
       var cashierTableMat = new THREE.MeshStandardMaterial({ color: 0x8B6F47, roughness: 0.6 });
       var cashierTable = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.6), cashierTableMat);
-      cashierTable.position.set(3.5, 0.4, -9.5); cashierTable.castShadow = true; scene.add(cashierTable);
-      var cashierTableBox = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.8, 0.7), new THREE.MeshBasicMaterial({ visible: false }));
-      cashierTableBox.position.set(3.5, 0.4, -9.5); scene.add(cashierTableBox); collidables.push(cashierTableBox);
+      cashierTable.position.set(0, 0.4, 0); cashierTable.castShadow = true; cashierDeskGroup.add(cashierTable);
 
-      // Card terminal on the table
+      // Card terminal on the table (positions relative to group origin)
       var terminalMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.4, metalness: 0.3 });
       var terminalBody = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.04, 0.28), terminalMat);
-      terminalBody.position.set(3.5, 0.84, -9.5); terminalBody.castShadow = true; scene.add(terminalBody);
+      terminalBody.position.set(0, 0.84, 0); terminalBody.castShadow = true; cashierDeskGroup.add(terminalBody);
 
       var terminalScreenMat = new THREE.MeshStandardMaterial({ color: 0x1a3a1a, roughness: 0.3, emissive: 0x0a1a0a, emissiveIntensity: 0.5 });
       var terminalScreen = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.005, 0.10), terminalScreenMat);
-      terminalScreen.position.set(3.5, 0.865, -9.42); scene.add(terminalScreen);
+      terminalScreen.position.set(0, 0.865, 0.08); cashierDeskGroup.add(terminalScreen);
 
       // Terminal keypad area (light gray dots area)
       var keypadMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.5 });
       var keypadArea = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.005, 0.12), keypadMat);
-      keypadArea.position.set(3.5, 0.865, -9.58); scene.add(keypadArea);
+      keypadArea.position.set(0, 0.865, -0.08); cashierDeskGroup.add(keypadArea);
 
-      // Terminal group for raycasting
-      var terminalGroup = new THREE.Group();
-      terminalGroup.add(terminalBody.clone());
-      terminalGroup.position.set(3.5, 0.84, -9.5);
+      cashierDeskGroup.position.set(3.5, 0, -9.5);
+      scene.add(cashierDeskGroup);
+
+      var cashierTableBox = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.8, 0.7), new THREE.MeshBasicMaterial({ visible: false }));
+      cashierTableBox.position.set(3.5, 0.4, -9.5); scene.add(cashierTableBox); collidables.push(cashierTableBox);
 
       H.createSign(THREE, scene, '\u041A\u0410\u0421\u0421\u0410', 3.5, 2.5, -11.78, 0);
       H.createSign(THREE, scene, '\u0420\u0415\u0421\u0415\u041F\u0428\u0415\u041D', 0, 2.5, -11.78, 0);
@@ -284,6 +285,8 @@
         bedMeshes: bedMeshes,
         chairMeshes: chairMeshes,
         cashierDesk: {
+          group: cashierDeskGroup,
+          collisionBox: cashierTableBox,
           terminalMeshes: [terminalBody, terminalScreen, keypadArea],
           patientPos: new THREE.Vector3(3.5, 0, -8.0)
         }

@@ -7,16 +7,28 @@
 
   var furnitureItems = [];
   var carriedFurniture = null;
+  var carriedOriginY = 0; // original Y of carried group
+  var carriedBoxY = 0.5; // original Y of carried collision box
   var hoveredFurniture = null;
 
   var FURNITURE_TYPES = {
-    bed:   { name: 'Кровать', price: 360, slotOffset: { x: 1, z: 0 } },
-    chair: { name: 'Стул',    price: 140, slotOffset: { x: -1, z: 0 } }
+    bed:            { name: 'Кровать',              price: 360, slotOffset: { x: 1, z: 0 }, boxSize: { x: 2.1, y: 1.0, z: 1.0 } },
+    chair:          { name: 'Стул',                 price: 140, slotOffset: { x: -1, z: 0 }, boxSize: { x: 0.6, y: 1.0, z: 0.6 } },
+    washingMachine: { name: 'Стиральная машина',    boxSize: { x: 1.0, y: 1.1, z: 0.8 } },
+    basketClean:    { name: 'Корзина (чистое)',     boxSize: { x: 0.8, y: 0.6, z: 0.6 } },
+    basketDirty:    { name: 'Корзина (грязное)',    boxSize: { x: 0.8, y: 0.6, z: 0.6 } },
+    shelf:          { name: 'Стеллаж',              boxSize: { x: 1.3, y: 1.5, z: 0.5 } },
+    toolPanel:      { name: 'Панель инструментов',  boxSize: { x: 1.1, y: 1.3, z: 0.3 } },
+    cashierDesk:    { name: 'Кассовый стол',        boxSize: { x: 0.9, y: 0.8, z: 0.7 } }
   };
 
   var INDOOR_BOUNDS = { xMin: -7.8, xMax: 7.8, zMin: -11.8, zMax: -0.2 };
 
   var DELIVERY_ZONE = { cx: 0, cz: 5, hw: 1.5, hd: 1.0 };
+
+  // Floor plane for raycast placement
+  var floorPlane = null;
+  var placementRay = null;
 
   // --- Mesh creation (mirrors world.js) ---
 
@@ -83,7 +95,9 @@
   // --- Slot position update ---
 
   function updateSlotPosition(item) {
-    var offset = FURNITURE_TYPES[item.type].slotOffset;
+    var typeInfo = FURNITURE_TYPES[item.type];
+    if (!typeInfo || !typeInfo.slotOffset) return;
+    var offset = typeInfo.slotOffset;
     item.slot.pos.set(
       item.group.position.x + offset.x,
       0,
@@ -194,9 +208,10 @@
   // --- Collision check for placement ---
 
   function canPlaceAt(position, type) {
-    var sizeX = type === 'bed' ? 2.1 : 0.6;
-    var sizeY = 1.0;
-    var sizeZ = type === 'bed' ? 1.0 : 0.6;
+    var info = FURNITURE_TYPES[type];
+    var sizeX = info ? info.boxSize.x : 1.0;
+    var sizeY = info ? info.boxSize.y : 1.0;
+    var sizeZ = info ? info.boxSize.z : 1.0;
     var hx = sizeX / 2, hy = sizeY / 2, hz = sizeZ / 2;
 
     var min = new THREE.Vector3(position.x - hx, position.y - hy + 0.5, position.z - hz);
@@ -219,28 +234,54 @@
     return true;
   }
 
+  // --- Floor raycast placement position ---
+
+  function getPlacementPosition() {
+    placementRay.setFromCamera(screenCenter, camera);
+    var target = new THREE.Vector3();
+    var hit = placementRay.ray.intersectPlane(floorPlane, target);
+    if (!hit) {
+      // Fallback: 3 units forward
+      var forward = new THREE.Vector3();
+      camera.getWorldDirection(forward);
+      forward.y = 0; forward.normalize();
+      target = camera.position.clone().add(forward.multiplyScalar(3));
+    }
+    // Clamp distance from player
+    var dx = target.x - camera.position.x;
+    var dz = target.z - camera.position.z;
+    var dist = Math.sqrt(dx * dx + dz * dz);
+    if (dist > 6) {
+      var scale = 6 / dist;
+      target.x = camera.position.x + dx * scale;
+      target.z = camera.position.z + dz * scale;
+    }
+    // Minimum distance so object doesn't clip into player
+    if (dist < 1.5) {
+      var forward2 = new THREE.Vector3();
+      camera.getWorldDirection(forward2);
+      forward2.y = 0; forward2.normalize();
+      target.x = camera.position.x + forward2.x * 1.5;
+      target.z = camera.position.z + forward2.z * 1.5;
+    }
+    target.y = 0;
+    return target;
+  }
+
   // --- Carried furniture update ---
 
   var canPlaceCurrent = false;
 
   function updateCarriedFurniture() {
     if (!carriedFurniture) return;
-    var forward = new THREE.Vector3();
-    camera.getWorldDirection(forward);
-    forward.y = 0;
-    forward.normalize();
 
-    var pos = camera.position.clone();
-    pos.add(forward.clone().multiplyScalar(3.0));
-    pos.y = 0.3;
+    var pos = getPlacementPosition();
 
-    carriedFurniture.group.position.copy(pos);
-    carriedFurniture.collisionBox.position.set(pos.x, 0.5, pos.z);
+    carriedFurniture.group.position.set(pos.x, carriedOriginY, pos.z);
+    carriedFurniture.collisionBox.position.set(pos.x, carriedBoxY, pos.z);
 
     // Check placement validity and update outline color
-    var placePos = pos.clone();
-    placePos.y = 0;
-    canPlaceCurrent = canPlaceAt(placePos, carriedFurniture.type);
+    canPlaceCurrent = canPlaceAt(pos, carriedFurniture.type);
     setCarryOutline(carriedFurniture.group, canPlaceCurrent ? 'green' : 'red');
   }
 
@@ -264,6 +305,23 @@
       return;
     }
     if (Game.WashingMachine && Game.WashingMachine.hasInteraction()) {
+      if (hoveredFurniture) { unhighlightGroup(hoveredFurniture.group); hoveredFurniture = null; }
+      return;
+    }
+    // Don't show furniture pickup hint when module-specific interactions are active
+    if (Game.Shelves && Game.Shelves.hasInteraction()) {
+      if (hoveredFurniture) { unhighlightGroup(hoveredFurniture.group); hoveredFurniture = null; }
+      return;
+    }
+    if (Game.ToolPanel && Game.ToolPanel.hasInteraction()) {
+      if (hoveredFurniture) { unhighlightGroup(hoveredFurniture.group); hoveredFurniture = null; }
+      return;
+    }
+    if (Game.Staff && Game.Staff.hasBasketInteraction && Game.Staff.hasBasketInteraction()) {
+      if (hoveredFurniture) { unhighlightGroup(hoveredFurniture.group); hoveredFurniture = null; }
+      return;
+    }
+    if (Game.Cashier && Game.Cashier.hasInteraction && Game.Cashier.hasInteraction()) {
       if (hoveredFurniture) { unhighlightGroup(hoveredFurniture.group); hoveredFurniture = null; }
       return;
     }
@@ -291,7 +349,8 @@
       } else if (hoveredFurniture.isDirty) {
         hintEl.textContent = 'Нужно чистое бельё для замены';
       } else {
-        hintEl.textContent = 'Нажми E чтобы переместить';
+        var typeName = FURNITURE_TYPES[hoveredFurniture.type] ? FURNITURE_TYPES[hoveredFurniture.type].name : '';
+        hintEl.textContent = 'E — Переместить ' + typeName.toLowerCase();
       }
       hintEl.style.display = 'block';
     }
@@ -300,11 +359,19 @@
   // --- Pick up ---
 
   function pickUpFurniture(item) {
-    if (item.slot.occupied) {
+    // Check canPickUp callback
+    if (item.canPickUp && !item.canPickUp()) {
+      Game.Inventory.showNotification('Сейчас нельзя переместить');
+      return;
+    }
+    // Check slot occupied (only for types with patient slots)
+    if (item.slot && item.slot.occupied) {
       Game.Inventory.showNotification('Нельзя переместить — предмет занят');
       return;
     }
     carriedFurniture = item;
+    carriedOriginY = item.group.position.y;
+    carriedBoxY = item.collisionBox.position.y;
     lastCarryColor = null; // Reset so outline gets applied on first frame
     // Remove collision box from collidables
     var idx = collidables.indexOf(item.collisionBox);
@@ -321,19 +388,13 @@
       return;
     }
 
-    var forward = new THREE.Vector3();
-    camera.getWorldDirection(forward);
-    forward.y = 0;
-    forward.normalize();
-
-    var targetPos = camera.position.clone();
-    targetPos.add(forward.clone().multiplyScalar(3.0));
-    targetPos.y = 0;
+    var targetPos = getPlacementPosition();
 
     var item = carriedFurniture;
     clearCarryOutline(item.group);
-    item.group.position.set(targetPos.x, 0, targetPos.z);
-    item.collisionBox.position.set(targetPos.x, 0.5, targetPos.z);
+    item.group.position.set(targetPos.x, carriedOriginY, targetPos.z);
+    item.collisionBox.position.set(targetPos.x, carriedBoxY, targetPos.z);
+    item.collisionBox.rotation.y = item.group.rotation.y;
 
     // Add collision box back
     collidables.push(item.collisionBox);
@@ -342,7 +403,12 @@
     updateSlotPosition(item);
     item.isIndoors = checkIndoors(item.group.position);
 
-    if (!item.isIndoors) {
+    // Call onMoved callback if defined
+    if (item.onMoved) {
+      item.onMoved(item.group.position, item.group.rotation.y);
+    }
+
+    if (!item.isIndoors && FURNITURE_TYPES[item.type] && FURNITURE_TYPES[item.type].slotOffset) {
       var name = FURNITURE_TYPES[item.type].name;
       Game.Inventory.showNotification('Пока ' + name.toLowerCase() + ' на улице — её нельзя использовать', 'rgba(200, 150, 50, 0.85)');
     }
@@ -387,10 +453,25 @@
       return;
     }
 
+    // Don't pickup if a module-specific interaction is active
+    if (Game.Shelves && Game.Shelves.hasInteraction()) return;
+    if (Game.ToolPanel && Game.ToolPanel.hasInteraction()) return;
+    if (Game.Staff && Game.Staff.hasBasketInteraction && Game.Staff.hasBasketInteraction()) return;
+
     if (hoveredFurniture) {
       pickUpFurniture(hoveredFurniture);
       return;
     }
+  }
+
+  // --- Mouse wheel rotation ---
+
+  function onWheel(e) {
+    if (!carriedFurniture) return;
+    if (!controls.isLocked) return;
+    e.preventDefault();
+    var rotStep = Math.PI / 12; // 15 degrees per tick
+    carriedFurniture.group.rotation.y += e.deltaY > 0 ? rotStep : -rotStep;
   }
 
   // --- Public API ---
@@ -410,7 +491,12 @@
       screenCenter = new THREE.Vector2(0, 0);
       hintEl = document.getElementById('interact-hint');
 
+      // Floor plane for raycast placement
+      floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+      placementRay = new THREE.Raycaster();
+
       document.addEventListener('keydown', onKeyDown);
+      document.addEventListener('wheel', onWheel, { passive: false });
     },
 
     registerExisting: function(bedMeshes, chairMeshes) {
@@ -440,6 +526,20 @@
         updateSlotPosition(item);
         furnitureItems.push(item);
       }
+    },
+
+    registerFixture: function(opts) {
+      var item = {
+        type: opts.type,
+        group: opts.group,
+        collisionBox: opts.collisionBox,
+        slot: opts.slot || { pos: new THREE.Vector3(), occupied: false },
+        isIndoors: checkIndoors(opts.group.position),
+        onMoved: opts.onMoved || null,
+        canPickUp: opts.canPickUp || null
+      };
+      furnitureItems.push(item);
+      return item;
     },
 
     spawnFurniture: function(type) {
@@ -472,7 +572,8 @@
 
       // Show carry hint
       if (carriedFurniture && controls.isLocked) {
-        hintEl.textContent = 'E — Поставить ' + FURNITURE_TYPES[carriedFurniture.type].name.toLowerCase();
+        var typeName = FURNITURE_TYPES[carriedFurniture.type] ? FURNITURE_TYPES[carriedFurniture.type].name : '';
+        hintEl.textContent = 'E — Поставить ' + typeName.toLowerCase() + '  |  Колёсико — Поворот';
         hintEl.style.display = 'block';
       }
     },
