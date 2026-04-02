@@ -780,6 +780,47 @@
       dropFromPlayer(type);
     },
 
+    // Staff APIs
+    findNearestGroundItem: function(type, fromPos) {
+      var best = null;
+      var bestDist = Infinity;
+      for (var i = 0; i < groundItems.length; i++) {
+        var gi = groundItems[i];
+        if (gi.type === type && !gi.pickedUp) {
+          var dx = gi.mesh.position.x - fromPos.x;
+          var dz = gi.mesh.position.z - fromPos.z;
+          var d = dx * dx + dz * dz;
+          if (d < bestDist) {
+            bestDist = d;
+            best = gi.mesh;
+          }
+        }
+      }
+      return best;
+    },
+
+    removeGroundItem: function(mesh) {
+      for (var i = 0; i < groundItems.length; i++) {
+        if (groundItems[i].mesh === mesh && !groundItems[i].pickedUp) {
+          groundItems[i].pickedUp = true;
+          scene.remove(groundItems[i].mesh);
+          groundItems.splice(i, 1);
+          return true;
+        }
+      }
+      return false;
+    },
+
+    getGroundItemsByType: function(type) {
+      var result = [];
+      for (var i = 0; i < groundItems.length; i++) {
+        if (groundItems[i].type === type && !groundItems[i].pickedUp) {
+          result.push(groundItems[i].mesh);
+        }
+      }
+      return result;
+    },
+
     spawnAtPosition: function(type, position) {
       var mesh = isInstrument(type) ? createInstrumentMesh(type) : createConsumableMesh(type);
       mesh.position.copy(position);

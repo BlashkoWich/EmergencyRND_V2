@@ -1711,6 +1711,49 @@
     revealDiagnosis: function(patient) { revealDiagnosis(patient); },
     revealDiagnosisAnimated: function(patient) { revealDiagnosisAnimated(patient); },
 
+    // Staff APIs
+    getPatients: function() { return patients; },
+    getQueue: function() { return queue; },
+    sendPatientByStaff: function(patient, dest, slot) {
+      // Same as sendPatient but without closing popup
+      // Free current destination (waiting chair) if occupied
+      if (patient.state === 'waiting' && patient.destination) {
+        patient.destination.occupied = false;
+      }
+      if (patient._wasWaiting && patient.destination) {
+        patient.destination.occupied = false;
+      }
+      patient._wasWaiting = false;
+      patient.state = 'walking';
+      patient.targetPos = dest.clone();
+      patient.targetPos.y = 0;
+      patient.destination = slot;
+      slot.occupied = true;
+      patient.anim.targetPose = 'standing';
+      removeFromQueue(patient);
+    },
+    summonToDesk: function(patient, deskPos) {
+      // Patient walks from queue to admin desk (stays in 'queued' state with special target)
+      removeFromQueue(patient);
+      patient.state = 'queued';
+      patient.queueTarget = new THREE.Vector3(deskPos.x, 0, deskPos.z);
+    },
+    treatPatientByStaff: function(patient, consumableType) {
+      if (!patient || patient.treated) return;
+      if (consumableType !== patient.requiredConsumable) return;
+      patient.treated = true;
+      patient.animating = true;
+      Game.Inventory.showNotification('Медсестра начала лечение!', 'rgba(34, 139, 34, 0.85)');
+      // Clone materials for heal animation
+      for (var j = 0; j < patient.mesh.userData.bodyParts.length; j++) {
+        var part = patient.mesh.userData.bodyParts[j];
+        part.material = part.material.clone();
+        part.material.emissive = new THREE.Color(0x00ff44);
+        part.material.emissiveIntensity = 0.8;
+      }
+      animations.push({ patient: patient, type: 'heal', timer: 0.5, maxTime: 0.5 });
+    },
+
     setup: function(_THREE, _scene, _camera, _controls, _beds, _waitingChairs) {
       THREE = _THREE;
       scene = _scene;
@@ -1752,11 +1795,22 @@
         if (Game.Diagnostics && Game.Diagnostics.isActive()) return;
         if (!hoveredPatient) return;
 
+        // Block interaction if admin is processing this patient
+        if (hoveredPatient.staffProcessing) {
+          Game.Inventory.showNotification('Администратор оформляет пациента');
+          return;
+        }
+
         if (hoveredPatient.state === 'atBed') {
           if (hoveredPatient.treated) return;
 
           // Undiagnosed patient — need instrument first
           if (hoveredPatient.needsDiagnosis) {
+            // Check if staff diagnostician is already working
+            if (hoveredPatient.staffDiagnosing) {
+              Game.Inventory.showNotification('Диагност уже проводит обследование');
+              return;
+            }
             var activeType = Game.Inventory.getActive();
             if (!activeType || !Game.Consumables.isInstrument(activeType)) {
               Game.Inventory.showNotification('Нужен диагностический инструмент');
@@ -1771,6 +1825,11 @@
             return;
           }
 
+          // Check if staff nurse is already treating
+          if (hoveredPatient.staffTreating) {
+            Game.Inventory.showNotification('Медсестра уже лечит этого пациента');
+            return;
+          }
           var activeType = Game.Inventory.getActive();
           if (!activeType || Game.Consumables.isInstrument(activeType)) {
             Game.Inventory.showNotification('Выберите препарат в инвентаре');

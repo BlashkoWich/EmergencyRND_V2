@@ -13,6 +13,47 @@
   ];
   var upgradeButtons = []; // [{btn, item}]
 
+  function refreshStaffList() {
+    var listEl = document.getElementById('staff-hired-list');
+    if (!listEl || !Game.Staff) return;
+
+    // Update hire buttons visibility — hide if already hired
+    var hireItems = document.querySelectorAll('.staff-hire-item');
+    for (var h = 0; h < hireItems.length; h++) {
+      var type = hireItems[h].dataset.type;
+      hireItems[h].style.display = Game.Staff.isTypeHired(type) ? 'none' : '';
+    }
+
+    // Build hired list
+    var hired = Game.Staff.getHiredStaff();
+    listEl.innerHTML = '';
+    if (hired.length === 0) {
+      listEl.innerHTML = '<div class="staff-empty-hint">Пока никого нет</div>';
+      return;
+    }
+    for (var i = 0; i < hired.length; i++) {
+      var s = hired[i];
+      var info = Game.Staff.TYPES[s.type];
+      var row = document.createElement('div');
+      row.className = 'staff-hired-item';
+      row.innerHTML = '<span class="shop-item-icon" style="background:#' + info.color.toString(16).padStart(6, '0') + '"></span>' +
+        '<span class="staff-hired-name">' + info.name + '</span>' +
+        '<button class="staff-fire-btn" data-id="' + s.id + '">Уволить — $' + info.salary + '</button>';
+      listEl.appendChild(row);
+    }
+    // Attach fire handlers
+    var fireBtns = listEl.querySelectorAll('.staff-fire-btn');
+    for (var j = 0; j < fireBtns.length; j++) {
+      (function(btn) {
+        btn.addEventListener('click', function() {
+          var id = parseInt(btn.dataset.id, 10);
+          Game.Staff.fire(id);
+          refreshStaffList();
+        });
+      })(fireBtns[j]);
+    }
+  }
+
   function updateCounts() {
     var types = Game.Consumables.TYPES;
     for (var type in types) {
@@ -69,7 +110,8 @@
         consumables: document.getElementById('shop-tab-consumables'),
         instruments: document.getElementById('shop-tab-instruments'),
         furniture: document.getElementById('shop-tab-furniture'),
-        upgrades: document.getElementById('shop-tab-upgrades')
+        upgrades: document.getElementById('shop-tab-upgrades'),
+        staff: document.getElementById('shop-tab-staff')
       };
       for (var t = 0; t < tabs.length; t++) {
         (function(tab) {
@@ -184,6 +226,20 @@
       }
       refreshUpgradeButtons();
 
+      // --- Staff hire buttons ---
+      var staffHireItems = document.querySelectorAll('.staff-hire-item');
+      for (var i = 0; i < staffHireItems.length; i++) {
+        var itemEl = staffHireItems[i];
+        var type = itemEl.dataset.type;
+        (function(btn, t) {
+          btn.addEventListener('click', function() {
+            if (!Game.Staff) return;
+            Game.Staff.hire(t);
+            refreshStaffList();
+          });
+        })(itemEl.querySelector('.staff-hire-btn'), type);
+      }
+
       // Close button
       closeBtn.addEventListener('click', function() {
         shopEl.style.display = 'none';
@@ -208,6 +264,7 @@
           controls.unlock();
           updateCounts();
           refreshUpgradeButtons();
+          refreshStaffList();
         }
       });
     }

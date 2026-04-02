@@ -299,6 +299,21 @@
 
     hasInteraction: function() { return isHovered; },
     isWashing: function() { return isWashing; },
-    getLoadedCount: function() { return dirtyLinenCount; }
+    getLoadedCount: function() { return dirtyLinenCount; },
+
+    // Staff APIs
+    canLoad: function() { return !isWashing && dirtyLinenCount < MAX_LOAD; },
+    loadOne: function() {
+      if (isWashing || dirtyLinenCount >= MAX_LOAD) return false;
+      dirtyLinenCount++;
+      setStatusColor(0xcc8844, 0.5);
+      return true;
+    },
+    isFull: function() { return dirtyLinenCount >= MAX_LOAD; },
+    startWashAuto: function() {
+      if (isWashing || dirtyLinenCount <= 0) return false;
+      startWash();
+      return true;
+    }
   };
 })();

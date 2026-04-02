@@ -499,12 +499,27 @@
 
   // ====== DAY END POPUP ======
   function showDayEndPopup() {
+    // Pay staff salary
+    var salary = 0;
+    if (Game.Staff && Game.Staff.getDailySalary) {
+      salary = Game.Staff.getDailySalary();
+      if (salary > 0) {
+        Game.Cashier.spend(salary);
+      }
+    }
+
     dayEndPopupOpen = true;
     dayEndNumberEl.textContent = dayNumber;
     statServedEl.textContent = dayStats.patientsServed;
     statLostEl.textContent = dayStats.patientsLost;
     statEarnedEl.textContent = '$' + dayStats.moneyEarned;
     statSpentEl.textContent = '$' + dayStats.moneySpent;
+
+    var statSalaryEl = document.getElementById('stat-salary');
+    if (statSalaryEl) {
+      statSalaryEl.textContent = '$' + salary;
+    }
+
     dayEndPopupEl.style.display = 'block';
     controls.unlock();
     updateTaskText();

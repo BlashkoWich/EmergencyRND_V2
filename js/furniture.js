@@ -554,6 +554,16 @@
       return item ? item.isDirty : false;
     },
 
+    getDirtyBeds: function() {
+      var result = [];
+      for (var i = 0; i < furnitureItems.length; i++) {
+        if (furnitureItems[i].type === 'bed' && furnitureItems[i].isIndoors && furnitureItems[i].isDirty) {
+          result.push(furnitureItems[i].slot);
+        }
+      }
+      return result;
+    },
+
     getDirtyBedCount: function() {
       var count = 0;
       for (var i = 0; i < furnitureItems.length; i++) {

@@ -405,6 +405,31 @@
   window.Game.Shelves = {
     hasInteraction: function() { return !!hoveredShelf; },
 
+    // Staff APIs
+    getShelves: function() { return shelves; },
+    findSlotWithItem: function(type) {
+      for (var s = 0; s < shelves.length; s++) {
+        for (var i = 0; i < shelves[s].slots.length; i++) {
+          if (shelves[s].slots[i].item === type && shelves[s].slots[i].count > 0) return shelves[s].slots[i];
+        }
+      }
+      return null;
+    },
+    takeFromSlot: function(slot) {
+      if (!slot || !slot.item) return null;
+      return takeItemFromShelf(slot);
+    },
+    placeOnAnyShelf: function(type) {
+      for (var s = 0; s < shelves.length; s++) {
+        var slot = findSlotForType(shelves[s], type);
+        if (slot) {
+          placeItemOnShelf(slot, type);
+          return true;
+        }
+      }
+      return false;
+    },
+
     setup: function(_THREE, _scene, _camera, _controls, collidables) {
       THREE = _THREE;
       scene = _scene;

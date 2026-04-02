@@ -29,6 +29,11 @@
   function updateBalanceHUD() {
     if (balanceEl) {
       balanceEl.textContent = '$' + balance;
+      balanceEl.style.color = balance < 0 ? '#ff4444' : '#4ade80';
+      var hud = document.getElementById('balance-hud');
+      if (hud) {
+        hud.style.borderColor = balance < 0 ? 'rgba(255, 68, 68, 0.3)' : 'rgba(74, 222, 128, 0.3)';
+      }
     }
   }
 
@@ -50,6 +55,10 @@
 
   function openTerminal() {
     if (!currentPatient || isOpen) return;
+    if (Game.Staff && Game.Staff.isStaffCashierHired()) {
+      Game.Inventory.showNotification('Кассир уже работает');
+      return;
+    }
     isOpen = true;
     enteredAmount = '';
     popupEl.style.display = 'block';
@@ -172,6 +181,32 @@
 
     hasInteraction: function() { return hoveredTerminal; },
     hasPatients: function() { return !!currentPatient || cashierQueue.length > 0; },
+
+    // Staff APIs
+    getCurrentPatient: function() { return currentPatient; },
+    processPaymentAuto: function() {
+      if (!currentPatient) return;
+      var required = PRICES[currentPatient.severity.key] || 0;
+      balance += required;
+      if (Game.Shift) Game.Shift.trackEarning(required);
+      updateBalanceHUD();
+      if (isOpen) closeTerminal();
+
+      // Signal patient to leave
+      currentPatient.state = 'leaving';
+      currentPatient.targetPos = new THREE.Vector3(0, 0, 1);
+      currentPatient.leavePhase = 'toExit';
+      currentPatient = null;
+
+      // Move next patient up
+      if (cashierQueue.length > 0) {
+        currentPatient = cashierQueue.shift();
+        currentPatient.targetPos = patientPos.clone();
+        for (var i = 0; i < cashierQueue.length; i++) {
+          cashierQueue[i].targetPos = getQueuePosition(i + 1);
+        }
+      }
+    },
 
     clearQueue: function() {
       // Remove all patients from cashier queue
