@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "mcp__Claude_Preview__preview_start",
-      "Bash(npx --version)"
+      "Bash(npx --version)",
+      "Bash(grep -rn \"hire\\\\|HIRE\" /a/EmergencyRND_V2/js/*.js)"
     ]
   }
 }

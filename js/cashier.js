@@ -4,7 +4,7 @@
   var THREE, scene, camera, controls;
   var terminalMeshes = [];
   var patientPos;
-  var balance = 100;
+  var balance = 350;
   var cashierQueue = [];
   var currentPatient = null;
   var enteredAmount = '';
@@ -13,7 +13,7 @@
   var prevHovered = false;
 
   // Price map by severity key
-  var PRICES = { mild: 30, medium: 50, severe: 80 };
+  var PRICES = { mild: 35, medium: 50, severe: 70 };
 
   // Raycaster for terminal interaction
   var interactRay;

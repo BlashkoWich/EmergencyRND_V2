@@ -10,8 +10,8 @@
   var hoveredFurniture = null;
 
   var FURNITURE_TYPES = {
-    bed:   { name: 'Кровать', price: 25, slotOffset: { x: 1, z: 0 } },
-    chair: { name: 'Стул',    price: 15, slotOffset: { x: -1, z: 0 } }
+    bed:   { name: 'Кровать', price: 360, slotOffset: { x: 1, z: 0 } },
+    chair: { name: 'Стул',    price: 140, slotOffset: { x: -1, z: 0 } }
   };
 
   var INDOOR_BOUNDS = { xMin: -7.8, xMax: 7.8, zMin: -11.8, zMax: -0.2 };

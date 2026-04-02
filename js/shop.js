@@ -7,9 +7,9 @@
   var countEls = {}; // type -> span element
   var upgradeLevel = 0; // 0=base(5), 1=10, 2=15, 3=20
   var upgradeLevels = [
-    { price: 50, stack: 10 },
-    { price: 100, stack: 15 },
-    { price: 200, stack: 20 }
+    { price: 100, stack: 10 },
+    { price: 200, stack: 15 },
+    { price: 500, stack: 20 }
   ];
   var upgradeButtons = []; // [{btn, item}]
 
@@ -138,13 +138,14 @@
 
         // Buy button handler
         (function(btn, t) {
+          var price = t === 'linen_clean' ? 100 : 80;
           btn.addEventListener('click', function() {
             var balance = Game.Cashier.getBalance();
-            if (balance < 10) {
+            if (balance < price) {
               Game.Inventory.showNotification('Недостаточно средств!');
               return;
             }
-            Game.Cashier.spend(10);
+            Game.Cashier.spend(price);
             Game.Consumables.spawnBoxInDeliveryZone(t);
             updateCounts();
           });
@@ -167,11 +168,11 @@
         (function(btn, t) {
           btn.addEventListener('click', function() {
             var balance = Game.Cashier.getBalance();
-            if (balance < 1) {
+            if (balance < 220) {
               Game.Inventory.showNotification('Недостаточно средств!');
               return;
             }
-            Game.Cashier.spend(1);
+            Game.Cashier.spend(220);
             Game.Consumables.spawnInstrumentInDeliveryZone(t);
             updateCounts();
           });
@@ -180,7 +181,7 @@
 
       // --- Furniture buy buttons ---
       var furnitureItems = document.querySelectorAll('#shop-tab-furniture .shop-item');
-      var furniturePrices = { bed: 25, chair: 15 };
+      var furniturePrices = { bed: 360, chair: 140 };
       for (var i = 0; i < furnitureItems.length; i++) {
         var itemEl = furnitureItems[i];
         var type = itemEl.dataset.type;
@@ -234,7 +235,13 @@
         (function(btn, t) {
           btn.addEventListener('click', function() {
             if (!Game.Staff) return;
-            Game.Staff.hire(t);
+            var balance = Game.Cashier.getBalance();
+            if (balance < 100) {
+              Game.Inventory.showNotification('Недостаточно средств!');
+              return;
+            }
+            var result = Game.Staff.hire(t);
+            if (result) Game.Cashier.spend(100);
             refreshStaffList();
           });
         })(itemEl.querySelector('.staff-hire-btn'), type);

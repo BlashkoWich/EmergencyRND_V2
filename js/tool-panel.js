@@ -355,6 +355,11 @@
 
       createPanel(collidables);
 
+      // Place all instruments on panel at start
+      for (var i = 0; i < slots.length; i++) {
+        placeItemOnSlot(slots[i]);
+      }
+
       // Take instrument from panel on LMB
       document.addEventListener('mousedown', function(e) {
         if (e.button !== 0 || !controls.isLocked) return;
