@@ -358,8 +358,8 @@
       }
     }
 
-    // Place mode: raycast against shelf structure
-    if (!newHovered && activeItem) {
+    // Place mode: raycast against shelf structure (instruments go on tool panel, not shelves)
+    if (!newHovered && activeItem && !Game.Consumables.isInstrument(activeItem)) {
       var hits = interactRay.intersectObjects(allShelfParts);
       if (hits.length > 0) {
         var shelf = getShelfFromMesh(hits[0].object);
@@ -420,6 +420,7 @@
       return takeItemFromShelf(slot);
     },
     placeOnAnyShelf: function(type) {
+      if (Game.Consumables.isInstrument(type)) return false;
       for (var s = 0; s < shelves.length; s++) {
         var slot = findSlotForType(shelves[s], type);
         if (slot) {
@@ -472,6 +473,10 @@
 
         var type = Game.Inventory.getActive();
         if (!type) return;
+        if (Game.Consumables.isInstrument(type)) {
+          Game.Inventory.showNotification('Инструменты вешайте на панель', 'rgba(200, 150, 50, 0.85)');
+          return;
+        }
         var slot = findSlotForType(hoveredShelf, type);
         if (!slot) return;
         Game.Inventory.removeActive();

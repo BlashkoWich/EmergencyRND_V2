@@ -416,6 +416,23 @@ healParticles[]          // активные лечебные частицы [{s
 healParticleTexture      // кешированная текстура частиц (одна на все)
 ```
 
+## Staff Integration Flags
+На объекте пациента:
+```js
+patient.staffProcessing = false  // администратор оформляет (блокирует попап)
+patient.staffDiagnosing = false  // диагност работает (блокирует мини-игру)
+patient.staffTreating = false    // медсестра лечит (блокирует лечение игроком)
+```
+
+## Public API (новые для Staff)
+```js
+Game.Patients.getPatients()     // → массив всех пациентов
+Game.Patients.getQueue()        // → массив очереди
+Game.Patients.sendPatientByStaff(patient, dest, slot)  // направить без попапа
+Game.Patients.summonToDesk(patient, deskPos)            // вызвать к стойке администратора
+Game.Patients.treatPatientByStaff(patient, consumableType) // лечить без инвентаря
+```
+
 ## Constants (Game.Patients)
 ```js
 SPAWN_INTERVAL = 10      // секунды между спавнами

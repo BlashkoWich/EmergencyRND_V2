@@ -142,7 +142,12 @@ dayEndPopupOpen = false // попап итогов дня показан
   - Потеряно пациентов: `dayStats.patientsLost`
   - Заработано: `$dayStats.moneyEarned`
   - Потрачено: `$dayStats.moneySpent`
+  - Зарплата сотрудников: `$salary` (`#stat-salary`) — вычитается через `Game.Cashier.spend()`
 - Кнопка "Перейти в следующий день" → `closeDayEndPopup()`
+
+### Зарплата сотрудников
+- При показе попапа: `var salary = Game.Staff.getDailySalary(); Game.Cashier.spend(salary);`
+- Баланс может уйти в минус — зарплата платится всегда
 
 ### Управление
 - При показе: `controls.unlock()`

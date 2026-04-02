@@ -261,6 +261,7 @@
   <script src="js/furniture.js"></script>
   <script src="js/washing-machine.js"></script>
   <script src="js/shelves.js"></script>
+  <script src="js/tool-panel.js"></script>
   <script src="js/diagnostics.js"></script>
   <script src="js/staff.js"></script>
   <script src="js/shift.js"></script>
@@ -327,6 +328,7 @@
     Game.Shop.setup(controls);
     Game.WashingMachine.setup(THREE, scene, camera, controls, collidables);
     Game.Shelves.setup(THREE, scene, camera, controls, collidables);
+    Game.ToolPanel.setup(THREE, scene, camera, controls, collidables);
     Game.Diagnostics.setup(controls);
     Game.Cashier.setup(THREE, scene, camera, controls, cashierDesk);
     Game.Staff.setup(THREE, scene, camera, controls, collidables);
@@ -348,6 +350,7 @@
       Game.WashingMachine.update(delta);
       Game.Consumables.update(delta);
       Game.Shelves.update(delta);
+      Game.ToolPanel.update(delta);
       Game.Cashier.update(delta);
       Game.Staff.update(delta);
       Game.Shift.update(delta);
