@@ -35,7 +35,6 @@
   var popupEl, popupTitleEl, popupUnlocksEl, popupCloseBtn;
   var animContainer;
   var isLevelUpPopupOpen = false;
-  var pendingLevelUpSpawn = false;
   var controls;
 
   function updateHUD() {
@@ -105,14 +104,6 @@
     isLevelUpPopupOpen = false;
     if (controls) controls.lock();
 
-    // After reaching level 2, spawn a new patient immediately
-    if (pendingLevelUpSpawn) {
-      pendingLevelUpSpawn = false;
-      if (Game.Patients && Game.Patients.spawnFirstPatient) {
-        Game.Patients.spawnFirstPatient();
-      }
-    }
-
     // Refresh shop tab locks
     if (Game.Shop && Game.Shop.refreshTabLocks) {
       Game.Shop.refreshTabLocks();
@@ -120,9 +111,6 @@
   }
 
   function onLevelUp(newLevel) {
-    if (newLevel === 2) {
-      pendingLevelUpSpawn = true;
-    }
     showLevelUpPopup(newLevel);
   }
 

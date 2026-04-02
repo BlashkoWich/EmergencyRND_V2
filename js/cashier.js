@@ -131,13 +131,9 @@
     balance += required;
     if (Game.Shift) Game.Shift.trackEarning(required);
     updateBalanceHUD();
-    awardPatientXP(currentPatient);
-    closeTerminal();
 
-    // Notify patient system about payment (spawns next patient on sequential levels)
-    if (Game.Patients && Game.Patients.onPatientPaid) {
-      Game.Patients.onPatientPaid();
-    }
+    var paidPatient = currentPatient;
+    closeTerminal();
 
     // Signal patient to leave
     currentPatient.state = 'leaving';
@@ -149,11 +145,18 @@
     if (cashierQueue.length > 0) {
       currentPatient = cashierQueue.shift();
       currentPatient.targetPos = patientPos.clone();
-      // Update queue positions for remaining
       for (var i = 0; i < cashierQueue.length; i++) {
         cashierQueue[i].targetPos = getQueuePosition(i + 1);
       }
     }
+
+    // Notify patient system about payment (spawns next patient on sequential levels)
+    if (Game.Patients && Game.Patients.onPatientPaid) {
+      Game.Patients.onPatientPaid();
+    }
+
+    // Award XP last — may trigger level-up popup which unlocks controls
+    awardPatientXP(paidPatient);
   }
 
   function updateHoverDetection() {
@@ -249,17 +252,12 @@
       if (!currentPatient.paymentInfo) {
         currentPatient.paymentInfo = getPatientPrice(currentPatient);
       }
-      var required = currentPatient.paymentInfo.total;
+      var paidPatient = currentPatient;
+      var required = paidPatient.paymentInfo.total;
       balance += required;
       if (Game.Shift) Game.Shift.trackEarning(required);
       updateBalanceHUD();
-      awardPatientXP(currentPatient);
       if (isOpen) closeTerminal();
-
-      // Notify patient system about payment
-      if (Game.Patients && Game.Patients.onPatientPaid) {
-        Game.Patients.onPatientPaid();
-      }
 
       // Signal patient to leave
       currentPatient.state = 'leaving';
@@ -275,6 +273,14 @@
           cashierQueue[i].targetPos = getQueuePosition(i + 1);
         }
       }
+
+      // Notify patient system about payment
+      if (Game.Patients && Game.Patients.onPatientPaid) {
+        Game.Patients.onPatientPaid();
+      }
+
+      // Award XP last — may trigger level-up popup
+      awardPatientXP(paidPatient);
     },
 
     clearQueue: function() {
