@@ -129,6 +129,52 @@
     strepsils:     ['holdThroat']
   };
 
+  // --- Illness visual region mapping ---
+  var ILLNESS_REGION_MAP = {
+    painkiller: {
+      'Мигрень с аурой': 'head', 'Головная боль напряжения': 'head',
+      'Люмбаго': 'back', 'Острый радикулит': 'back', 'Миофасциальный синдром': 'back',
+      'Острый бурсит': 'leg', 'Коксартроз': 'leg',
+      'Ишиас': 'leg', 'Тендинит ахиллова сухожилия': 'leg', 'Плантарный фасциит': 'leg',
+      'Защемление локтевого нерва': 'arm', 'Артрит лучезапястного сустава': 'arm',
+      'Посттравматическая невропатия': 'arm', 'Эпикондилит': 'arm', 'Цервикобрахиалгия': 'arm',
+      'Шейный миозит': 'neck',
+      'Жёлчная колика': 'stomach',
+      'Пульпит': 'teeth',
+      'Межрёберная невралгия': 'chest',
+      'Фибромиалгия': 'fullBody'
+    },
+    strepsils: {
+      'Гнойная ангина': 'throat', 'Острый фарингит': 'throat',
+      'Паратонзиллярный инфильтрат': 'throat', 'Ларингофарингеальный рефлюкс': 'throat',
+      'Инфекционный мононуклеоз': 'throat', 'Гранулёзный фарингит': 'throat',
+      'Эпиглоттит': 'throat', 'Катаральная ангина': 'throat', 'Аденоидит': 'throat',
+      'Острый бронхит': 'chest', 'Бронхоспазм': 'chest',
+      'Пневмония (начальная)': 'chest', 'Плеврит': 'chest',
+      'Обструктивный бронхит': 'chest', 'Трахеобронхит': 'chest',
+      'Бронхиальная астма (приступ)': 'chest', 'Коклюш': 'chest',
+      'Острый ларингит': 'both', 'Острый трахеит': 'both', 'Ларинготрахеит': 'both'
+    }
+    // antihistamine: all patients get 'nose' region — no per-diagnosis map needed
+  };
+
+  function getIllnessRegion(consumableType, diagnosis) {
+    if (consumableType === 'antihistamine') return 'nose';
+    var map = ILLNESS_REGION_MAP[consumableType];
+    if (map && diagnosis && map[diagnosis]) return map[diagnosis];
+    // fallback
+    if (consumableType === 'painkiller') return 'back';
+    if (consumableType === 'strepsils') return 'throat';
+    return 'fullBody';
+  }
+
+  function getIllnessSeverityScale(patient) {
+    var k = patient.severity.key;
+    if (k === 'severe') return 1.0;
+    if (k === 'medium') return 0.6;
+    return 0.3;
+  }
+
   // --- Pose target values ---
   var POSE_VALUES = {
     standing: { poseRotX: 0, posePosY: 0, posePosZ: 0, bodyOffsetY: 0, legPivotY: 0.5, legRotX: 0, leftArmRotZ: 0, rightArmRotZ: 0 },
@@ -287,6 +333,172 @@
     return group;
   }
 
+  // --- Illness visual effects ---
+  function addIllnessMesh(patient, mesh, parent) {
+    parent.add(mesh);
+    patient.mesh.userData.illnessVisuals.push({ mesh: mesh, parent: parent });
+  }
+
+  function tintMaterial(patient, targetMesh, tintColor, factor) {
+    var origColor = targetMesh.material.color.getHex();
+    targetMesh.material = targetMesh.material.clone();
+    targetMesh.material.color.lerp(new THREE.Color(tintColor), factor);
+    patient.mesh.userData.illnessMaterials.push({ mesh: targetMesh, originalColor: origColor });
+  }
+
+  function applyIllnessVisuals(patient) {
+    var ud = patient.mesh.userData;
+    ud.illnessVisuals = [];
+    ud.illnessMaterials = [];
+
+    var cType = patient.hiddenConsumable || patient.requiredConsumable;
+    var diag = patient.hiddenDiagnosis || patient.diagnosis;
+    if (!cType) return;
+
+    var region = getIllnessRegion(cType, diag);
+    var sev = getIllnessSeverityScale(patient);
+    var whiteMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.5 });
+
+    // Helper: scale a body part and register for reset
+    function swell(mesh, factor) {
+      mesh.scale.set(factor, factor, factor);
+      ud.illnessVisuals.push({ mesh: mesh, parent: null, resetScale: true });
+    }
+
+    if (cType === 'antihistamine') {
+      // ===== ALLERGY: red swollen head + red skin everywhere =====
+      tintMaterial(patient, ud.headMesh, 0xff0000, 0.5 + 0.35 * sev);
+      // Swollen head
+      var headSwell = 1.1 + 0.2 * sev;
+      swell(ud.headMesh, headSwell);
+      // All skin turns reddish (allergic reaction)
+      tintMaterial(patient, ud.leftArm.upperArm, 0xff3333, 0.3 + 0.3 * sev);
+      tintMaterial(patient, ud.leftArm.forearm, 0xff3333, 0.3 + 0.3 * sev);
+      tintMaterial(patient, ud.rightArm.upperArm, 0xff3333, 0.3 + 0.3 * sev);
+      tintMaterial(patient, ud.rightArm.forearm, 0xff3333, 0.3 + 0.3 * sev);
+
+    } else if (cType === 'painkiller') {
+      // ===== PAIN: affected zone turns red + swells =====
+
+      if (region === 'head') {
+        // Red swollen head (migraine, headache)
+        tintMaterial(patient, ud.headMesh, 0xff2222, 0.4 + 0.35 * sev);
+        swell(ud.headMesh, 1.15 + 0.2 * sev);
+
+      } else if (region === 'back') {
+        // Red torso (back pain)
+        tintMaterial(patient, ud.bodyMesh, 0xff3333, 0.3 + 0.3 * sev);
+
+      } else if (region === 'leg') {
+        // Swollen red legs
+        var leftLeg = ud.leftLegPivot.children[0];
+        var rightLeg = ud.rightLegPivot.children[0];
+        var legSwell = 1.2 + 0.5 * sev;
+        swell(leftLeg, legSwell);
+        tintMaterial(patient, leftLeg, 0xcc3333, 0.3 + 0.25 * sev);
+        tintMaterial(patient, rightLeg, 0xcc3333, 0.15 + 0.15 * sev);
+
+      } else if (region === 'arm') {
+        // Swollen arm + bandage
+        var forearm = ud.rightArm.forearm;
+        var upperArm = ud.rightArm.upperArm;
+        swell(forearm, 1.3 + 0.4 * sev);
+        swell(upperArm, 1.15 + 0.25 * sev);
+        tintMaterial(patient, forearm, 0xcc3333, 0.3 + 0.25 * sev);
+        tintMaterial(patient, upperArm, 0xcc3333, 0.2 + 0.2 * sev);
+        // White bandage wrap on forearm
+        var bandage = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 0.06, 8), whiteMat);
+        bandage.position.set(0, -0.06, 0);
+        bandage.castShadow = true;
+        addIllnessMesh(patient, bandage, forearm);
+
+      } else if (region === 'neck') {
+        // White neck brace (collar)
+        var brace = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.1, 8), whiteMat);
+        brace.position.set(0, 1.22, 0);
+        brace.castShadow = true;
+        addIllnessMesh(patient, brace, ud.bodyContainer);
+
+      } else if (region === 'stomach') {
+        // Green nauseous body + face
+        tintMaterial(patient, ud.bodyMesh, 0x66cc33, 0.3 + 0.3 * sev);
+        tintMaterial(patient, ud.headMesh, 0x88cc44, 0.2 + 0.25 * sev);
+
+      } else if (region === 'teeth') {
+        // Swollen head (one-sided cheek effect via scale + red)
+        tintMaterial(patient, ud.headMesh, 0xff4444, 0.3 + 0.25 * sev);
+        ud.headMesh.scale.set(1.15 + 0.15 * sev, 1, 1.1 + 0.1 * sev);
+        ud.illnessVisuals.push({ mesh: ud.headMesh, parent: null, resetScale: true });
+
+      } else if (region === 'chest') {
+        // Red chest area
+        tintMaterial(patient, ud.bodyMesh, 0xff2222, 0.3 + 0.3 * sev);
+
+      } else if (region === 'fullBody') {
+        // Everything red-ish and slightly swollen
+        tintMaterial(patient, ud.bodyMesh, 0xff4444, 0.25 + 0.25 * sev);
+        tintMaterial(patient, ud.headMesh, 0xff4444, 0.2 + 0.2 * sev);
+        tintMaterial(patient, ud.leftArm.upperArm, 0xff4444, 0.2 + 0.2 * sev);
+        tintMaterial(patient, ud.rightArm.upperArm, 0xff4444, 0.2 + 0.2 * sev);
+        var leftLeg2 = ud.leftLegPivot.children[0];
+        var rightLeg2 = ud.rightLegPivot.children[0];
+        tintMaterial(patient, leftLeg2, 0xff4444, 0.15 + 0.15 * sev);
+        tintMaterial(patient, rightLeg2, 0xff4444, 0.15 + 0.15 * sev);
+      }
+
+    } else if (cType === 'strepsils') {
+      // ===== THROAT/RESPIRATORY: swollen red neck + red torso =====
+      var applyThroat = (region === 'throat' || region === 'both');
+      var applyChest = (region === 'chest' || region === 'both');
+      var im = region === 'both' ? 0.7 : 1.0;
+
+      if (applyThroat) {
+        // Swollen red neck cylinder
+        var neckR = 0.1 + 0.05 * sev * im;
+        var neckMat = new THREE.MeshStandardMaterial({ color: 0xcc4444, roughness: 0.6 });
+        var swollenNeck = new THREE.Mesh(new THREE.CylinderGeometry(neckR, 0.08, 0.12, 8), neckMat);
+        swollenNeck.position.set(0, 1.22, 0);
+        swollenNeck.castShadow = true;
+        addIllnessMesh(patient, swollenNeck, ud.bodyContainer);
+        // Red face
+        tintMaterial(patient, ud.headMesh, 0xff3333, (0.25 + 0.3 * sev) * im);
+      }
+
+      if (applyChest) {
+        // Red torso (inflamed chest)
+        tintMaterial(patient, ud.bodyMesh, 0xcc2222, (0.3 + 0.3 * sev) * im);
+        // Slightly swollen torso
+        var chestSwell = 1 + 0.15 * sev * im;
+        ud.bodyMesh.scale.set(chestSwell, 1, chestSwell);
+        ud.illnessVisuals.push({ mesh: ud.bodyMesh, parent: null, resetScale: true });
+      }
+    }
+  }
+
+  function removeIllnessVisuals(patient) {
+    var ud = patient.mesh.userData;
+    if (ud.illnessVisuals) {
+      for (var i = 0; i < ud.illnessVisuals.length; i++) {
+        var entry = ud.illnessVisuals[i];
+        if (entry.resetScale) {
+          entry.mesh.scale.set(1, 1, 1);
+        } else if (entry.parent) {
+          entry.parent.remove(entry.mesh);
+          if (entry.mesh.geometry) entry.mesh.geometry.dispose();
+          if (entry.mesh.material) entry.mesh.material.dispose();
+        }
+      }
+      ud.illnessVisuals = [];
+    }
+    if (ud.illnessMaterials) {
+      for (var j = 0; j < ud.illnessMaterials.length; j++) {
+        var m = ud.illnessMaterials[j];
+        m.mesh.material.color.setHex(m.originalColor);
+      }
+      ud.illnessMaterials = [];
+    }
+  }
+
   function spawnPatient(instant) {
     var mesh = createPatientMesh();
     mesh.position.set(0, 0, 1);
@@ -345,6 +557,7 @@
     queue.push(patient);
     updateQueueTargets();
     createHealthBar(patient);
+    applyIllnessVisuals(patient);
 
     if (instant && patient.queueTarget) {
       mesh.position.copy(patient.queueTarget);
@@ -1172,6 +1385,7 @@
     }
     patient.treated = false; // Stop recovery logic
     patient.anim.recovered = true;
+    removeIllnessVisuals(patient);
     patient.anim.targetPose = 'standing';
     // Track served
     if (Game.Shift) Game.Shift.trackPatientServed();
@@ -1180,6 +1394,7 @@
   }
 
   function removePatient(patient) {
+    removeIllnessVisuals(patient);
     if (patient.indicator) {
       scene.remove(patient.indicator);
       patient.indicator = null;
@@ -1624,6 +1839,7 @@
       // Remove all patients from scene
       for (var i = patients.length - 1; i >= 0; i--) {
         var p = patients[i];
+        removeIllnessVisuals(p);
         if (p.indicator) { scene.remove(p.indicator); p.indicator = null; }
         if (p.healthBar) { scene.remove(p.healthBar); p.healthBar = null; }
         if (p.destination) {
