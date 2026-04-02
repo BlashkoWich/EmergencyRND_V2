@@ -182,6 +182,11 @@
     <div id="nurse-warning-hud"></div>
   </div>
   <div id="balance-hud">Баланс: <span id="balance-value">$350</span></div>
+  <div id="level-hud">
+    <span id="level-label">Ур. <span id="level-value">1</span></span>
+    <div id="xp-track"><div id="xp-fill"></div></div>
+    <span id="xp-text">0/100</span>
+  </div>
   <div id="time-hud">
     <span id="day-value">День 1</span>
     <span id="time-value">08:00</span>
@@ -203,12 +208,20 @@
     </div>
     <button id="day-end-next">Перейти в следующий день</button>
   </div>
+  <div id="level-up-popup" style="display:none">
+    <h2 id="level-up-title">Уровень 2!</h2>
+    <div id="level-up-unlocks"></div>
+    <button id="level-up-close">Отлично!</button>
+  </div>
+  <div id="xp-animation-container"></div>
   <div id="cashier-popup">
     <button id="terminal-close">&#10005;</button>
     <div class="terminal-body">
       <div class="terminal-screen">
         <div class="terminal-screen-row">К оплате: <span id="terminal-amount">$0</span></div>
         <div class="terminal-screen-row terminal-screen-entered">Введено: <span id="terminal-entered">0</span></div>
+        <div class="terminal-screen-row terminal-screen-breakdown" id="terminal-breakdown"></div>
+        <div class="terminal-screen-row terminal-screen-xp" id="terminal-xp"></div>
       </div>
       <div class="terminal-keypad">
         <button class="terminal-key" data-value="1">1</button>
@@ -226,7 +239,53 @@
       </div>
     </div>
   </div>
-  <div id="overlay">
+  <div id="level-select-screen">
+    <h1>Частная Клиника</h1>
+    <p class="level-select-subtitle">Выберите начальный уровень</p>
+    <div id="level-select-cards">
+      <div class="level-card" data-level="1">
+        <div class="level-card-header">Уровень 1</div>
+        <ul class="level-card-features">
+          <li>Только лёгкие пациенты</li>
+          <li>Покупка препаратов и белья</li>
+          <li>Без диагностики</li>
+          <li>Пациенты приходят по одному</li>
+        </ul>
+        <button class="level-card-btn" data-level="1">Начать</button>
+      </div>
+      <div class="level-card" data-level="2">
+        <div class="level-card-header">Уровень 2</div>
+        <ul class="level-card-features">
+          <li>+ Пациенты средней тяжести</li>
+          <li>+ Покупка инструментов</li>
+          <li>Пациентам нужна диагностика</li>
+          <li>Пациенты приходят по одному</li>
+        </ul>
+        <button class="level-card-btn" data-level="2">Начать</button>
+      </div>
+      <div class="level-card" data-level="3">
+        <div class="level-card-header">Уровень 3</div>
+        <ul class="level-card-features">
+          <li>+ Тяжёлые пациенты</li>
+          <li>+ Покупка мебели и прокачка</li>
+          <li>Поток пациентов каждые 20с</li>
+          <li>Диагностика включена</li>
+        </ul>
+        <button class="level-card-btn" data-level="3">Начать</button>
+      </div>
+      <div class="level-card" data-level="4">
+        <div class="level-card-header">Уровень 4</div>
+        <ul class="level-card-features">
+          <li>+ Найм сотрудников</li>
+          <li>Всё разблокировано</li>
+          <li>Поток пациентов каждые 10с</li>
+          <li>Полный хаос!</li>
+        </ul>
+        <button class="level-card-btn" data-level="4">Начать</button>
+      </div>
+    </div>
+  </div>
+  <div id="overlay" style="display:none">
     <h1>Частная Клиника</h1>
     <p>Нажмите, чтобы начать</p>
     <div class="keys">
@@ -252,6 +311,7 @@
   </div>
 
   <script src="js/helpers.js"></script>
+  <script src="js/levels.js"></script>
   <script src="js/world.js"></script>
   <script src="js/patients.js"></script>
   <script src="js/controls.js"></script>
@@ -325,6 +385,7 @@
     Game.Furniture.registerExisting(bedMeshes, chairMeshes);
     Game.Consumables.setup(THREE, scene, camera, controls, collidables);
     Game.Inventory.setup();
+    Game.Levels.setup(controls);
     Game.Shop.setup(controls);
     Game.WashingMachine.setup(THREE, scene, camera, controls, collidables);
     Game.Shelves.setup(THREE, scene, camera, controls, collidables);

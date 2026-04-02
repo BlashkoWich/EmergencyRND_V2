@@ -379,6 +379,134 @@ canvas { display: block; }
 }
 #balance-value { color: #4ade80; }
 
+/* --- Level select screen --- */
+#level-select-screen {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  z-index: 10; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.85);
+  font-family: 'Segoe UI', Arial, sans-serif;
+  color: #d0dbe6;
+}
+#level-select-screen h1 {
+  font-size: 2.2rem; margin-bottom: 4px; color: #fff;
+}
+.level-select-subtitle {
+  font-size: 1rem; opacity: 0.6; margin-bottom: 24px;
+}
+#level-select-cards {
+  display: flex; gap: 14px; flex-wrap: wrap; justify-content: center;
+  max-width: 900px; padding: 0 16px;
+}
+.level-card {
+  background: rgba(15, 30, 46, 0.95);
+  border: 1px solid rgba(122, 191, 255, 0.2);
+  border-radius: 12px; padding: 20px 18px;
+  width: 190px; display: flex; flex-direction: column;
+  transition: border-color 0.2s, transform 0.2s;
+}
+.level-card:hover {
+  border-color: rgba(255, 215, 0, 0.5);
+  transform: translateY(-3px);
+}
+.level-card-header {
+  font-size: 1.1rem; font-weight: 700; color: #ffd700;
+  margin-bottom: 12px; text-align: center;
+}
+.level-card-features {
+  list-style: none; padding: 0; margin: 0 0 16px 0;
+  font-size: 0.82rem; line-height: 1.7; flex: 1;
+  color: #a0b8d0;
+}
+.level-card-features li::before {
+  content: '\2022 '; color: #7abfff;
+}
+.level-card-btn {
+  padding: 10px 0; border: none; border-radius: 8px;
+  background: #1a5a8a; color: #fff; font-size: 0.95rem;
+  font-weight: 600; cursor: pointer; transition: background 0.2s;
+}
+.level-card-btn:hover { background: #2277aa; }
+
+/* --- Level HUD --- */
+#level-hud {
+  position: fixed; top: 56px; right: 20px; z-index: 5;
+  background: rgba(0, 0, 0, 0.55);
+  color: #ffd700; font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 0.95rem; font-weight: 600;
+  padding: 6px 14px; border-radius: 8px;
+  pointer-events: none; user-select: none;
+  border: 1px solid rgba(255, 215, 0, 0.3);
+  display: flex; align-items: center; gap: 10px;
+}
+#xp-track {
+  width: 80px; height: 8px; background: rgba(255,255,255,0.15);
+  border-radius: 4px; overflow: hidden;
+}
+#xp-fill {
+  height: 100%; width: 0%; background: linear-gradient(90deg, #ffd700, #ffaa00);
+  border-radius: 4px; transition: width 0.4s ease;
+}
+#xp-text { font-size: 0.75rem; opacity: 0.7; }
+
+/* --- Level-up popup --- */
+#level-up-popup {
+  position: fixed; top: 50%; left: 50%; z-index: 25;
+  transform: translate(-50%, -50%);
+  background: #0f1e2e; color: #d0dbe6;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  border-radius: 14px; padding: 30px 40px;
+  min-width: 340px; text-align: center;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,215,0,0.2);
+  border: 2px solid rgba(255, 215, 0, 0.3);
+}
+#level-up-popup h2 { color: #ffd700; font-size: 1.5rem; margin-bottom: 16px; }
+#level-up-unlocks { text-align: left; margin-bottom: 20px; font-size: 0.95rem; line-height: 1.8; }
+.level-up-item { color: #a0d8a0; }
+#level-up-close {
+  padding: 12px 32px; border: none; border-radius: 10px;
+  background: #b8860b; color: #fff; font-size: 1.05rem;
+  font-weight: 600; cursor: pointer; transition: background 0.2s;
+}
+#level-up-close:hover { background: #d4a017; }
+
+/* --- XP float animation --- */
+#xp-animation-container {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none; z-index: 30;
+}
+.xp-float {
+  position: absolute; color: #ffd700; font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 1.4rem; font-weight: 800;
+  text-shadow: 0 0 14px rgba(255,215,0,0.7), 0 0 28px rgba(255,170,0,0.4), 0 2px 4px rgba(0,0,0,0.6);
+  animation: xp-rise 1.8s ease-out forwards;
+  white-space: nowrap;
+}
+@keyframes xp-rise {
+  0% { opacity: 1; transform: translateY(0) scale(1.3); }
+  20% { opacity: 1; transform: translateY(-10px) scale(1.1); }
+  100% { opacity: 0; transform: translateY(-80px) scale(0.85); }
+}
+
+/* --- Locked shop tabs --- */
+.shop-tab.locked {
+  opacity: 0.4; cursor: not-allowed; position: relative;
+}
+.shop-tab.locked::after {
+  content: '\1F512'; position: absolute; top: -2px; right: 4px;
+  font-size: 0.65rem;
+}
+
+/* --- Terminal breakdown/xp rows --- */
+.terminal-screen-breakdown {
+  font-size: 0.75rem; color: #7abfff; margin-top: 4px;
+  min-height: 1em;
+}
+.terminal-screen-xp {
+  font-size: 0.75rem; color: #ffd700; margin-top: 2px;
+  min-height: 1em;
+}
+
 /* --- Cashier terminal popup --- */
 #cashier-popup {
   position: fixed; top: 50%; left: 50%; z-index: 20;

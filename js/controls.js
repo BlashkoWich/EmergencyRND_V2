@@ -66,6 +66,10 @@
         if (Game.Patients && Game.Patients.isPopupOpen()) return;
         if (Game.Diagnostics && Game.Diagnostics.isActive()) return;
         if (Game.Shift && Game.Shift.isPopupOpen()) return;
+        if (Game.Levels && Game.Levels.isPopupOpen()) return;
+        if (Game.Cashier && Game.Cashier.isPopupOpen()) return;
+        var levelSelect = document.getElementById('level-select-screen');
+        if (levelSelect && levelSelect.style.display !== 'none') return;
         overlay.style.display = 'flex';
         crosshairEl.style.display = 'none';
         document.getElementById('interact-hint').style.display = 'none';

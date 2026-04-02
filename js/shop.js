@@ -13,6 +13,26 @@
   ];
   var upgradeButtons = []; // [{btn, item}]
 
+  var UNLOCK_LEVELS_MAP = {
+    instruments: 2,
+    furniture: 3,
+    upgrades: 3,
+    staff: 4
+  };
+
+  function refreshTabLocks() {
+    if (!shopEl) return;
+    var tabs = shopEl.querySelectorAll('.shop-tab');
+    for (var t = 0; t < tabs.length; t++) {
+      var name = tabs[t].dataset.tab;
+      if (Game.Levels && !Game.Levels.isTabUnlocked(name)) {
+        tabs[t].classList.add('locked');
+      } else {
+        tabs[t].classList.remove('locked');
+      }
+    }
+  }
+
   function refreshStaffList() {
     var listEl = document.getElementById('staff-hired-list');
     if (!listEl || !Game.Staff) return;
@@ -116,10 +136,19 @@
       for (var t = 0; t < tabs.length; t++) {
         (function(tab) {
           tab.addEventListener('click', function() {
+            var tabName = tab.dataset.tab;
+            if (Game.Levels && !Game.Levels.isTabUnlocked(tabName)) {
+              var unlockLevel = UNLOCK_LEVELS_MAP[tabName] || '?';
+              Game.Inventory.showNotification(
+                'Разблокируется на уровне ' + unlockLevel,
+                'rgba(200, 150, 50, 0.85)'
+              );
+              return;
+            }
             for (var k = 0; k < tabs.length; k++) tabs[k].classList.remove('active');
             tab.classList.add('active');
             for (var key in tabContents) tabContents[key].style.display = 'none';
-            tabContents[tab.dataset.tab].style.display = '';
+            tabContents[tabName].style.display = '';
           });
         })(tabs[t]);
       }
@@ -248,12 +277,15 @@
         controls.lock();
       });
 
+      refreshTabLocks();
+
       // KeyQ to toggle shop
       document.addEventListener('keydown', function(e) {
         if (e.code !== 'KeyQ') return;
         if (Game.Patients.isPopupOpen()) return;
         if (Game.Cashier.isPopupOpen()) return;
         if (Game.Diagnostics && Game.Diagnostics.isActive()) return;
+        if (Game.Levels && Game.Levels.isPopupOpen()) return;
 
         if (isShopOpen) {
           shopEl.style.display = 'none';
@@ -266,8 +298,11 @@
           updateCounts();
           refreshUpgradeButtons();
           refreshStaffList();
+          refreshTabLocks();
         }
       });
-    }
+    },
+
+    refreshTabLocks: refreshTabLocks
   };
 })();

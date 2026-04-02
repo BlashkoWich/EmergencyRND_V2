@@ -240,6 +240,9 @@
   var spawnTimer = 0;
   var SPAWN_INTERVAL = 10;
   var PATIENT_SPEED = 3.5;
+  var sequentialSpawnTimer = 0;
+  var sequentialSpawnActive = false; // true after first patient is fully paid
+  var firstPatientPaid = false; // tracks if the very first patient has been paid
   var animations = [];
 
   // --- UI elements ---
@@ -507,9 +510,20 @@
     var consumableType = randomFrom(CONSUMABLE_KEYS);
     var data = MEDICAL_DATA[consumableType];
     var medCase = randomFrom(data.cases);
-    var roll = Math.random();
-    var severity = roll < 0.60 ? SEVERITIES[2] : roll < 0.85 ? SEVERITIES[1] : SEVERITIES[0];
-    var needsDiagnosis = Math.random() < 0.2;
+    var currentLevel = Game.Levels ? Game.Levels.getLevel() : 1;
+    var severity;
+    if (currentLevel === 1) {
+      severity = SEVERITIES[2]; // mild only
+    } else if (currentLevel === 2) {
+      // mild + medium
+      var roll = Math.random();
+      severity = roll < 0.65 ? SEVERITIES[2] : SEVERITIES[1];
+    } else {
+      // level 3+: mild + medium + severe
+      var roll = Math.random();
+      severity = roll < 0.60 ? SEVERITIES[2] : roll < 0.85 ? SEVERITIES[1] : SEVERITIES[0];
+    }
+    var needsDiagnosis = (currentLevel >= 2) ? (Math.random() < 0.2) : false;
 
     var patient = {
       id: patientIdCounter++,
@@ -537,6 +551,7 @@
       maxHp: MAX_HP,
       severity: severity,
       treated: false,
+      wasDiagnosed: false,
       hpDecayTimer: 0,
       healthBar: null,
       lastDrawnHp: -1,
@@ -1393,6 +1408,23 @@
     Game.Cashier.addPatientToQueue(patient);
   }
 
+  function onPatientPaid() {
+    var currentLevel = Game.Levels ? Game.Levels.getLevel() : 1;
+    if (currentLevel >= 3) return; // continuous mode handles spawning via timer
+    if (!Game.Shift || !Game.Shift.isOpen()) return;
+
+    if (!firstPatientPaid) {
+      // First patient just paid — unlock 30s timer and spawn one immediately
+      firstPatientPaid = true;
+      sequentialSpawnActive = true;
+      sequentialSpawnTimer = 0;
+      spawnPatient();
+    } else {
+      // Subsequent payments — spawn immediately
+      spawnPatient();
+    }
+  }
+
   function removePatient(patient) {
     removeIllnessVisuals(patient);
     if (patient.indicator) {
@@ -1588,6 +1620,7 @@
   }
 
   function revealDiagnosis(patient) {
+    patient.wasDiagnosed = true;
     patient.needsDiagnosis = false;
     patient.symptom = null;
     patient.diagnosis = patient.hiddenDiagnosis;
@@ -1893,6 +1926,9 @@
     spawnFirstPatient: function() {
       spawnPatient();
     },
+    onPatientPaid: function() {
+      onPatientPaid();
+    },
 
     clearAll: function() {
       // Remove all patients from scene
@@ -1914,6 +1950,9 @@
       hoveredPatient = null;
       popupPatient = null;
       spawnTimer = 0;
+      sequentialSpawnTimer = 0;
+      sequentialSpawnActive = false;
+      firstPatientPaid = false;
       // Remove heal particles
       for (var j = healParticles.length - 1; j >= 0; j--) {
         scene.remove(healParticles[j].mesh);
@@ -1924,19 +1963,42 @@
     update: function(delta) {
       // Spawn patients only when shift is open
       if (Game.Shift && Game.Shift.isOpen()) {
-        spawnTimer += delta;
-        if (spawnTimer >= SPAWN_INTERVAL) {
-          spawnTimer = 0;
-          var maxQueue = Math.min(2 + Game.Furniture.getAllBeds().length + Game.Furniture.getAllChairs().length - 5, 10);
-          if (maxQueue < 2) maxQueue = 2;
-          if (queue.length >= maxQueue) {
-            Game.Inventory.showNotification('Пациент не смог зайти из-за того, что очередь переполнена');
-          } else {
-            spawnPatient();
+        var currentLevel = Game.Levels ? Game.Levels.getLevel() : 1;
+        var spawnMode = (currentLevel >= 3) ? 'continuous' : 'sequential';
+
+        if (spawnMode === 'continuous') {
+          // Level 3+: timed spawn every N seconds
+          var interval = Game.Levels ? Game.Levels.getSpawnInterval() : 10;
+          spawnTimer += delta;
+          if (spawnTimer >= interval) {
+            spawnTimer = 0;
+            var maxQueue = Math.min(2 + Game.Furniture.getAllBeds().length + Game.Furniture.getAllChairs().length - 5, 10);
+            if (maxQueue < 2) maxQueue = 2;
+            if (queue.length >= maxQueue) {
+              Game.Inventory.showNotification('Пациент не смог зайти из-за того, что очередь переполнена');
+            } else {
+              spawnPatient();
+            }
+          }
+        } else {
+          // Level 1-2: sequential mode
+          // After first patient is paid, spawn every 30 seconds
+          if (sequentialSpawnActive) {
+            sequentialSpawnTimer += delta;
+            if (sequentialSpawnTimer >= 30) {
+              sequentialSpawnTimer = 0;
+              var maxQueue = Math.min(2 + Game.Furniture.getAllBeds().length + Game.Furniture.getAllChairs().length - 5, 10);
+              if (maxQueue < 2) maxQueue = 2;
+              if (queue.length < maxQueue) {
+                spawnPatient();
+              }
+            }
           }
         }
       } else {
         spawnTimer = 0;
+        sequentialPendingSpawn = false;
+        sequentialDelay = 0;
       }
 
       updatePatients(delta);

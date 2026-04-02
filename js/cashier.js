@@ -13,7 +13,19 @@
   var prevHovered = false;
 
   // Price map by severity key
-  var PRICES = { mild: 35, medium: 50, severe: 70 };
+  var BASE_PRICES = { mild: 35, medium: 50, severe: 70 };
+  var DIAGNOSIS_BONUS = 15;
+  var PRICE_VARIANCE = 5;
+  var XP_BY_SEVERITY = { mild: 10, medium: 15, severe: 20 };
+  var XP_DIAGNOSIS_BONUS = 5;
+
+  function getPatientPrice(patient) {
+    var base = BASE_PRICES[patient.severity.key] || 35;
+    var variance = Math.floor(Math.random() * (PRICE_VARIANCE * 2 + 1)) - PRICE_VARIANCE;
+    var treatment = base + variance;
+    var diagBonus = patient.wasDiagnosed ? DIAGNOSIS_BONUS : 0;
+    return { treatment: treatment, diagnosis: diagBonus, total: treatment + diagBonus };
+  }
 
   // Raycaster for terminal interaction
   var interactRay;
@@ -21,6 +33,7 @@
 
   // UI elements
   var popupEl, screenAmountEl, screenEnteredEl, applyBtn, balanceEl;
+  var screenBreakdownEl, screenXpEl;
 
   function getQueuePosition(index) {
     return new THREE.Vector3(3.5, 0, -8.0 + index * 1.0);
@@ -39,9 +52,27 @@
 
   function updateTerminalScreen() {
     if (!currentPatient) return;
-    var required = PRICES[currentPatient.severity.key] || 0;
+    var info = currentPatient.paymentInfo;
+    if (!info) return;
+    var required = info.total;
     screenAmountEl.textContent = '$' + required;
     screenEnteredEl.textContent = enteredAmount || '0';
+
+    // Show breakdown
+    if (screenBreakdownEl) {
+      var text = '$' + info.treatment + ' лечение';
+      if (info.diagnosis > 0) text += ' + $' + info.diagnosis + ' диагностика';
+      screenBreakdownEl.textContent = text;
+    }
+
+    // Show XP preview
+    if (screenXpEl) {
+      var xpBase = XP_BY_SEVERITY[currentPatient.severity.key] || 10;
+      var xpDiag = currentPatient.wasDiagnosed ? XP_DIAGNOSIS_BONUS : 0;
+      var xpText = '+' + xpBase + ' XP лечение';
+      if (xpDiag > 0) xpText += ' + ' + xpDiag + ' XP диагностика';
+      screenXpEl.textContent = xpText;
+    }
 
     // Enable apply button only if entered amount matches exactly
     if (parseInt(enteredAmount, 10) === required) {
@@ -70,18 +101,38 @@
     isOpen = false;
     popupEl.style.display = 'none';
     enteredAmount = '';
+    if (screenBreakdownEl) screenBreakdownEl.textContent = '';
+    if (screenXpEl) screenXpEl.textContent = '';
     controls.lock();
+  }
+
+  function awardPatientXP(patient) {
+    if (!Game.Levels) return;
+    var xpBase = XP_BY_SEVERITY[patient.severity.key] || 10;
+    var xpDiag = patient.wasDiagnosed ? XP_DIAGNOSIS_BONUS : 0;
+    Game.Levels.awardXP(xpBase + xpDiag, {
+      treatment: xpBase,
+      diagnosis: xpDiag
+    });
   }
 
   function processPayment() {
     if (!currentPatient) return;
-    var required = PRICES[currentPatient.severity.key] || 0;
+    var info = currentPatient.paymentInfo;
+    if (!info) return;
+    var required = info.total;
     if (parseInt(enteredAmount, 10) !== required) return;
 
     balance += required;
     if (Game.Shift) Game.Shift.trackEarning(required);
     updateBalanceHUD();
+    awardPatientXP(currentPatient);
     closeTerminal();
+
+    // Notify patient system about payment (spawns next patient on sequential levels)
+    if (Game.Patients && Game.Patients.onPatientPaid) {
+      Game.Patients.onPatientPaid();
+    }
 
     // Signal patient to leave
     currentPatient.state = 'leaving';
@@ -186,11 +237,20 @@
     getCurrentPatient: function() { return currentPatient; },
     processPaymentAuto: function() {
       if (!currentPatient) return;
-      var required = PRICES[currentPatient.severity.key] || 0;
+      if (!currentPatient.paymentInfo) {
+        currentPatient.paymentInfo = getPatientPrice(currentPatient);
+      }
+      var required = currentPatient.paymentInfo.total;
       balance += required;
       if (Game.Shift) Game.Shift.trackEarning(required);
       updateBalanceHUD();
+      awardPatientXP(currentPatient);
       if (isOpen) closeTerminal();
+
+      // Notify patient system about payment
+      if (Game.Patients && Game.Patients.onPatientPaid) {
+        Game.Patients.onPatientPaid();
+      }
 
       // Signal patient to leave
       currentPatient.state = 'leaving';
@@ -223,6 +283,9 @@
     },
 
     addPatientToQueue: function(patient) {
+      // Calculate payment once when entering queue
+      patient.paymentInfo = getPatientPrice(patient);
+
       if (!currentPatient) {
         currentPatient = patient;
         patient.targetPos = patientPos.clone();
@@ -251,6 +314,8 @@
       screenEnteredEl = document.getElementById('terminal-entered');
       applyBtn = document.getElementById('terminal-apply');
       balanceEl = document.getElementById('balance-value');
+      screenBreakdownEl = document.getElementById('terminal-breakdown');
+      screenXpEl = document.getElementById('terminal-xp');
 
       updateBalanceHUD();
 
@@ -286,6 +351,7 @@
         if (isOpen) return;
         if (Game.Patients.isPopupOpen()) return;
         if (Game.Shop.isOpen()) return;
+        if (Game.Levels && Game.Levels.isPopupOpen()) return;
         if (hoveredTerminal && currentPatient && currentPatient.state === 'atCashier') {
           openTerminal();
         }
