@@ -148,6 +148,7 @@
     pickMedicine: 'Берёт лекарство',
     treating: 'Лечение',
     changingLinen: 'Смена белья',
+    cleaningTrash: 'Уборка мусора',
     depositDirty: 'Складывает',
     loadingMachine: 'Загрузка',
     collectClean: 'Собирает бельё'
@@ -959,6 +960,18 @@
         staff.state = 'walkToBed';
         return;
       }
+
+      // Priority 4: Pick up trash
+      var trashList = Game.Trash ? Game.Trash.getTrashItems() : [];
+      if (trashList.length > 0) {
+        var nearest = Game.Trash.findNearest(staff.mesh.position);
+        if (nearest) {
+          staff._targetTrash = nearest;
+          staff.targetPos = new THREE.Vector3(nearest.position.x, 0, nearest.position.z);
+          staff.state = 'walkToTrash';
+          return;
+        }
+      }
     } else if (staff.state === 'walkToCleanBasket') {
       var arrived = moveToward(staff.mesh.position, staff.targetPos, speed);
       faceTarget(staff, staff.targetPos);
@@ -1104,6 +1117,48 @@
         }
         if (collected > 0) {
           updateBasketSprite(baskets.clean);
+        }
+        returnToWorkPos(staff);
+      }
+    } else if (staff.state === 'walkToTrash') {
+      // Verify trash still exists (player might have picked it up)
+      if (!staff._targetTrash || !staff._targetTrash.parent) {
+        staff._targetTrash = null;
+        // Try next trash
+        var trashList = Game.Trash ? Game.Trash.getTrashItems() : [];
+        if (trashList.length > 0) {
+          var nearest = Game.Trash.findNearest(staff.mesh.position);
+          if (nearest) {
+            staff._targetTrash = nearest;
+            staff.targetPos = new THREE.Vector3(nearest.position.x, 0, nearest.position.z);
+            return;
+          }
+        }
+        returnToWorkPos(staff);
+        return;
+      }
+      var arrived = moveToward(staff.mesh.position, staff.targetPos, speed);
+      faceTarget(staff, staff.targetPos);
+      if (arrived) {
+        setTimedState(staff, 'cleaningTrash', 5.0);
+      }
+    } else if (staff.state === 'cleaningTrash') {
+      staff.stateTimer -= delta;
+      if (staff.stateTimer <= 0) {
+        if (staff._targetTrash && Game.Trash.removeTrash) {
+          Game.Trash.removeTrash(staff._targetTrash);
+        }
+        staff._targetTrash = null;
+        // Check for more trash
+        var moreTrash = Game.Trash ? Game.Trash.getTrashItems() : [];
+        if (moreTrash.length > 0) {
+          var nearest = Game.Trash.findNearest(staff.mesh.position);
+          if (nearest) {
+            staff._targetTrash = nearest;
+            staff.targetPos = new THREE.Vector3(nearest.position.x, 0, nearest.position.z);
+            staff.state = 'walkToTrash';
+            return;
+          }
         }
         returnToWorkPos(staff);
       }
