@@ -149,17 +149,24 @@ returning → idle
 
 ### Медсестра
 
+Медсестра поддерживает мульти-препаратное лечение: делает **несколько ходок** (по одному препарату за раз). После доставки одного препарата возвращается в idle, затем снова находит того же пациента (если `pendingConsumables` не пуст) и несёт следующий.
+
 ```
-idle → ищет atBed + !needsDiagnosis + !treated + !staffTreating
+idle (каждые 1 сек) → ищет atBed + !needsDiagnosis + !treated + !staffTreating + pendingConsumables.length > 0
+  → requiredMed = patient.pendingConsumables[0]  // берёт ПЕРВЫЙ из оставшихся
   → patient.staffTreating = true
   → ищет лекарство ТОЛЬКО на стеллаже
 walkToShelf → pickMedicine (1 сек) → берёт лекарство
   → если нет: красное предупреждение HUD
-walkToPatient → treating (5 сек) → treatPatientByStaff()
+walkToPatient → treating (5 сек) → treatPatientByStaff(patient, heldItem)
+  → проверка: если pendingConsumables.indexOf(heldItem) === -1 → cancelNurseTask (игрок уже применил)
 returning → idle
+  → если у пациента ещё есть pendingConsumables → на следующем цикле idle снова подберёт его
 ```
 
-**Блокировка**: `patient.staffTreating` → игрок видит "Медсестра уже лечит этого пациента". Действует с момента начала (даже пока идёт за лекарством).
+**Защита от дублирования**: при walkToPatient и treating проверяется `pendingConsumables.indexOf(staff.heldItem)`. Если игрок уже применил этот препарат пока медсестра шла — задача отменяется (`cancelNurseTask`), лекарство возвращается на стеллаж.
+
+**Блокировка**: `patient.staffTreating` → игрок видит "Медсестра уже лечит этого пациента". Действует с момента начала (даже пока идёт за лекарством). Снимается после каждой доставки.
 
 **Предупреждение**: красный HUD-блок (`#nurse-warning-hud`) с перечнем недостающих препаратов на стеллаже. Пульсирующая анимация. Исчезает при появлении лекарства на стеллаже или увольнении медсестры.
 

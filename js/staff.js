@@ -807,9 +807,9 @@
       var patients = Game.Patients.getPatients ? Game.Patients.getPatients() : [];
       for (var i = 0; i < patients.length; i++) {
         var p = patients[i];
-        if (p.state === 'atBed' && !p.needsDiagnosis && !p.treated && !p.staffTreating && !p.staffDiagnosing) {
-          // Check medicine availability on shelves
-          var requiredMed = p.requiredConsumable;
+        if (p.state === 'atBed' && !p.needsDiagnosis && !p.treated && !p.staffTreating && !p.staffDiagnosing && p.pendingConsumables && p.pendingConsumables.length > 0) {
+          // Check medicine availability on shelves — pick first pending consumable
+          var requiredMed = p.pendingConsumables[0];
           var slot = Game.Shelves.findSlotWithItem ? Game.Shelves.findSlotWithItem(requiredMed) : null;
 
           if (!slot) {
@@ -859,6 +859,11 @@
         cancelNurseTask(staff);
         return;
       }
+      // Check if player already applied this specific medicine while nurse was walking
+      if (staff.targetPatient.pendingConsumables && staff.targetPatient.pendingConsumables.indexOf(staff.heldItem) === -1) {
+        cancelNurseTask(staff);
+        return;
+      }
       var arrived = moveToward(staff.mesh.position, staff.targetPos, speed);
       faceTarget(staff, staff.targetPos);
       if (arrived) {
@@ -866,6 +871,11 @@
       }
     } else if (staff.state === 'treating') {
       if (!staff.targetPatient || staff.targetPatient.hp <= 0 || staff.targetPatient.state !== 'atBed') {
+        cancelNurseTask(staff);
+        return;
+      }
+      // Check if player already applied this medicine while nurse was treating
+      if (staff.targetPatient.pendingConsumables && staff.targetPatient.pendingConsumables.indexOf(staff.heldItem) === -1) {
         cancelNurseTask(staff);
         return;
       }

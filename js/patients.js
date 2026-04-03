@@ -525,6 +525,18 @@
     }
     var needsDiagnosis = (currentLevel >= 2) ? (Math.random() < 0.2) : false;
 
+    // Build multi-consumable list based on severity
+    var requiredConsumables;
+    if (severity.key === 'mild') {
+      requiredConsumables = [consumableType];
+    } else if (severity.key === 'medium') {
+      var others = CONSUMABLE_KEYS.filter(function(k) { return k !== consumableType; });
+      requiredConsumables = [consumableType, randomFrom(others)];
+    } else {
+      // severe: all three
+      requiredConsumables = CONSUMABLE_KEYS.slice();
+    }
+
     var patient = {
       id: patientIdCounter++,
       name: randomFrom(NAMES),
@@ -535,6 +547,8 @@
       complaint: medCase.complaint,
       vitals: generateVitals(severity.key),
       requiredConsumable: needsDiagnosis ? null : consumableType,
+      requiredConsumables: needsDiagnosis ? null : requiredConsumables,
+      pendingConsumables: needsDiagnosis ? null : requiredConsumables.slice(),
       needsDiagnosis: needsDiagnosis,
       requiredInstrument: needsDiagnosis ? INSTRUMENT_MAP[consumableType] : null,
       hiddenSymptom: null,
@@ -545,7 +559,7 @@
       targetPos: null,
       queueTarget: null,
       destination: null,
-      indicator: null,
+      indicators: [],
       animating: false,
       hp: severity.startHp,
       maxHp: MAX_HP,
@@ -687,8 +701,15 @@
           var typeName = Game.Consumables.TYPES[activeType].name;
           hintEl.textContent = 'ЛКМ — Применить ' + typeName;
         } else {
-          var neededConsumable = Game.Consumables.TYPES[hoveredPatient.requiredConsumable];
-          hintEl.textContent = 'Нужен препарат (' + neededConsumable.name + ')';
+          var pendingNames = [];
+          if (hoveredPatient.pendingConsumables) {
+            for (var pi = 0; pi < hoveredPatient.pendingConsumables.length; pi++) {
+              pendingNames.push(Game.Consumables.TYPES[hoveredPatient.pendingConsumables[pi]].name);
+            }
+          }
+          hintEl.textContent = pendingNames.length > 1
+            ? 'Нужны препараты: ' + pendingNames.join(', ')
+            : 'Нужен препарат (' + pendingNames[0] + ')';
         }
       }
       hintEl.style.display = 'block';
@@ -760,11 +781,24 @@
       popupSupplyIcon.style.display = '';
       if (popupInstrumentHint) popupInstrumentHint.style.display = 'none';
 
-      // Required consumable
-      var typeInfo = Game.Consumables.TYPES[patient.requiredConsumable];
-      popupSupply.textContent = typeInfo.name;
-      var c = typeInfo.color;
-      popupSupplyIcon.style.backgroundColor = 'rgb(' + ((c >> 16) & 255) + ',' + ((c >> 8) & 255) + ',' + (c & 255) + ')';
+      // Required consumables (show all, mark applied ones)
+      if (patient.requiredConsumables && patient.requiredConsumables.length > 1) {
+        var parts = [];
+        for (var ci = 0; ci < patient.requiredConsumables.length; ci++) {
+          var cKey = patient.requiredConsumables[ci];
+          var cInfo = Game.Consumables.TYPES[cKey];
+          var applied = !patient.pendingConsumables || patient.pendingConsumables.indexOf(cKey) === -1;
+          parts.push(applied ? '\u2713 ' + cInfo.name : cInfo.name);
+        }
+        popupSupply.textContent = parts.join(', ');
+        var c = Game.Consumables.TYPES[patient.requiredConsumable].color;
+        popupSupplyIcon.style.backgroundColor = 'rgb(' + ((c >> 16) & 255) + ',' + ((c >> 8) & 255) + ',' + (c & 255) + ')';
+      } else {
+        var typeInfo = Game.Consumables.TYPES[patient.requiredConsumable];
+        popupSupply.textContent = typeInfo.name;
+        var c = typeInfo.color;
+        popupSupplyIcon.style.backgroundColor = 'rgb(' + ((c >> 16) & 255) + ',' + ((c >> 8) & 255) + ',' + (c & 255) + ')';
+      }
     }
 
     popupEl.style.display = 'block';
@@ -975,25 +1009,22 @@
     ctx.restore();
   }
 
-  function createBedIndicator(patient) {
+  function createSingleIndicatorSprite(itemType) {
     var canvas = document.createElement('canvas');
     canvas.width = 64; canvas.height = 64;
     var ctx = canvas.getContext('2d');
 
-    var itemType, bgColor;
-    if (patient.needsDiagnosis) {
-      itemType = patient.requiredInstrument;
+    var bgColor;
+    if (Game.Consumables.isInstrument && Game.Consumables.isInstrument(itemType)) {
       var instrInfo = Game.Consumables.INSTRUMENT_TYPES[itemType];
       bgColor = instrInfo.color;
     } else {
-      itemType = patient.requiredConsumable;
       var typeInfo = Game.Consumables.TYPES[itemType];
       bgColor = typeInfo.color;
     }
 
     var r = (bgColor >> 16) & 255, g = (bgColor >> 8) & 255, b = bgColor & 255;
 
-    // Background circle with slight dark tint
     ctx.beginPath();
     ctx.arc(32, 32, 30, 0, Math.PI * 2);
     ctx.fillStyle = 'rgba(' + Math.floor(r * 0.3) + ',' + Math.floor(g * 0.3) + ',' + Math.floor(b * 0.3) + ',0.85)';
@@ -1002,17 +1033,64 @@
     ctx.lineWidth = 3;
     ctx.stroke();
 
-    // Draw the actual item icon
     drawIndicatorIcon(ctx, itemType);
 
     var texture = new THREE.CanvasTexture(canvas);
     var mat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
     var sprite = new THREE.Sprite(mat);
     sprite.scale.set(0.4, 0.4, 1);
-    sprite.position.copy(patient.mesh.position);
-    sprite.position.y = 2.0;
-    scene.add(sprite);
-    patient.indicator = sprite;
+    sprite.userData = { consumableType: itemType };
+    return sprite;
+  }
+
+  function createBedIndicators(patient) {
+    removeAllIndicators(patient);
+
+    if (patient.needsDiagnosis) {
+      // Show single instrument indicator before diagnosis
+      var sprite = createSingleIndicatorSprite(patient.requiredInstrument);
+      sprite.position.copy(patient.mesh.position);
+      sprite.position.y = 2.0;
+      scene.add(sprite);
+      patient.indicators.push(sprite);
+      return;
+    }
+
+    if (!patient.pendingConsumables) return;
+    var count = patient.pendingConsumables.length;
+    for (var i = 0; i < count; i++) {
+      var type = patient.pendingConsumables[i];
+      var sprite = createSingleIndicatorSprite(type);
+      var offsetX = (i - (count - 1) / 2) * 0.45;
+      sprite.position.copy(patient.mesh.position);
+      sprite.position.x += offsetX;
+      sprite.position.y = 2.0;
+      scene.add(sprite);
+      patient.indicators.push(sprite);
+    }
+  }
+
+  function removeAllIndicators(patient) {
+    if (!patient.indicators) return;
+    for (var i = 0; i < patient.indicators.length; i++) {
+      scene.remove(patient.indicators[i]);
+      if (patient.indicators[i].material.map) patient.indicators[i].material.map.dispose();
+      patient.indicators[i].material.dispose();
+    }
+    patient.indicators = [];
+  }
+
+  function removeOneIndicator(patient, consumableType) {
+    if (!patient.indicators) return;
+    for (var i = 0; i < patient.indicators.length; i++) {
+      if (patient.indicators[i].userData.consumableType === consumableType) {
+        scene.remove(patient.indicators[i]);
+        if (patient.indicators[i].material.map) patient.indicators[i].material.map.dispose();
+        patient.indicators[i].material.dispose();
+        patient.indicators.splice(i, 1);
+        break;
+      }
+    }
   }
 
   // --- Health bar ---
@@ -1327,12 +1405,17 @@
     for (var i = 0; i < patients.length; i++) {
       var p = patients[i];
       var isLying = p.anim.pose === 'lying';
-      if (p.indicator) {
-        p.indicator.position.x = p.mesh.position.x;
-        p.indicator.position.z = p.mesh.position.z;
-        p.indicator.position.y = isLying ? 1.5 : 2.0;
-        var pulse = 0.4 + Math.sin(t + p.id) * 0.06;
-        p.indicator.scale.set(pulse, pulse, 1);
+      if (p.indicators && p.indicators.length > 0) {
+        var count = p.indicators.length;
+        for (var j = 0; j < count; j++) {
+          var ind = p.indicators[j];
+          var offsetX = (j - (count - 1) / 2) * 0.45;
+          ind.position.x = p.mesh.position.x + offsetX;
+          ind.position.z = p.mesh.position.z;
+          ind.position.y = isLying ? 1.5 : 2.0;
+          var pulse = 0.4 + Math.sin(t + p.id + j * 0.5) * 0.06;
+          ind.scale.set(pulse, pulse, 1);
+        }
       }
       if (p.healthBar) {
         p.healthBar.position.x = p.mesh.position.x;
@@ -1343,21 +1426,42 @@
   }
 
   // --- Treatment ---
-  function treatPatient(patient) {
-    Game.Inventory.removeActive();
+  function applyOneConsumable(patient, consumableType) {
+    // Remove from pending list
+    var idx = patient.pendingConsumables.indexOf(consumableType);
+    if (idx !== -1) patient.pendingConsumables.splice(idx, 1);
+    removeOneIndicator(patient, consumableType);
+
     patient.animating = true;
-    patient.treated = true;
-    Game.Inventory.showNotification('Лечение начато!', 'rgba(34, 139, 34, 0.85)');
 
-    // Clone materials for animation
-    for (var j = 0; j < patient.mesh.userData.bodyParts.length; j++) {
-      var part = patient.mesh.userData.bodyParts[j];
-      part.material = part.material.clone();
-      part.material.emissive = new THREE.Color(0x00ff44);
-      part.material.emissiveIntensity = 0.8;
+    if (patient.pendingConsumables.length === 0) {
+      // All items applied — fully treated
+      patient.treated = true;
+      Game.Inventory.showNotification('Лечение начато!', 'rgba(34, 139, 34, 0.85)');
+      for (var j = 0; j < patient.mesh.userData.bodyParts.length; j++) {
+        var part = patient.mesh.userData.bodyParts[j];
+        part.material = part.material.clone();
+        part.material.emissive = new THREE.Color(0x00ff44);
+        part.material.emissiveIntensity = 0.8;
+      }
+      animations.push({ patient: patient, type: 'heal', timer: 0.5, maxTime: 0.5 });
+    } else {
+      // Partial treatment — brief feedback
+      Game.Inventory.showNotification('Препарат применён! Осталось: ' + patient.pendingConsumables.length, 'rgba(70, 130, 180, 0.85)');
+      for (var j = 0; j < patient.mesh.userData.bodyParts.length; j++) {
+        var part = patient.mesh.userData.bodyParts[j];
+        part.material = part.material.clone();
+        part.material.emissive = new THREE.Color(0x4488ff);
+        part.material.emissiveIntensity = 0.5;
+      }
+      animations.push({ patient: patient, type: 'heal', timer: 0.3, maxTime: 0.3 });
     }
+  }
 
-    animations.push({ patient: patient, type: 'heal', timer: 0.5, maxTime: 0.5 });
+  function treatPatient(patient) {
+    var activeType = Game.Inventory.getActive();
+    Game.Inventory.removeActive();
+    applyOneConsumable(patient, activeType);
   }
 
   function wrongTreatment(patient) {
@@ -1383,10 +1487,7 @@
 
   function dischargePatient(patient) {
     // Free the bed/chair
-    if (patient.indicator) {
-      scene.remove(patient.indicator);
-      patient.indicator = null;
-    }
+    removeAllIndicators(patient);
     if (patient.healthBar) {
       scene.remove(patient.healthBar);
       patient.healthBar = null;
@@ -1427,10 +1528,7 @@
 
   function removePatient(patient) {
     removeIllnessVisuals(patient);
-    if (patient.indicator) {
-      scene.remove(patient.indicator);
-      patient.indicator = null;
-    }
+    removeAllIndicators(patient);
     if (patient.healthBar) {
       scene.remove(patient.healthBar);
       patient.healthBar = null;
@@ -1466,9 +1564,8 @@
             part.material.emissiveIntensity = 0;
           }
           anim.patient.animating = false;
-          if (anim.patient.indicator) {
-            scene.remove(anim.patient.indicator);
-            anim.patient.indicator = null;
+          if (anim.patient.treated) {
+            removeAllIndicators(anim.patient);
           }
           animations.splice(i, 1);
         }
@@ -1566,7 +1663,7 @@
           p.targetPos = null;
           p.anim.targetPose = isBed ? 'lying' : 'sitting';
           if (p.state === 'atBed') {
-            createBedIndicator(p);
+            createBedIndicators(p);
           }
         }
       }
@@ -1626,13 +1723,25 @@
     patient.diagnosis = patient.hiddenDiagnosis;
     patient.requiredConsumable = patient.hiddenConsumable;
     patient.requiredInstrument = null;
-    // Update bed indicator to show consumable instead of instrument
-    if (patient.indicator) {
-      scene.remove(patient.indicator);
-      patient.indicator = null;
+
+    // Build multi-consumable lists based on severity
+    var primary = patient.requiredConsumable;
+    var requiredConsumables;
+    if (patient.severity.key === 'mild') {
+      requiredConsumables = [primary];
+    } else if (patient.severity.key === 'medium') {
+      var others = CONSUMABLE_KEYS.filter(function(k) { return k !== primary; });
+      requiredConsumables = [primary, randomFrom(others)];
+    } else {
+      requiredConsumables = CONSUMABLE_KEYS.slice();
     }
+    patient.requiredConsumables = requiredConsumables;
+    patient.pendingConsumables = requiredConsumables.slice();
+
+    // Update bed indicators to show consumables instead of instrument
+    removeAllIndicators(patient);
     if (patient.state === 'atBed') {
-      createBedIndicator(patient);
+      createBedIndicators(patient);
     }
     Game.Inventory.showNotification('Диагноз установлен!', 'rgba(34, 139, 34, 0.85)');
   }
@@ -1773,18 +1882,8 @@
     },
     treatPatientByStaff: function(patient, consumableType) {
       if (!patient || patient.treated) return;
-      if (consumableType !== patient.requiredConsumable) return;
-      patient.treated = true;
-      patient.animating = true;
-      Game.Inventory.showNotification('Медсестра начала лечение!', 'rgba(34, 139, 34, 0.85)');
-      // Clone materials for heal animation
-      for (var j = 0; j < patient.mesh.userData.bodyParts.length; j++) {
-        var part = patient.mesh.userData.bodyParts[j];
-        part.material = part.material.clone();
-        part.material.emissive = new THREE.Color(0x00ff44);
-        part.material.emissiveIntensity = 0.8;
-      }
-      animations.push({ patient: patient, type: 'heal', timer: 0.5, maxTime: 0.5 });
+      if (!patient.pendingConsumables || patient.pendingConsumables.indexOf(consumableType) === -1) return;
+      applyOneConsumable(patient, consumableType);
     },
 
     setup: function(_THREE, _scene, _camera, _controls, _beds, _waitingChairs) {
@@ -1868,7 +1967,7 @@
             Game.Inventory.showNotification('Выберите препарат в инвентаре');
             return;
           }
-          if (activeType === hoveredPatient.requiredConsumable) {
+          if (hoveredPatient.pendingConsumables && hoveredPatient.pendingConsumables.indexOf(activeType) !== -1) {
             treatPatient(hoveredPatient);
           } else {
             wrongTreatment(hoveredPatient);
@@ -1935,7 +2034,7 @@
       for (var i = patients.length - 1; i >= 0; i--) {
         var p = patients[i];
         removeIllnessVisuals(p);
-        if (p.indicator) { scene.remove(p.indicator); p.indicator = null; }
+        removeAllIndicators(p);
         if (p.healthBar) { scene.remove(p.healthBar); p.healthBar = null; }
         if (p.destination) {
           p.destination.occupied = false;
