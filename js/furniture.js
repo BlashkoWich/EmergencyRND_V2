@@ -26,6 +26,15 @@
 
   var DELIVERY_ZONE = { cx: 0, cz: 5, hw: 1.5, hd: 1.0 };
 
+  // Hold-E state
+  var HOLD_DURATION = 600; // ms
+  var eKeyHeld = false;
+  var eHoldStartTime = 0;
+  var eHoldTarget = null;
+  var holdProgressEl = null;
+  var HOLD_CIRCUMFERENCE = 100.53; // 2 * PI * 16
+  var eWaitForRelease = false; // block E until key is physically released
+
   // Floor plane for raycast placement
   var floorPlane = null;
   var placementRay = null;
@@ -205,6 +214,43 @@
     return null;
   }
 
+  // --- Wall segments for 2D line intersection (axis-aligned) ---
+  // type: 'h' = horizontal (constant z, x range), 'v' = vertical (constant x, z range)
+  var WALL_SEGMENTS = [
+    { type: 'h', val: -12, min: -8.1, max: 8.1 },   // North wall
+    { type: 'v', val: -8,  min: -12,  max: 0 },      // West wall
+    { type: 'v', val:  8,  min: -12,  max: 0 },      // East wall
+    { type: 'h', val:  0,  min: -8.1, max: -1.2 },   // South wall left
+    { type: 'h', val:  0,  min:  1.2, max:  8.1 }    // South wall right
+  ];
+  var WALL_HALF_THICKNESS = 0.1;
+
+  // Returns the closest wall intersection parameter t (0..1) along line from (px,pz) to (tx,tz), or 1 if no wall hit
+  function wallClampT(px, pz, tx, tz) {
+    var bestT = 1;
+    var lx = tx - px, lz = tz - pz;
+    for (var i = 0; i < WALL_SEGMENTS.length; i++) {
+      var w = WALL_SEGMENTS[i];
+      var t, cross;
+      if (w.type === 'h') {
+        // horizontal wall: constant z = w.val
+        if (Math.abs(lz) < 0.0001) continue; // parallel
+        t = (w.val - pz) / lz;
+        if (t <= 0 || t >= bestT) continue;
+        cross = px + lx * t;
+        if (cross >= w.min && cross <= w.max) bestT = t;
+      } else {
+        // vertical wall: constant x = w.val
+        if (Math.abs(lx) < 0.0001) continue; // parallel
+        t = (w.val - px) / lx;
+        if (t <= 0 || t >= bestT) continue;
+        cross = pz + lz * t;
+        if (cross >= w.min && cross <= w.max) bestT = t;
+      }
+    }
+    return bestT;
+  }
+
   // --- Collision check for placement ---
 
   function canPlaceAt(position, type) {
@@ -264,6 +310,20 @@
       target.x = camera.position.x + forward2.x * 1.5;
       target.z = camera.position.z + forward2.z * 1.5;
     }
+    // --- Wall clamping: prevent placement through walls ---
+    if (carriedFurniture) {
+      var px = camera.position.x, pz = camera.position.z;
+      var t = wallClampT(px, pz, target.x, target.z);
+      if (t < 1) {
+        var info = FURNITURE_TYPES[carriedFurniture.type];
+        var furOffset = info ? Math.max(info.boxSize.x, info.boxSize.z) / 2 + WALL_HALF_THICKNESS + 0.05 : 0.65;
+        var fullDist = Math.sqrt((target.x - px) * (target.x - px) + (target.z - pz) * (target.z - pz));
+        var clampDist = Math.max(0, t * fullDist - furOffset);
+        target.x = px + (target.x - px) * (clampDist / fullDist);
+        target.z = pz + (target.z - pz) * (clampDist / fullDist);
+      }
+    }
+
     target.y = 0;
     return target;
   }
@@ -350,7 +410,7 @@
         hintEl.textContent = 'Нужно чистое бельё для замены';
       } else {
         var typeName = FURNITURE_TYPES[hoveredFurniture.type] ? FURNITURE_TYPES[hoveredFurniture.type].name : '';
-        hintEl.textContent = 'E — Переместить ' + typeName.toLowerCase();
+        hintEl.textContent = 'Зажми E — Переместить ' + typeName.toLowerCase();
       }
       hintEl.style.display = 'block';
     }
@@ -438,10 +498,23 @@
     return true;
   }
 
+  // --- Hold cancel ---
+
+  function cancelHold() {
+    eKeyHeld = false;
+    eHoldTarget = null;
+    eHoldStartTime = 0;
+    if (holdProgressEl) {
+      holdProgressEl.parentElement.style.display = 'none';
+      holdProgressEl.style.strokeDashoffset = String(HOLD_CIRCUMFERENCE);
+    }
+  }
+
   // --- E key handler ---
 
   function onKeyDown(e) {
     if (e.code !== 'KeyE') return;
+    if (eKeyHeld || eWaitForRelease) return; // filter auto-repeat and post-hold
     if (!controls.isLocked) return;
     if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
     if (Game.Cashier && Game.Cashier.isPopupOpen()) return;
@@ -459,9 +532,22 @@
     if (Game.Staff && Game.Staff.hasBasketInteraction && Game.Staff.hasBasketInteraction()) return;
 
     if (hoveredFurniture) {
-      pickUpFurniture(hoveredFurniture);
+      // Start hold
+      eKeyHeld = true;
+      eHoldStartTime = performance.now();
+      eHoldTarget = hoveredFurniture;
+      if (holdProgressEl) {
+        holdProgressEl.style.strokeDashoffset = String(HOLD_CIRCUMFERENCE);
+        holdProgressEl.parentElement.style.display = 'block';
+      }
       return;
     }
+  }
+
+  function onKeyUp(e) {
+    if (e.code !== 'KeyE') return;
+    if (eKeyHeld) cancelHold();
+    eWaitForRelease = false;
   }
 
   // --- Mouse wheel rotation ---
@@ -495,7 +581,10 @@
       floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
       placementRay = new THREE.Raycaster();
 
+      holdProgressEl = document.getElementById('hold-progress-arc');
+
       document.addEventListener('keydown', onKeyDown);
+      document.addEventListener('keyup', onKeyUp);
       document.addEventListener('wheel', onWheel, { passive: false });
     },
 
@@ -567,6 +656,26 @@
     },
 
     update: function(delta) {
+      // Hold-E progress
+      if (eKeyHeld && eHoldTarget) {
+        // Cancel if target no longer valid
+        if (eHoldTarget !== hoveredFurniture || carriedFurniture || !controls.isLocked ||
+            Game.Patients.isPopupOpen() || Game.Shop.isOpen()) {
+          cancelHold();
+        } else {
+          var progress = Math.min((performance.now() - eHoldStartTime) / HOLD_DURATION, 1.0);
+          if (holdProgressEl) {
+            holdProgressEl.style.strokeDashoffset = String(HOLD_CIRCUMFERENCE * (1 - progress));
+          }
+          if (progress >= 1.0) {
+            var target = eHoldTarget;
+            cancelHold();
+            eWaitForRelease = true;
+            pickUpFurniture(target);
+          }
+        }
+      }
+
       updateCarriedFurniture();
       updateFurnitureInteraction();
 

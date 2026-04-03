@@ -32,6 +32,13 @@ canvas { display: block; }
 #crosshair::before { width: 2px; height: 24px; left: 11px; top: 0; }
 #crosshair::after  { width: 24px; height: 2px; top: 11px; left: 0; }
 
+/* --- Hold progress ring --- */
+#hold-progress {
+  position: fixed; top: 50%; left: 50%; z-index: 6;
+  transform: translate(-50%, -50%);
+  pointer-events: none; display: none;
+}
+
 /* --- Interaction hint --- */
 #interact-hint {
   position: fixed; top: calc(50% + 30px); left: 50%; z-index: 5;
