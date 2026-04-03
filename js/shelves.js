@@ -453,6 +453,15 @@
       createShelf(-5.5, -11.5, 0, collidables);
       createShelf(-4.2, -11.5, 0, collidables);
 
+      // Pre-populate first shelf with initial items
+      var initialItems = ['strepsils', 'painkiller', 'antihistamine', 'linen_clean'];
+      for (var i = 0; i < initialItems.length; i++) {
+        var slot = shelves[0].slots[i];
+        for (var n = 0; n < 5; n++) {
+          placeItemOnShelf(slot, initialItems[i]);
+        }
+      }
+
       // Register shelves as draggable fixtures
       var boardYs = [0.3, 0.7, 1.1];
       var slotXOffsets = [-0.35, 0, 0.35];
