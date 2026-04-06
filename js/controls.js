@@ -23,6 +23,14 @@
     _gravity: -12.0,
     _groundY: 1.6,
     _isGrounded: true,
+    _velocityX: 0,
+    _velocityZ: 0,
+    _moveDamping: 12.0,
+    _pendingMouseX: 0,
+    _pendingMouseY: 0,
+    _mouseSmoothFactor: 0.6,
+    _smoothMouseX: 0,
+    _smoothMouseY: 0,
 
     setup: function(THREE, camera, collidables, PointerLockControls) {
       this._THREE = THREE;
@@ -36,13 +44,18 @@
       this._moveX = new THREE.Vector3();
       this._moveZ = new THREE.Vector3();
 
-      // Filter out bogus large mouse deltas (known Pointer Lock API browser bug)
-      // Capture phase runs before PointerLockControls' bubble-phase listener
+      // Intercept mouse events: accumulate deltas for smooth application in update()
       var MAX_MOUSE_DELTA = 150;
+      var self = this;
       document.addEventListener('mousemove', function(e) {
         if (Math.abs(e.movementX) > MAX_MOUSE_DELTA || Math.abs(e.movementY) > MAX_MOUSE_DELTA) {
           e.stopImmediatePropagation();
+          return;
         }
+        // Accumulate mouse deltas — will be smoothly applied in update()
+        self._pendingMouseX += e.movementX;
+        self._pendingMouseY += e.movementY;
+        e.stopImmediatePropagation(); // Prevent PointerLockControls from handling
       }, true);
 
       var controls = new PointerLockControls(camera, document.body);
@@ -122,12 +135,29 @@
       if (this._savedQuat) {
         camera.quaternion.copy(this._savedQuat);
         this._savedQuat = null;
-        return; // skip movement this frame
+        this._pendingMouseX = 0;
+        this._pendingMouseY = 0;
+        this._smoothMouseX = 0;
+        this._smoothMouseY = 0;
+        return;
       }
 
+      // --- Smooth mouse look ---
+      var sf = this._mouseSmoothFactor;
+      this._smoothMouseX += (this._pendingMouseX - this._smoothMouseX) * sf;
+      this._smoothMouseY += (this._pendingMouseY - this._smoothMouseY) * sf;
+      this._pendingMouseX -= this._smoothMouseX;
+      this._pendingMouseY -= this._smoothMouseY;
+
+      // Apply smoothed rotation (matching PointerLockControls logic)
+      var sensitivity = this._controls.pointerSpeed * 0.002;
+      camera.rotation.y -= this._smoothMouseX * sensitivity;
+      camera.rotation.x -= this._smoothMouseY * sensitivity;
+      camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
+
+      // --- Smooth movement ---
       var keys = this._keys;
       var baseSpeed = keys.sprint ? this._sprintSpeed : this._moveSpeed;
-      var speed = baseSpeed * delta;
 
       var forward = this._forward;
       camera.getWorldDirection(forward);
@@ -137,6 +167,8 @@
       right.set(0, 0, 0);
       right.crossVectors(forward, camera.up).normalize();
 
+      var targetVX = 0;
+      var targetVZ = 0;
       var moveDir = this._moveDir.set(0, 0, 0);
       if (keys.forward)  moveDir.add(forward);
       if (keys.backward) moveDir.sub(forward);
@@ -145,15 +177,33 @@
 
       if (moveDir.lengthSq() > 0) {
         moveDir.normalize();
+        targetVX = moveDir.x * baseSpeed;
+        targetVZ = moveDir.z * baseSpeed;
+      }
 
-        var moveX = this._moveX.set(moveDir.x, 0, 0).normalize();
-        var moveZ = this._moveZ.set(0, 0, moveDir.z).normalize();
+      // Lerp velocity towards target
+      var damping = 1 - Math.exp(-this._moveDamping * delta);
+      this._velocityX += (targetVX - this._velocityX) * damping;
+      this._velocityZ += (targetVZ - this._velocityZ) * damping;
 
-        if (moveDir.x !== 0 && this._canMove(moveX)) {
-          camera.position.x += moveDir.x * speed;
+      // Apply with collision
+      var dx = this._velocityX * delta;
+      var dz = this._velocityZ * delta;
+
+      if (dx !== 0) {
+        var moveX = this._moveX.set(dx > 0 ? 1 : -1, 0, 0);
+        if (this._canMove(moveX)) {
+          camera.position.x += dx;
+        } else {
+          this._velocityX = 0;
         }
-        if (moveDir.z !== 0 && this._canMove(moveZ)) {
-          camera.position.z += moveDir.z * speed;
+      }
+      if (dz !== 0) {
+        var moveZ = this._moveZ.set(0, 0, dz > 0 ? 1 : -1);
+        if (this._canMove(moveZ)) {
+          camera.position.z += dz;
+        } else {
+          this._velocityZ = 0;
         }
       }
 
