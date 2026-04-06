@@ -165,13 +165,38 @@
     awardPatientXP(paidPatient);
   }
 
+  function clearCashierHighlight() {
+    for (var i = 0; i < terminalMeshes.length; i++) {
+      var m = terminalMeshes[i];
+      m.material.emissive = new THREE.Color(0x000000);
+      m.material.emissiveIntensity = 0;
+    }
+    if (currentPatient && currentPatient.mesh.userData.bodyParts) {
+      for (var j = 0; j < currentPatient.mesh.userData.bodyParts.length; j++) {
+        var part = currentPatient.mesh.userData.bodyParts[j];
+        part.material.emissive = new THREE.Color(0x000000);
+        part.material.emissiveIntensity = 0;
+      }
+    }
+  }
+
   function updateHoverDetection() {
     if (isOpen || !controls.isLocked) {
+      if (prevHovered) clearCashierHighlight();
       hoveredTerminal = false;
+      prevHovered = false;
       return;
     }
     if (Game.Furniture.isCarrying()) {
+      if (prevHovered) clearCashierHighlight();
       hoveredTerminal = false;
+      prevHovered = false;
+      return;
+    }
+    if (!Game.Interaction.isActive('cashier')) {
+      if (prevHovered) clearCashierHighlight();
+      hoveredTerminal = false;
+      prevHovered = false;
       return;
     }
 
@@ -212,30 +237,16 @@
         }
       }
     } else if (!nowHovered && prevHovered) {
-      // Unhighlight terminal meshes
-      for (var i = 0; i < terminalMeshes.length; i++) {
-        var m = terminalMeshes[i];
-        m.material.emissive = new THREE.Color(0x000000);
-        m.material.emissiveIntensity = 0;
-      }
-      // Unhighlight patient
-      if (currentPatient && currentPatient.mesh.userData.bodyParts) {
-        for (var j = 0; j < currentPatient.mesh.userData.bodyParts.length; j++) {
-          var part = currentPatient.mesh.userData.bodyParts[j];
-          part.material.emissive = new THREE.Color(0x000000);
-          part.material.emissiveIntensity = 0;
-        }
-      }
+      clearCashierHighlight();
     }
 
     hoveredTerminal = nowHovered;
     prevHovered = nowHovered;
 
     if (hoveredTerminal) {
-      if (!Game.Patients.hasInteraction() && !Game.Consumables.hasInteraction() && !Game.Consumables.hasBoxInteraction() && !Game.Consumables.isHoldingBox()) {
-        hintEl.textContent = '\u041B\u041A\u041C \u2014 \u041E\u043F\u043B\u0430\u0442\u0430';
-        hintEl.style.display = 'block';
-      }
+      var hintEl = document.getElementById('interact-hint');
+      hintEl.textContent = '\u041B\u041A\u041C \u2014 \u041E\u043F\u043B\u0430\u0442\u0430';
+      hintEl.style.display = 'block';
     }
   }
 
@@ -421,6 +432,17 @@
           }
         });
       }
+
+      // Register with central interaction system
+      Game.Interaction.register('cashier', function() {
+        var meshes = terminalMeshes.slice();
+        if (currentPatient && currentPatient.state === 'atCashier') {
+          currentPatient.mesh.traverse(function(child) {
+            if (child.isMesh) meshes.push(child);
+          });
+        }
+        return meshes;
+      }, false, 3);
     },
 
     update: function(delta) {

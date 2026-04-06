@@ -432,12 +432,7 @@
       clearHover();
       return false;
     }
-    if (Game.Patients.hasInteraction()) { clearHover(); return false; }
-    if (Game.WashingMachine && Game.WashingMachine.hasInteraction()) { clearHover(); return false; }
-    if (Game.Furniture && (Game.Furniture.hasInteraction() || Game.Furniture.isCarrying())) { clearHover(); return false; }
-    if (Game.Consumables.hasInteraction() || Game.Consumables.hasBoxInteraction() || Game.Consumables.isHoldingBox()) { clearHover(); return false; }
-    if (Game.Shelves && Game.Shelves.hasInteraction()) { clearHover(); return false; }
-    if (Game.ToolPanel && Game.ToolPanel.hasInteraction()) { clearHover(); return false; }
+    if (!Game.Interaction.isActive('trash')) { clearHover(); return false; }
 
     interactRay.setFromCamera(screenCenter, camera);
     var meshes = [];
@@ -524,6 +519,15 @@
 
         removeTrashItem(hoveredTrash);
       });
+
+      // Register with central interaction system
+      Game.Interaction.register('trash', function() {
+        var meshes = [];
+        for (var i = 0; i < trashItems.length; i++) {
+          meshes.push(trashItems[i].mesh);
+        }
+        return meshes;
+      }, true, 5);
     },
 
     update: function(delta) {

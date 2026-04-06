@@ -318,29 +318,27 @@
     return type;
   }
 
+  function clearShelfHover() {
+    if (hoveredShelf && shelfMode === 'place') unhighlightShelf(hoveredShelf);
+    if (hoveredSlot && shelfMode === 'take') unhighlightItemMesh(hoveredSlot.itemMesh);
+    hoveredShelf = null; hoveredSlot = null; shelfMode = null;
+  }
+
   function updateInteraction() {
     if (!controls.isLocked || Game.Patients.isPopupOpen() || Game.Shop.isOpen()) {
-      if (hoveredShelf && shelfMode === 'place') unhighlightShelf(hoveredShelf);
-      if (hoveredSlot && shelfMode === 'take') unhighlightItemMesh(hoveredSlot.itemMesh);
-      hoveredShelf = null; hoveredSlot = null; shelfMode = null;
+      clearShelfHover();
       return false;
     }
     if (Game.Furniture.isCarrying()) {
-      if (hoveredShelf && shelfMode === 'place') unhighlightShelf(hoveredShelf);
-      if (hoveredSlot && shelfMode === 'take') unhighlightItemMesh(hoveredSlot.itemMesh);
-      hoveredShelf = null; hoveredSlot = null; shelfMode = null;
-      return false;
-    }
-    if (Game.Patients.hasInteraction() || Game.Consumables.hasInteraction() || Game.Consumables.hasBoxInteraction() || (Game.Cashier && Game.Cashier.hasInteraction())) {
-      if (hoveredShelf && shelfMode === 'place') unhighlightShelf(hoveredShelf);
-      if (hoveredSlot && shelfMode === 'take') unhighlightItemMesh(hoveredSlot.itemMesh);
-      hoveredShelf = null; hoveredSlot = null; shelfMode = null;
+      clearShelfHover();
       return false;
     }
     if (Game.Consumables.isHoldingBox()) {
-      if (hoveredShelf && shelfMode === 'place') unhighlightShelf(hoveredShelf);
-      if (hoveredSlot && shelfMode === 'take') unhighlightItemMesh(hoveredSlot.itemMesh);
-      hoveredShelf = null; hoveredSlot = null; shelfMode = null;
+      clearShelfHover();
+      return false;
+    }
+    if (!Game.Interaction.isActive('shelvesItems') && !Game.Interaction.isActive('shelvesPlace')) {
+      clearShelfHover();
       return false;
     }
 
@@ -538,6 +536,15 @@
         Game.Inventory.removeActive();
         placeItemOnShelf(slot, type);
       });
+
+      // Register with central interaction system
+      Game.Interaction.register('shelvesItems', function() {
+        return allItemMeshes;
+      }, false, 5);
+
+      Game.Interaction.register('shelvesPlace', function() {
+        return allShelfParts;
+      }, false, 5);
     },
 
     update: function(delta) {

@@ -132,19 +132,25 @@
   }
 
   // ====== SIGN INTERACTION ======
+  function clearSignHover() {
+    if (prevHovered) unhighlightSign();
+    hoveredSign = false;
+    prevHovered = false;
+  }
+
   function updateSignHover() {
     if (dayEndPopupOpen || !controls.isLocked) {
-      if (prevHovered) unhighlightSign();
-      hoveredSign = false;
-      prevHovered = false;
+      clearSignHover();
       return;
     }
-
-    // Don't show sign hint if other popups are open
-    if (Game.Patients && Game.Patients.isPopupOpen()) { hoveredSign = false; return; }
-    if (Game.Shop && Game.Shop.isOpen()) { hoveredSign = false; return; }
-    if (Game.Cashier && Game.Cashier.isPopupOpen()) { hoveredSign = false; return; }
-    if (Game.Diagnostics && Game.Diagnostics.isActive()) { hoveredSign = false; return; }
+    if (Game.Patients && Game.Patients.isPopupOpen()) { clearSignHover(); return; }
+    if (Game.Shop && Game.Shop.isOpen()) { clearSignHover(); return; }
+    if (Game.Cashier && Game.Cashier.isPopupOpen()) { clearSignHover(); return; }
+    if (Game.Diagnostics && Game.Diagnostics.isActive()) { clearSignHover(); return; }
+    if (!Game.Interaction.isActive('shift')) {
+      clearSignHover();
+      return;
+    }
 
     interactRay.setFromCamera(screenCenter, camera);
     var intersects = interactRay.intersectObjects(signMeshes, false);
@@ -159,21 +165,16 @@
     hoveredSign = hit;
     prevHovered = hit;
 
-    // Update hint
     if (hit) {
       var hintEl = document.getElementById('interact-hint');
-      // Don't override higher-priority hints
-      if (!Game.Patients.hasInteraction() && !Game.Consumables.hasInteraction() &&
-          !Game.Shelves.hasInteraction() && !Game.Cashier.hasInteraction()) {
-        if (shiftOpen) {
-          hintEl.textContent = 'Смена идёт...';
-        } else if (shiftEnding) {
-          hintEl.textContent = 'Приём окончен. Дообслужите пациентов.';
-        } else {
-          hintEl.textContent = 'ЛКМ — Открыть смену';
-        }
-        hintEl.style.display = 'block';
+      if (shiftOpen) {
+        hintEl.textContent = 'Смена идёт...';
+      } else if (shiftEnding) {
+        hintEl.textContent = 'Приём окончен. Дообслужите пациентов.';
+      } else {
+        hintEl.textContent = 'ЛКМ — Открыть смену';
       }
+      hintEl.style.display = 'block';
     }
   }
 
@@ -615,6 +616,11 @@
 
       // Click handler
       document.addEventListener('mousedown', onMouseDown);
+
+      // Register with central interaction system
+      Game.Interaction.register('shift', function() {
+        return signMeshes;
+      }, false, 5);
 
       // Initial state
       updateHUD();

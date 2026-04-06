@@ -356,32 +356,11 @@
       if (hoveredFurniture) { unhighlightGroup(hoveredFurniture.group); hoveredFurniture = null; }
       return;
     }
-    if (Game.Patients.hasInteraction()) {
-      if (hoveredFurniture) { unhighlightGroup(hoveredFurniture.group); hoveredFurniture = null; }
-      return;
-    }
     if (Game.Diagnostics && Game.Diagnostics.isActive()) {
       if (hoveredFurniture) { unhighlightGroup(hoveredFurniture.group); hoveredFurniture = null; }
       return;
     }
-    if (Game.WashingMachine && Game.WashingMachine.hasInteraction()) {
-      if (hoveredFurniture) { unhighlightGroup(hoveredFurniture.group); hoveredFurniture = null; }
-      return;
-    }
-    // Don't show furniture pickup hint when module-specific interactions are active
-    if (Game.Shelves && Game.Shelves.hasInteraction()) {
-      if (hoveredFurniture) { unhighlightGroup(hoveredFurniture.group); hoveredFurniture = null; }
-      return;
-    }
-    if (Game.ToolPanel && Game.ToolPanel.hasInteraction()) {
-      if (hoveredFurniture) { unhighlightGroup(hoveredFurniture.group); hoveredFurniture = null; }
-      return;
-    }
-    if (Game.Staff && Game.Staff.hasBasketInteraction && Game.Staff.hasBasketInteraction()) {
-      if (hoveredFurniture) { unhighlightGroup(hoveredFurniture.group); hoveredFurniture = null; }
-      return;
-    }
-    if (Game.Cashier && Game.Cashier.hasInteraction && Game.Cashier.hasInteraction()) {
+    if (!Game.Interaction.isActive('furniture')) {
       if (hoveredFurniture) { unhighlightGroup(hoveredFurniture.group); hoveredFurniture = null; }
       return;
     }
@@ -589,6 +568,17 @@
       document.addEventListener('keydown', onKeyDown);
       document.addEventListener('keyup', onKeyUp);
       document.addEventListener('wheel', onWheel, { passive: false });
+
+      // Register with central interaction system
+      Game.Interaction.register('furniture', function() {
+        var meshes = [];
+        for (var i = 0; i < furnitureItems.length; i++) {
+          if (furnitureItems[i] !== carriedFurniture) {
+            meshes.push(furnitureItems[i].group);
+          }
+        }
+        return meshes;
+      }, true, 5);
     },
 
     registerExisting: function(bedMeshes, chairMeshes) {

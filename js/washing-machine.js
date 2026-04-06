@@ -137,15 +137,15 @@
       if (isHovered) { unhighlightMachine(); isHovered = false; }
       return;
     }
-    if (Game.Patients.hasInteraction()) {
-      if (isHovered) { unhighlightMachine(); isHovered = false; }
-      return;
-    }
     if (Game.Diagnostics && Game.Diagnostics.isActive()) {
       if (isHovered) { unhighlightMachine(); isHovered = false; }
       return;
     }
     if (Game.Cashier && Game.Cashier.isPopupOpen()) {
+      if (isHovered) { unhighlightMachine(); isHovered = false; }
+      return;
+    }
+    if (!Game.Interaction.isActive('washingMachine')) {
       if (isHovered) { unhighlightMachine(); isHovered = false; }
       return;
     }
@@ -297,6 +297,11 @@
 
       document.addEventListener('mousedown', onMouseDown);
       document.addEventListener('keydown', onKeyDown);
+
+      // Register with central interaction system
+      Game.Interaction.register('washingMachine', function() {
+        return machineGroup ? [machineGroup] : [];
+      }, true, 5);
 
       // Register as draggable fixture
       Game.Furniture.registerFixture({

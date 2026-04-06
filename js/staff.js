@@ -1314,37 +1314,30 @@
   }
 
   // ====== BASKET INTERACTION ======
+  function clearBasketHover() {
+    if (hoveredBasket && hoveredBasket.mesh) unhighlightBasket(hoveredBasket);
+    hoveredBasket = null; basketMode = null;
+  }
+
   function updateBasketInteraction() {
     if (!controls.isLocked || Game.Patients.isPopupOpen() || Game.Shop.isOpen()) {
-      hoveredBasket = null; basketMode = null;
-      return;
-    }
-    if (Game.Patients.hasInteraction() || Game.Consumables.hasInteraction() || Game.Consumables.hasBoxInteraction()) {
-      hoveredBasket = null; basketMode = null;
-      return;
-    }
-    if (Game.Consumables.isHoldingBox()) {
-      hoveredBasket = null; basketMode = null;
+      clearBasketHover();
       return;
     }
     if (Game.Furniture.isCarrying()) {
-      hoveredBasket = null; basketMode = null;
+      clearBasketHover();
       return;
     }
     if (Game.Diagnostics && Game.Diagnostics.isActive()) {
-      hoveredBasket = null; basketMode = null;
+      clearBasketHover();
       return;
     }
     if (Game.Cashier && Game.Cashier.isPopupOpen()) {
-      hoveredBasket = null; basketMode = null;
+      clearBasketHover();
       return;
     }
-    if (Game.WashingMachine && Game.WashingMachine.hasInteraction()) {
-      hoveredBasket = null; basketMode = null;
-      return;
-    }
-    if (Game.Shelves && Game.Shelves.hasInteraction()) {
-      hoveredBasket = null; basketMode = null;
+    if (!Game.Interaction.isActive('staff')) {
+      clearBasketHover();
       return;
     }
 
@@ -1531,6 +1524,14 @@
           Game.Inventory.showNotification('Положено в корзину', 'rgba(34, 139, 34, 0.85)');
         }
       });
+
+      // Register with central interaction system
+      Game.Interaction.register('staff', function() {
+        var meshes = [];
+        if (baskets.clean.mesh) meshes.push(baskets.clean.mesh);
+        if (baskets.dirty.mesh) meshes.push(baskets.dirty.mesh);
+        return meshes;
+      }, true, 5);
     },
 
     update: function(delta) {

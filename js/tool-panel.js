@@ -247,11 +247,11 @@
       clearInteraction();
       return false;
     }
-    if (Game.Patients.hasInteraction() || Game.Consumables.hasInteraction() || Game.Consumables.hasBoxInteraction()) {
+    if (Game.Consumables.isHoldingBox()) {
       clearInteraction();
       return false;
     }
-    if (Game.Consumables.isHoldingBox()) {
+    if (!Game.Interaction.isActive('toolPanelItems') && !Game.Interaction.isActive('toolPanelPlace')) {
       clearInteraction();
       return false;
     }
@@ -423,6 +423,15 @@
         Game.Inventory.removeActive();
         placeItemOnSlot(hoveredSlot);
       });
+
+      // Register with central interaction system
+      Game.Interaction.register('toolPanelItems', function() {
+        return allPanelItemMeshes;
+      }, false, 5);
+
+      Game.Interaction.register('toolPanelPlace', function() {
+        return allPanelParts;
+      }, false, 5);
     },
 
     update: function(delta) {

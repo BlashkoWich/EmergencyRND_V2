@@ -643,10 +643,17 @@
 
   function updateInteraction() {
     if (!controls.isLocked || popupPatient || Game.Cashier.isPopupOpen()) {
+      if (hoveredPatient) { unhighlightPatient(hoveredPatient); hoveredPatient = null; }
       hintEl.style.display = 'none';
       return;
     }
     if (Game.Diagnostics && Game.Diagnostics.isActive()) {
+      if (hoveredPatient) { unhighlightPatient(hoveredPatient); hoveredPatient = null; }
+      hintEl.style.display = 'none';
+      return;
+    }
+    if (!Game.Interaction.isActive('patients')) {
+      if (hoveredPatient) { unhighlightPatient(hoveredPatient); hoveredPatient = null; }
       hintEl.style.display = 'none';
       return;
     }
@@ -2030,6 +2037,19 @@
       });
 
       // Don't spawn first patient — shift system controls this
+
+      // Register with central interaction system
+      Game.Interaction.register('patients', function() {
+        var meshes = [];
+        for (var i = 0; i < patients.length; i++) {
+          var p = patients[i];
+          if (p.animating) continue;
+          if (p.state === 'queued' || p.state === 'interacting' || p.state === 'atBed' || p.state === 'waiting') {
+            meshes.push(p.mesh);
+          }
+        }
+        return meshes;
+      }, true, 5);
     },
 
     spawnFirstPatient: function() {

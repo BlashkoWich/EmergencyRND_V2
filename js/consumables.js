@@ -778,11 +778,11 @@
       if (hoveredBox) { unhighlightGroup(hoveredBox.mesh); hoveredBox = null; }
       return false;
     }
-    if (Game.Patients.hasInteraction()) {
+    if (heldBox) {
       if (hoveredBox) { unhighlightGroup(hoveredBox.mesh); hoveredBox = null; }
       return false;
     }
-    if (heldBox) {
+    if (!Game.Interaction.isActive('boxes')) {
       if (hoveredBox) { unhighlightGroup(hoveredBox.mesh); hoveredBox = null; }
       return false;
     }
@@ -822,11 +822,7 @@
       if (hoveredItem) { unhighlightGroup(hoveredItem.mesh); hoveredItem = null; }
       return false;
     }
-    if (Game.Patients.hasInteraction()) {
-      if (hoveredItem) { unhighlightGroup(hoveredItem.mesh); hoveredItem = null; }
-      return false;
-    }
-    if (Game.WashingMachine && Game.WashingMachine.hasInteraction()) {
+    if (!Game.Interaction.isActive('consumables')) {
       if (hoveredItem) { unhighlightGroup(hoveredItem.mesh); hoveredItem = null; }
       return false;
     }
@@ -1068,22 +1064,38 @@
         hoveredBox = null;
         hintEl.style.display = 'none';
       });
+
+      // Register with central interaction system
+      Game.Interaction.register('boxes', function() {
+        var meshes = [];
+        for (var i = 0; i < groundBoxes.length; i++) {
+          if (groundBoxes[i].grounded && !groundBoxes[i].pickedUp) {
+            meshes.push(groundBoxes[i].mesh);
+          }
+        }
+        return meshes;
+      }, true, 5);
+
+      Game.Interaction.register('consumables', function() {
+        var meshes = [];
+        for (var i = 0; i < groundItems.length; i++) {
+          if (groundItems[i].grounded && !groundItems[i].pickedUp) {
+            meshes.push(groundItems[i].mesh);
+          }
+        }
+        return meshes;
+      }, true, 5);
     },
 
     update: function(delta) {
       updatePhysics(delta);
       updateHeldBox();
 
-      // Interaction priority: patients > furniture(E) > boxes(E) > consumables(LMB) > shelves > cashier
-      var furnitureBlocks = Game.Furniture && (Game.Furniture.hasInteraction() || Game.Furniture.isCarrying());
-      var boxInteracted = furnitureBlocks ? false : updateBoxInteraction();
-      if (furnitureBlocks) {
-        if (hoveredBox) { unhighlightGroup(hoveredBox.mesh); hoveredBox = null; }
-        if (hoveredItem) { unhighlightGroup(hoveredItem.mesh); hoveredItem = null; }
-      } else if (!boxInteracted && !heldBox) {
+      // Central interaction system decides which module is active
+      var boxInteracted = updateBoxInteraction();
+      if (!boxInteracted && !heldBox) {
         updateInteraction();
       } else if (!boxInteracted) {
-        // Holding box but not hovering a box — clear item hover
         if (hoveredItem) { unhighlightGroup(hoveredItem.mesh); hoveredItem = null; }
       }
 

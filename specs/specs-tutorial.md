@@ -189,7 +189,7 @@ CSS-класс `.tutorial-locked`:
 | `patients.js` | Клик по пациенту, кнопки попапа, HP-decay, спавн по таймеру и после оплаты |
 | `shop.js` | Открытие/закрытие, покупки |
 | `cashier.js` | Клик по терминалу, кнопка закрытия скрыта во время туториала |
-| `shelves.js` | Взятие и размещение предметов, уступает кассе при конфликте рейкастов |
+| `shelves.js` | Взятие и размещение предметов |
 | `consumables.js` | Подбор, бросок, E-подъём коробок |
 | `furniture.js` | Перемещение мебели, замена белья |
 | `washing-machine.js` | Загрузка и запуск (LMB и E) |
@@ -198,8 +198,9 @@ CSS-класс `.tutorial-locked`:
 
 ### Порядок в animation loop:
 ```
-Game.Cashier.update(delta)   // до shelves — кассир имеет приоритет
-Game.Shelves.update(delta)   // уступает кассиру
+Game.Interaction.update()    // централизованный рейкаст — ближайший объект побеждает
+Game.Cashier.update(delta)
+Game.Shelves.update(delta)
 Game.Tutorial.update(delta)  // обновление 3D-стрелки
 ```
 

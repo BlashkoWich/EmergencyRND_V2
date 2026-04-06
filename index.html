@@ -325,6 +325,7 @@
     <div id="diagnostics-status"></div>
   </div>
 
+  <script src="js/interaction.js"></script>
   <script src="js/helpers.js"></script>
   <script src="js/levels.js"></script>
   <script src="js/world.js"></script>
@@ -413,6 +414,7 @@
     Game.Trash.setup(THREE, scene, camera, controls, collidables);
     Game.Shift.setup(THREE, scene, camera, controls, collidables);
     Game.Tutorial.setup(controls, THREE, camera, scene);
+    Game.Interaction.setup(THREE, camera, controls);
 
     // --- Animation loop ---
     const clock = new THREE.Clock();
@@ -425,6 +427,7 @@
         Game.Controls.update(delta);
       }
 
+      Game.Interaction.update();
       Game.Patients.update(delta);
       Game.Furniture.update(delta);
       Game.WashingMachine.update(delta);
