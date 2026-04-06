@@ -294,7 +294,7 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 - `isInstrument(type)` → boolean — тип начинается с `instrument_`
 - `isLinen(type)` → boolean — тип `linen_clean` или `linen_dirty`
 - `spawnInstrumentInDeliveryZone(type)` — спавн инструмента в зоне доставки
-- `spawnAtPosition(type, position)` — спавн расходника в конкретной позиции (для стиральной машины)
+- `spawnAtPosition(type, position)` — спавн расходника в конкретной позиции
 - `TYPES` — объект с описанием типов расходников
 - `INSTRUMENT_TYPES` — объект с описанием типов инструментов
 
@@ -335,12 +335,13 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 - `TYPES` — описание типов мебели `{ bed: {name, price, slotOffset}, chair: {...} }`
 
 ### `Game.WashingMachine` (`js/washing-machine.js`)
-Стиральная машина: загрузка грязного белья, стирка, выдача чистого.
+Стиральная машина: загрузка грязного белья, стирка, выдача чистого в корзину.
 - `setup(THREE, scene, camera, controls, collidables)` — инициализация, создание 3D модели, raycaster, event listeners
 - `update(delta)` — interaction raycast, обновление таймера стирки, анимация барабана
 - `hasInteraction()` → boolean — наведён на машину
 - `isWashing()` → boolean — идёт стирка
 - `getLoadedCount()` → number — количество загруженного грязного белья
+- По завершении стирки чистое бельё добавляется в корзину "ЧИСТОЕ" через `Game.Staff.addToBasket()`
 
 ### `Game.Shelves` (`js/shelves.js`)
 - `setup(THREE, scene, camera, controls, collidables)` — создание стеллажей

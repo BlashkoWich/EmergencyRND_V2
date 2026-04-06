@@ -1642,6 +1642,15 @@
 
     hasBasketInteraction: function() { return !!hoveredBasket; },
 
-    getBaskets: function() { return baskets; }
+    getBaskets: function() { return baskets; },
+
+    addToBasket: function(basketKey, itemType, count) {
+      var basket = baskets[basketKey];
+      if (!basket) return;
+      for (var i = 0; i < count; i++) {
+        basket.items.push(itemType);
+      }
+      updateBasketSprite(basket);
+    }
   };
 })();

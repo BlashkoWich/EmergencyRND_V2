@@ -185,17 +185,8 @@
     progressBg.visible = false;
     progressFill.visible = false;
 
-    // Spawn clean linen on top of machine
-    for (var i = 0; i < count; i++) {
-      var offsetX = (Math.random() - 0.5) * 0.4;
-      var offsetZ = (Math.random() - 0.5) * 0.3;
-      var pos = new THREE.Vector3(
-        MACHINE_X + offsetX,
-        1.1 + i * 0.05,
-        MACHINE_Z + offsetZ
-      );
-      Game.Consumables.spawnAtPosition('linen_clean', pos);
-    }
+    // Add clean linen to clean basket
+    Game.Staff.addToBasket('clean', 'linen_clean', count);
 
     Game.Inventory.showNotification('Стирка завершена! Заберите бельё.', 'rgba(34, 139, 34, 0.85)');
     if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('wash_finished');
