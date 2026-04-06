@@ -761,9 +761,10 @@
 
   function updateHeldBoxHints() {
     if (heldBox && controls.isLocked) {
+      var heldItemName = (CONSUMABLE_TYPES[heldBox.type] || INSTRUMENT_TYPES[heldBox.type] || {}).name || 'предмет';
       heldBoxHintEl.innerHTML = heldBox.empty
         ? 'G — Выбросить в мусорку'
-        : 'ЛКМ — Взять препарат (осталось: ' + heldBox.remaining + ')<br>G — Бросить коробку';
+        : 'ЛКМ — Взять: ' + heldItemName + ' (осталось: ' + heldBox.remaining + ')<br>G — Бросить коробку';
       heldBoxHintEl.style.display = 'block';
     } else {
       heldBoxHintEl.style.display = 'none';
@@ -804,9 +805,10 @@
     }
 
     if (hoveredBox) {
+      var boxItemName = (CONSUMABLE_TYPES[hoveredBox.type] || INSTRUMENT_TYPES[hoveredBox.type] || {}).name || 'предмет';
       hintEl.textContent = hoveredBox.empty
         ? 'E — Поднять пустую коробку'
-        : 'ЛКМ — Взять препарат (' + hoveredBox.remaining + ' шт.)  |  E — Поднять коробку';
+        : 'ЛКМ — Взять: ' + boxItemName + ' (' + hoveredBox.remaining + ' шт.)  |  E — Поднять коробку';
       hintEl.style.display = 'block';
       return true;
     }
@@ -981,6 +983,7 @@
         if (Game.Patients.hasInteraction()) return;
         if (Game.WashingMachine && Game.WashingMachine.hasInteraction()) return;
         if (Game.Furniture && Game.Furniture.tryLinenReplace()) return;
+        if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('pickup_item')) return;
 
         // If holding a box, LMB takes item from box
         if (heldBox) {
@@ -991,6 +994,7 @@
             if (heldBox.remaining <= 0) {
               markBoxEmpty(heldBox);
             }
+            if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('item_picked_up', heldBox.type);
           } else {
             Game.Inventory.showNotification('Инвентарь полон');
           }
@@ -1005,6 +1009,7 @@
             if (hoveredBox.remaining <= 0) {
               markBoxEmpty(hoveredBox);
             }
+            if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('item_picked_up', hoveredBox.type);
           } else {
             Game.Inventory.showNotification('Инвентарь полон');
           }
@@ -1014,11 +1019,13 @@
         // Normal item pickup
         if (!hoveredItem) return;
         if (Game.Inventory.addItem(hoveredItem.type)) {
+          var pickedType = hoveredItem.type;
           hoveredItem.pickedUp = true;
           scene.remove(hoveredItem.mesh);
           unhighlightGroup(hoveredItem.mesh);
           hoveredItem = null;
           hintEl.style.display = 'none';
+          if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('item_picked_up', pickedType);
         } else {
           Game.Inventory.showNotification('Инвентарь полон');
         }
@@ -1029,6 +1036,7 @@
         if (e.code !== 'KeyG') return;
         if (!controls.isLocked) return;
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
+        if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('drop_item')) return;
 
         // Priority: throw held box
         if (heldBox) {
@@ -1048,6 +1056,7 @@
         if (e.code !== 'KeyE') return;
         if (!controls.isLocked) return;
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
+        if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('pickup_box')) return;
         if (Game.Furniture && (Game.Furniture.isCarrying() || Game.Furniture.hasInteraction())) return;
         if (Game.WashingMachine && Game.WashingMachine.hasInteraction()) return;
         if (heldBox) return;

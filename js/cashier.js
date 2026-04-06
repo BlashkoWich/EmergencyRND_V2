@@ -155,6 +155,12 @@
       Game.Patients.onPatientPaid();
     }
 
+    if (Game.Tutorial && Game.Tutorial.isActive()) {
+      var cb = document.getElementById('terminal-close');
+      if (cb) cb.style.display = '';
+      Game.Tutorial.onEvent('payment_done');
+    }
+
     // Award XP last — may trigger level-up popup which unlocks controls
     awardPatientXP(paidPatient);
   }
@@ -226,7 +232,7 @@
     prevHovered = nowHovered;
 
     if (hoveredTerminal) {
-      if (!Game.Patients.hasInteraction() && !Game.Consumables.hasInteraction() && !Game.Consumables.hasBoxInteraction() && !Game.Consumables.isHoldingBox() && !Game.Shelves.hasInteraction()) {
+      if (!Game.Patients.hasInteraction() && !Game.Consumables.hasInteraction() && !Game.Consumables.hasBoxInteraction() && !Game.Consumables.isHoldingBox()) {
         hintEl.textContent = '\u041B\u041A\u041C \u2014 \u041E\u043F\u043B\u0430\u0442\u0430';
         hintEl.style.display = 'block';
       }
@@ -374,8 +380,15 @@
         if (Game.Patients.isPopupOpen()) return;
         if (Game.Shop.isOpen()) return;
         if (Game.Levels && Game.Levels.isPopupOpen()) return;
+        if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('cashier_click')) return;
         if (hoveredTerminal && currentPatient && currentPatient.state === 'atCashier') {
           openTerminal();
+          // Hide close button during tutorial so player can't exit
+          if (Game.Tutorial && Game.Tutorial.isActive()) {
+            var cb = document.getElementById('terminal-close');
+            if (cb) cb.style.display = 'none';
+            Game.Tutorial.onEvent('terminal_opened');
+          }
         }
       });
 
@@ -383,6 +396,7 @@
       var closeBtn = document.getElementById('terminal-close');
       if (closeBtn) {
         closeBtn.addEventListener('click', function() {
+          if (Game.Tutorial && Game.Tutorial.isActive()) return;
           closeTerminal();
         });
       }

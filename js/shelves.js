@@ -331,7 +331,7 @@
       hoveredShelf = null; hoveredSlot = null; shelfMode = null;
       return false;
     }
-    if (Game.Patients.hasInteraction() || Game.Consumables.hasInteraction() || Game.Consumables.hasBoxInteraction()) {
+    if (Game.Patients.hasInteraction() || Game.Consumables.hasInteraction() || Game.Consumables.hasBoxInteraction() || (Game.Cashier && Game.Cashier.hasInteraction())) {
       if (hoveredShelf && shelfMode === 'place') unhighlightShelf(hoveredShelf);
       if (hoveredSlot && shelfMode === 'take') unhighlightItemMesh(hoveredSlot.itemMesh);
       hoveredShelf = null; hoveredSlot = null; shelfMode = null;
@@ -453,14 +453,7 @@
       createShelf(-5.5, -11.5, 0, collidables);
       createShelf(-4.2, -11.5, 0, collidables);
 
-      // Pre-populate first shelf with initial items
-      var initialItems = ['strepsils', 'painkiller', 'antihistamine', 'linen_clean'];
-      for (var i = 0; i < initialItems.length; i++) {
-        var slot = shelves[0].slots[i];
-        for (var n = 0; n < 5; n++) {
-          placeItemOnShelf(slot, initialItems[i]);
-        }
-      }
+      // Shelves start empty — player buys consumables from the shop
 
       // Register shelves as draggable fixtures
       var boardYs = [0.3, 0.7, 1.1];
@@ -511,12 +504,14 @@
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
         if (Game.Patients.hasInteraction() || Game.Consumables.hasInteraction() || Game.Consumables.hasBoxInteraction()) return;
         if (Game.Consumables.isHoldingBox()) return;
+        if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('shelf_take')) return;
         if (!hoveredShelf || shelfMode !== 'take') return;
 
         if (!hoveredSlot) return;
         var type = hoveredSlot.item;
         if (Game.Inventory.addItem(type)) {
           takeItemFromShelf(hoveredSlot);
+          if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('item_taken_from_shelf', type);
         } else {
           Game.Inventory.showNotification('Инвентарь полон');
         }
@@ -529,6 +524,7 @@
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
         if (Game.Patients.hasInteraction() || Game.Consumables.hasInteraction() || Game.Consumables.hasBoxInteraction()) return;
         if (Game.Consumables.isHoldingBox()) return;
+        if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('shelf_place')) return;
         if (!hoveredShelf) return;
 
         var type = Game.Inventory.getActive();

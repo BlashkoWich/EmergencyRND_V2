@@ -485,6 +485,7 @@
     if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return false;
     if (Game.Cashier && Game.Cashier.isPopupOpen()) return false;
     if (Game.Diagnostics && Game.Diagnostics.isActive()) return false;
+    if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('linen_replace')) return false;
 
     // Remove clean linen from inventory
     Game.Inventory.removeActive();
@@ -495,6 +496,7 @@
       Game.Consumables.dropFromPlayer('linen_dirty');
     }
     Game.Inventory.showNotification('Бельё заменено!', 'rgba(34, 139, 34, 0.85)');
+    if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('linen_replaced');
     return true;
   }
 
@@ -520,6 +522,7 @@
     if (Game.Cashier && Game.Cashier.isPopupOpen()) return;
     if (Game.Diagnostics && Game.Diagnostics.isActive()) return;
     if (Game.WashingMachine && Game.WashingMachine.hasInteraction()) return;
+    if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('furniture_interact')) return;
 
     if (carriedFurniture) {
       placeFurniture();

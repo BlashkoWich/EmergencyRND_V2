@@ -62,6 +62,19 @@
         crosshairEl.style.display = 'block';
       });
       controls.addEventListener('unlock', function() {
+        if (Game.Tutorial && Game.Tutorial.isActive()) {
+          // During tutorial action steps, re-lock on next click
+          if (Game.Tutorial.isAllowed('movement')) {
+            var reLock = function() {
+              document.removeEventListener('click', reLock);
+              if (Game.Tutorial && Game.Tutorial.isActive() && Game.Tutorial.isAllowed('movement')) {
+                controls.lock();
+              }
+            };
+            document.addEventListener('click', reLock);
+          }
+          return;
+        }
         if (Game.Shop && Game.Shop.isOpen()) return;
         if (Game.Patients && Game.Patients.isPopupOpen()) return;
         if (Game.Diagnostics && Game.Diagnostics.isActive()) return;

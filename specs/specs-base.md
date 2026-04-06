@@ -31,8 +31,9 @@
 - `Game.Trash` — система мусора (спавн внутри больницы, модели, партиклы вони, мухи, уборка)
 - `Game.Shift` — система смен и дней (время, табличка Open/Closed, задачи, итоги дня)
 - `Game.Cashier` — касса и система оплаты
+- `Game.Tutorial` — пошаговый туториал (state machine, 3D-стрелки, spotlight, блокировка действий)
 
-Порядок загрузки: helpers → world → patients → controls → consumables → inventory → shop → furniture → washing-machine → shelves → tool-panel → diagnostics → staff → trash → shift → cashier → inline module (оркестратор).
+Порядок загрузки: helpers → world → patients → controls → consumables → inventory → shop → furniture → washing-machine → shelves → tool-panel → diagnostics → staff → trash → shift → cashier → tutorial → inline module (оркестратор).
 
 ## File Structure
 ```
@@ -55,6 +56,7 @@ js/
   trash.js              — система мусора (спавн, модели, партиклы вони, мухи, уборка игроком/уборщиком)
   shift.js              — система смен (время, табличка, задачи, маскот, итоги дня)
   cashier.js            — касса и оплата
+  tutorial.js           — пошаговый туториал (state machine, 25 шагов, 3D-стрелки, spotlight)
 serve.mjs               — вспомогательный Node.js HTTP-сервер для локальной разработки
 specs/
   specs-base.md         — этот файл (техническая база)
@@ -80,14 +82,17 @@ specs/
 3. `Game.Furniture.update(delta)` — перемещение мебели, interaction raycast, outline валидации размещения
 4. `Game.WashingMachine.update(delta)` — interaction raycast стиральной машины, таймер стирки
 5. `Game.Consumables.update(delta)` — физика расходников + interaction raycast
-6. `Game.Shelves.update(delta)` — interaction raycast стеллажей
-7. `Game.ToolPanel.update(delta)` — interaction raycast панели инструментов
-8. `Game.Cashier.update(delta)` — касса, терминал, очередь оплаты
-8. `Game.Shift.update(delta)` — время смены, hover таблички, задачи
-8. `renderer.render(scene, camera)`
+6. `Game.Cashier.update(delta)` — касса, терминал, очередь оплаты (до стеллажей — приоритет рейкаста)
+7. `Game.Shelves.update(delta)` — interaction raycast стеллажей (уступает кассе)
+8. `Game.ToolPanel.update(delta)` — interaction raycast панели инструментов
+9. `Game.Staff.update(delta)` — NPC-сотрудники
+10. `Game.Trash.update(delta)` — мусор
+11. `Game.Shift.update(delta)` — время смены, hover таблички, задачи
+12. `Game.Tutorial.update(delta)` — обновление 3D-стрелки туториала
+13. `renderer.render(scene, camera)`
 
 ## Оркестратор (`index.html` inline module)
-Создаёт renderer, scene, camera, collidables[]. Вызывает `Game.World.setup()`, `Game.Controls.setup()`, `Game.Furniture.setup()` + `registerExisting()`, `Game.WashingMachine.setup()`, `Game.Patients.setup()`, `Game.Consumables.setup()`, `Game.Inventory.setup()`, `Game.Shop.setup()`, `Game.Shelves.setup()`, `Game.ToolPanel.setup()`, `Game.Diagnostics.setup()`, `Game.Cashier.setup()`, `Game.Shift.setup()`. Запускает animation loop.
+Создаёт renderer, scene, camera, collidables[]. Вызывает `Game.World.setup()`, `Game.Controls.setup()`, `Game.Furniture.setup()` + `registerExisting()`, `Game.WashingMachine.setup()`, `Game.Patients.setup()`, `Game.Consumables.setup()`, `Game.Inventory.setup()`, `Game.Shop.setup()`, `Game.Shelves.setup()`, `Game.ToolPanel.setup()`, `Game.Diagnostics.setup()`, `Game.Cashier.setup()`, `Game.Shift.setup()`, `Game.Tutorial.setup()`. Запускает animation loop.
 
 ## Global State
 

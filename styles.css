@@ -726,3 +726,76 @@ canvas { display: block; }
 }
 #day-end-next:hover { background: #33a06a; }
 #day-end-next:active { transform: scale(0.96); }
+
+/* ====== TUTORIAL ====== */
+#tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 28;
+  pointer-events: none;
+}
+
+#tutorial-spotlight {
+  position: fixed;
+  z-index: 16;
+  border-radius: 10px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+  transition: top 0.3s ease, left 0.3s ease, width 0.3s ease, height 0.3s ease;
+  display: none;
+}
+
+#tutorial-panel {
+  position: fixed;
+  z-index: 30;
+  background: rgba(8, 20, 35, 0.96);
+  border: 1px solid rgba(100, 180, 255, 0.3);
+  border-radius: 14px;
+  padding: 22px 26px;
+  max-width: 420px;
+  min-width: 280px;
+  color: #c8dae8;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  pointer-events: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  white-space: pre-line;
+}
+
+#tutorial-step-num {
+  font-size: 0.72rem;
+  color: rgba(100, 170, 255, 0.55);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+}
+
+#tutorial-text {
+  margin-bottom: 4px;
+}
+
+#tutorial-next {
+  margin-top: 18px;
+  padding: 10px 28px;
+  background: rgba(50, 130, 240, 0.85);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+#tutorial-next:hover { background: rgba(70, 150, 255, 0.95); }
+#tutorial-next:active { transform: scale(0.96); }
+
+/* Tutorial-locked buttons */
+.tutorial-locked {
+  opacity: 0.3 !important;
+  pointer-events: none !important;
+  filter: grayscale(0.8) !important;
+  cursor: not-allowed !important;
+}

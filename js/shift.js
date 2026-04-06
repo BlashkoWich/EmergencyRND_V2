@@ -203,6 +203,7 @@
   function onSignClick() {
     if (!hoveredSign || dayEndPopupOpen) return;
     if (!controls.isLocked) return;
+    if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('sign_click')) return;
 
     if (!shiftOpen && !shiftEnding) {
       openShift();
@@ -223,6 +224,7 @@
     if (Game.Patients && Game.Patients.spawnFirstPatient) {
       Game.Patients.spawnFirstPatient();
     }
+    if (Game.Tutorial) Game.Tutorial.onEvent('shift_opened');
   }
 
   function endShiftTime() {
@@ -621,10 +623,12 @@
 
     update: function(delta) {
       if (shiftOpen) {
-        gameTime += delta;
-        if (gameTime >= SHIFT_DURATION) {
-          gameTime = SHIFT_DURATION;
-          endShiftTime();
+        if (!(Game.Tutorial && Game.Tutorial.isPaused())) {
+          gameTime += delta;
+          if (gameTime >= SHIFT_DURATION) {
+            gameTime = SHIFT_DURATION;
+            endShiftTime();
+          }
         }
         updateHUD();
       }
@@ -643,6 +647,7 @@
     isOpen: function() { return shiftOpen; },
     isPopupOpen: function() { return dayEndPopupOpen; },
     hasInteraction: function() { return hoveredSign; },
+    getDayNumber: function() { return dayNumber; },
 
     trackEarning: function(amount) { dayStats.moneyEarned += amount; },
     trackSpending: function(amount) { dayStats.moneySpent += amount; },

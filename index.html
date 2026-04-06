@@ -308,6 +308,15 @@
     <p style="margin-top:0.5rem; opacity:0.6; font-size:0.85rem;">Q — магазин &nbsp;|&nbsp; 1-6 — инвентарь &nbsp;|&nbsp; E — коробка &nbsp;|&nbsp; ЛКМ — взаимодействие</p>
   </div>
 
+  <div id="tutorial-overlay" style="display:none">
+    <div id="tutorial-spotlight"></div>
+    <div id="tutorial-panel">
+      <div id="tutorial-step-num"></div>
+      <div id="tutorial-text"></div>
+      <button id="tutorial-next" style="display:none">Далее</button>
+    </div>
+  </div>
+
   <div id="diagnostics-overlay" style="display:none">
     <button id="diagnostics-close">&#10005;</button>
     <div id="diagnostics-title"></div>
@@ -333,6 +342,7 @@
   <script src="js/trash.js"></script>
   <script src="js/shift.js"></script>
   <script src="js/cashier.js"></script>
+  <script src="js/tutorial.js"></script>
 
   <script type="importmap">
   {
@@ -402,6 +412,7 @@
     Game.Staff.setup(THREE, scene, camera, controls, collidables);
     Game.Trash.setup(THREE, scene, camera, controls, collidables);
     Game.Shift.setup(THREE, scene, camera, controls, collidables);
+    Game.Tutorial.setup(controls, THREE, camera, scene);
 
     // --- Animation loop ---
     const clock = new THREE.Clock();
@@ -418,12 +429,13 @@
       Game.Furniture.update(delta);
       Game.WashingMachine.update(delta);
       Game.Consumables.update(delta);
+      Game.Cashier.update(delta);
       Game.Shelves.update(delta);
       Game.ToolPanel.update(delta);
-      Game.Cashier.update(delta);
       Game.Staff.update(delta);
       Game.Trash.update(delta);
       Game.Shift.update(delta);
+      Game.Tutorial.update(delta);
 
       renderer.render(scene, camera);
     }

@@ -6,6 +6,9 @@
   var isShopOpen = false;
   var countEls = {}; // type -> span element
   var upgradeLevel = 0; // 0=base(5), 1=10, 2=15, 3=20
+
+  // First order of each consumable type is free
+  var firstOrderUsed = {}; // type -> true if first free order already used
   var upgradeLevels = [
     { price: 100, stack: 10 },
     { price: 200, stack: 15 },
@@ -95,6 +98,24 @@
     }
   }
 
+  function refreshFreeLabels() {
+    var consumableItems = document.querySelectorAll('#shop-tab-consumables .shop-item');
+    for (var i = 0; i < consumableItems.length; i++) {
+      var itemEl = consumableItems[i];
+      var type = itemEl.dataset.type;
+      var btn = itemEl.querySelector('.shop-buy-btn');
+      if (!btn) continue;
+      var basePrice = type === 'linen_clean' ? 100 : 80;
+      if (!firstOrderUsed[type]) {
+        btn.textContent = 'Заказать — Бесплатно!';
+        btn.style.background = '#2a8a5a';
+      } else {
+        btn.textContent = 'Купить — $' + basePrice;
+        btn.style.background = '';
+      }
+    }
+  }
+
   function refreshUpgradeButtons() {
     for (var i = 0; i < upgradeButtons.length; i++) {
       var entry = upgradeButtons[i];
@@ -167,16 +188,28 @@
 
         // Buy button handler
         (function(btn, t) {
-          var price = t === 'linen_clean' ? 100 : 80;
+          var basePrice = t === 'linen_clean' ? 100 : 80;
           btn.addEventListener('click', function() {
-            var balance = Game.Cashier.getBalance();
-            if (balance < price) {
-              Game.Inventory.showNotification('Недостаточно средств!');
-              return;
+            if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('shop_buy')) return;
+            // First order of each type is free
+            var isFree = !firstOrderUsed[t];
+            var price = isFree ? 0 : basePrice;
+            if (!isFree) {
+              var balance = Game.Cashier.getBalance();
+              if (balance < price) {
+                Game.Inventory.showNotification('Недостаточно средств!');
+                return;
+              }
             }
-            Game.Cashier.spend(price);
+            if (price > 0) Game.Cashier.spend(price);
+            if (isFree) {
+              firstOrderUsed[t] = true;
+              Game.Inventory.showNotification('Первый заказ бесплатно!', 'rgba(34, 139, 34, 0.85)');
+              refreshFreeLabels();
+            }
             Game.Consumables.spawnBoxInDeliveryZone(t);
             updateCounts();
+            if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('shop_item_bought', t);
           });
         })(itemEl.querySelector('.shop-buy-btn'), type);
       }
@@ -272,12 +305,15 @@
 
       // Close button
       closeBtn.addEventListener('click', function() {
+        if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('shop_close')) return;
         shopEl.style.display = 'none';
         isShopOpen = false;
         controls.lock();
+        if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('shop_closed');
       });
 
       refreshTabLocks();
+      refreshFreeLabels();
 
       // KeyQ to toggle shop
       document.addEventListener('keydown', function(e) {
@@ -288,10 +324,13 @@
         if (Game.Levels && Game.Levels.isPopupOpen()) return;
 
         if (isShopOpen) {
+          if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('shop_close')) return;
           shopEl.style.display = 'none';
           isShopOpen = false;
           controls.lock();
+          if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('shop_closed');
         } else if (controls.isLocked) {
+          if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('shop_open')) return;
           isShopOpen = true;
           shopEl.style.display = 'block';
           controls.unlock();
@@ -299,6 +338,8 @@
           refreshUpgradeButtons();
           refreshStaffList();
           refreshTabLocks();
+          refreshFreeLabels();
+          if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('shop_opened');
         }
       });
     },

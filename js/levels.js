@@ -153,6 +153,10 @@
             if (Game.Shop && Game.Shop.refreshTabLocks) {
               Game.Shop.refreshTabLocks();
             }
+            // Start tutorial for level 1
+            if (Game.Tutorial && Game.Tutorial.checkStart) {
+              Game.Tutorial.checkStart();
+            }
           });
         })(levelBtns[i]);
       }

@@ -513,6 +513,7 @@
         if (e.button !== 0 || !controls.isLocked) return;
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
         if (Game.Diagnostics && Game.Diagnostics.isActive()) return;
+        if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('trash_interact')) return;
         if (!hoveredTrash) return;
         if (Game.Patients.hasInteraction()) return;
         if (Game.WashingMachine && Game.WashingMachine.hasInteraction()) return;

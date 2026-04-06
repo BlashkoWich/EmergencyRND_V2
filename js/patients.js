@@ -852,6 +852,7 @@
     btnDismiss.style.display = '';
 
     controls.unlock();
+    if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('popup_opened');
   }
 
   function closePopup() {
@@ -1462,6 +1463,7 @@
     var activeType = Game.Inventory.getActive();
     Game.Inventory.removeActive();
     applyOneConsumable(patient, activeType);
+    if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('patient_treated');
   }
 
   function wrongTreatment(patient) {
@@ -1513,6 +1515,7 @@
     var currentLevel = Game.Levels ? Game.Levels.getLevel() : 1;
     if (currentLevel >= 3) return; // continuous mode handles spawning via timer
     if (!Game.Shift || !Game.Shift.isOpen()) return;
+    if (Game.Tutorial && Game.Tutorial.isActive()) return; // no spawning during tutorial
 
     if (!firstPatientPaid) {
       // First patient just paid — unlock 30s timer and spawn one immediately
@@ -1610,6 +1613,8 @@
         }
         updateHealthBarTexture(p);
       } else {
+        // Skip decay during tutorial
+        if (Game.Tutorial && Game.Tutorial.isActive()) continue;
         // Skip decay while walking to destination or during active minigame
         if (p.state === 'walking') continue;
         if (p.state === 'queued' && p.queueTarget) {
@@ -1926,6 +1931,7 @@
         if (popupPatient) return;
         if (Game.Diagnostics && Game.Diagnostics.isActive()) return;
         if (!hoveredPatient) return;
+        if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('patient_click') && !Game.Tutorial.isAllowed('treat_patient')) return;
 
         // Block interaction if admin is processing this patient
         if (hoveredPatient.staffProcessing) {
@@ -1986,6 +1992,7 @@
       // Popup buttons
       btnBed.addEventListener('click', function() {
         if (!popupPatient) return;
+        if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('btn_bed')) return;
         var indoorBeds = Game.Furniture.getIndoorBeds();
         var slot = null;
         for (var i = 0; i < indoorBeds.length; i++) {
@@ -1993,10 +2000,12 @@
         }
         if (!slot) return;
         sendPatient(popupPatient, slot.pos, slot);
+        if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('patient_sent_to_bed');
       });
 
       btnWait.addEventListener('click', function() {
         if (!popupPatient) return;
+        if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('btn_wait')) return;
         var indoorChairs = Game.Furniture.getIndoorChairs();
         var slot = null;
         for (var i = 0; i < indoorChairs.length; i++) {
@@ -2008,6 +2017,7 @@
 
       btnDismiss.addEventListener('click', function() {
         if (!popupPatient) return;
+        if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('btn_dismiss')) return;
         var patient = popupPatient;
         // Return patient to previous state
         if (patient._wasWaiting) {
@@ -2023,7 +2033,10 @@
     },
 
     spawnFirstPatient: function() {
-      spawnPatient();
+      var p = spawnPatient();
+      if (Game.Tutorial && Game.Tutorial.isActive() && p) {
+        Game.Tutorial.setTutorialPatient(p);
+      }
     },
     onPatientPaid: function() {
       onPatientPaid();
@@ -2060,8 +2073,8 @@
     },
 
     update: function(delta) {
-      // Spawn patients only when shift is open
-      if (Game.Shift && Game.Shift.isOpen()) {
+      // Spawn patients only when shift is open (and not during tutorial)
+      if (Game.Shift && Game.Shift.isOpen() && !(Game.Tutorial && Game.Tutorial.isActive())) {
         var currentLevel = Game.Levels ? Game.Levels.getLevel() : 1;
         var spawnMode = (currentLevel >= 3) ? 'continuous' : 'sequential';
 

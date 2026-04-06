@@ -190,6 +190,7 @@
     progressFill.visible = true;
     progressFill.scale.x = 0.01;
     Game.Inventory.showNotification('Стирка запущена! (' + dirtyLinenCount + ' шт.)', 'rgba(34, 139, 34, 0.85)');
+    if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('wash_started');
   }
 
   function finishWash() {
@@ -213,6 +214,7 @@
     }
 
     Game.Inventory.showNotification('Стирка завершена! Заберите бельё.', 'rgba(34, 139, 34, 0.85)');
+    if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('wash_finished');
   }
 
   function updateWashCycle(delta) {
@@ -241,6 +243,7 @@
     if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
     if (Game.Cashier && Game.Cashier.isPopupOpen()) return;
     if (Game.Diagnostics && Game.Diagnostics.isActive()) return;
+    if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('washing_machine')) return;
 
     var activeType = Game.Inventory.getActive();
     if (activeType !== 'linen_dirty') return;
@@ -252,6 +255,7 @@
 
     Game.Inventory.removeActive();
     dirtyLinenCount++;
+    if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('linen_loaded');
     setStatusColor(0xcc8844, 0.5);
     Game.Inventory.showNotification('Загружено бельё (' + dirtyLinenCount + '/' + MAX_LOAD + ')', 'rgba(34, 139, 34, 0.85)');
   }
@@ -263,6 +267,7 @@
     if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
     if (Game.Cashier && Game.Cashier.isPopupOpen()) return;
     if (Game.Diagnostics && Game.Diagnostics.isActive()) return;
+    if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('washing_machine')) return;
 
     if (isWashing) return;
     if (dirtyLinenCount <= 0) {
