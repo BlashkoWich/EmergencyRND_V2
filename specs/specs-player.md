@@ -22,10 +22,11 @@
 
 ## Mouse Input
 - PointerLockControls используется только для lock/unlock (внутренний mousemove отключён через `disconnect()`)
-- Вращение камеры — собственный `mousemove` listener с clamp дельт: `MAX_DELTA = 100`
-- Математика идентична PointerLockControls r164: `euler.y -= mx * 0.002 * pointerSpeed`, pitch clamp ±π/2
+- **Накопление дельт**: `mousemove` listener копит `_mouseDX`/`_mouseDY` с clamp ±100 за событие
+- **Применение 1 раз за кадр**: в `update()` накопленные дельты конвертируются в euler-вращение камеры, затем сбрасываются в 0
+- Математика идентична PointerLockControls r164: `euler.y -= dx * 0.002 * pointerSpeed`, pitch clamp ±π/2
 - `pointerSpeed = 0.5`
-- Clamp вместо фильтрации: аномальный спайк от браузера не телепортирует камеру, а ограничивается максимальным поворотом за событие
+- Синхронизация инпута с кадром обеспечивает плавность на слабых ПК (нет дёрганий между кадрами)
 
 ## Controls Internal State
 ```js

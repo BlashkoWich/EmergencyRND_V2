@@ -26,6 +26,9 @@
     _velocityX: 0,
     _velocityZ: 0,
     _moveDamping: 12.0,
+    _mouseDX: 0,
+    _mouseDY: 0,
+    _mouseEuler: null,
 
     setup: function(THREE, camera, collidables, PointerLockControls) {
       this._THREE = THREE;
@@ -55,20 +58,18 @@
         }
       });
 
+      // Accumulate mouse deltas — rotation applied once per frame in update()
       var MAX_DELTA = 100;
-      var HALF_PI = Math.PI / 2;
-      var _euler = new THREE.Euler(0, 0, 0, 'YXZ');
+      this._mouseEuler = new THREE.Euler(0, 0, 0, 'YXZ');
+      var self2 = this;
       document.addEventListener('mousemove', function(e) {
         if (!controls.isLocked) return;
         var mx = e.movementX || 0;
         var my = e.movementY || 0;
         if (mx > MAX_DELTA) mx = MAX_DELTA; else if (mx < -MAX_DELTA) mx = -MAX_DELTA;
         if (my > MAX_DELTA) my = MAX_DELTA; else if (my < -MAX_DELTA) my = -MAX_DELTA;
-        _euler.setFromQuaternion(camera.quaternion);
-        _euler.y -= mx * 0.002 * controls.pointerSpeed;
-        _euler.x -= my * 0.002 * controls.pointerSpeed;
-        _euler.x = Math.max(-HALF_PI, Math.min(HALF_PI, _euler.x));
-        camera.quaternion.setFromEuler(_euler);
+        self2._mouseDX += mx;
+        self2._mouseDY += my;
       });
 
       this._controls = controls;
@@ -145,7 +146,18 @@
         return;
       }
 
-      // Camera rotation is handled by custom mousemove listener (clamps deltas, no smoothing)
+      // Apply accumulated mouse deltas (collected in mousemove, applied once per frame)
+      if (this._mouseDX !== 0 || this._mouseDY !== 0) {
+        var HALF_PI = Math.PI / 2;
+        var euler = this._mouseEuler;
+        euler.setFromQuaternion(camera.quaternion);
+        euler.y -= this._mouseDX * 0.002 * this._controls.pointerSpeed;
+        euler.x -= this._mouseDY * 0.002 * this._controls.pointerSpeed;
+        euler.x = Math.max(-HALF_PI, Math.min(HALF_PI, euler.x));
+        camera.quaternion.setFromEuler(euler);
+        this._mouseDX = 0;
+        this._mouseDY = 0;
+      }
 
       // --- Smooth movement ---
       var keys = this._keys;
