@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+  <div id="fps-counter">0 FPS</div>
   <div id="crosshair"></div>
   <svg id="hold-progress" width="40" height="40" viewBox="0 0 40 40">
     <circle cx="20" cy="20" r="16" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="3"/>
@@ -504,6 +505,14 @@
       });
     });
 
+    // --- FPS counter ---
+    const fpsEl = document.getElementById('fps-counter');
+    Game.FPS = { frames: 0 };
+    setInterval(() => {
+      fpsEl.textContent = Game.FPS.frames + ' FPS';
+      Game.FPS.frames = 0;
+    }, 1000);
+
     // --- Animation loop ---
     const clock = new THREE.Clock();
     let frameCount = 0;
@@ -512,6 +521,7 @@
       requestAnimationFrame(animate);
       const delta = Math.min(clock.getDelta(), 0.05);
       frameCount++;
+      Game.FPS.frames++;
 
       if (controls.isLocked) {
         Game.Controls.update(delta);
