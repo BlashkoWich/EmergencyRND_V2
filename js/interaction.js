@@ -5,6 +5,7 @@
   var ray, center;
   var modules = [];
   var activeModule = null;
+  var hitResults = {};
 
   window.Game.Interaction = {
     setup: function(_THREE, _camera, _controls) {
@@ -26,6 +27,7 @@
 
     update: function() {
       activeModule = null;
+      hitResults = {};
 
       if (!controls.isLocked) return;
 
@@ -41,9 +43,12 @@
         ray.far = mod.maxDist;
         var hits = ray.intersectObjects(meshes, mod.recursive);
 
-        if (hits.length > 0 && hits[0].distance < bestDist) {
-          bestDist = hits[0].distance;
-          activeModule = mod.name;
+        if (hits.length > 0) {
+          hitResults[mod.name] = hits;
+          if (hits[0].distance < bestDist) {
+            bestDist = hits[0].distance;
+            activeModule = mod.name;
+          }
         }
       }
     },
@@ -58,6 +63,14 @@
 
     hasAny: function() {
       return activeModule !== null;
+    },
+
+    getHits: function(name) {
+      return hitResults[name] || null;
+    },
+
+    getRay: function() {
+      return ray;
     }
   };
 })();

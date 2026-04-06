@@ -29,9 +29,9 @@
   function createPanel(collidables) {
     panelGroup = new THREE.Group();
 
-    var boardMat = new THREE.MeshStandardMaterial({ color: 0x6B5B4F, roughness: 0.7 });
-    var frameMat = new THREE.MeshStandardMaterial({ color: 0x4A3B30, roughness: 0.6 });
-    var hookMat = new THREE.MeshStandardMaterial({ color: 0x888899, roughness: 0.3, metalness: 0.6 });
+    var boardMat = new THREE.MeshLambertMaterial({ color: 0x6B5B4F });
+    var frameMat = new THREE.MeshLambertMaterial({ color: 0x4A3B30 });
+    var hookMat = new THREE.MeshLambertMaterial({ color: 0x888899 });
 
     // Pegboard backing
     var board = new THREE.Mesh(new THREE.BoxGeometry(PANEL_WIDTH, PANEL_HEIGHT, PANEL_DEPTH), boardMat);
@@ -99,7 +99,7 @@
       labelTex.minFilter = THREE.LinearFilter;
       var labelMesh = new THREE.Mesh(
         new THREE.PlaneGeometry(0.4, 0.1),
-        new THREE.MeshStandardMaterial({ map: labelTex, roughness: 0.5 })
+        new THREE.MeshLambertMaterial({ map: labelTex })
       );
       labelMesh.position.set(0, hookY - 0.12, PANEL_DEPTH / 2 + 0.005);
       panelGroup.add(labelMesh);
@@ -235,15 +235,14 @@
     }
 
     var activeItem = Game.Inventory.getActive();
-    interactRay.setFromCamera(screenCenter, camera);
 
     var newHoveredSlot = null;
     var newMode = null;
 
-    // Try take mode: raycast against instrument meshes on panel
-    if (!Game.Inventory.isFull() && allPanelItemMeshes.length > 0) {
-      var itemHits = interactRay.intersectObjects(allPanelItemMeshes, false);
-      if (itemHits.length > 0) {
+    // Try take mode: use cached hits from toolPanelItems
+    if (!Game.Inventory.isFull()) {
+      var itemHits = Game.Interaction.getHits('toolPanelItems');
+      if (itemHits) {
         var result = getSlotFromItemMesh(itemHits[0].object);
         if (result && result.item) {
           newHoveredSlot = result;
@@ -252,10 +251,10 @@
       }
     }
 
-    // Place mode: raycast against panel structure
+    // Place mode: use cached hits from toolPanelPlace
     if (!newHoveredSlot && activeItem && Game.Consumables.isInstrument(activeItem)) {
-      var hits = interactRay.intersectObjects(allPanelParts);
-      if (hits.length > 0) {
+      var placeHits = Game.Interaction.getHits('toolPanelPlace');
+      if (placeHits) {
         var targetSlot = findSlotForType(activeItem);
         if (targetSlot && !targetSlot.item) {
           newHoveredSlot = targetSlot;

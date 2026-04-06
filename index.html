@@ -307,6 +307,12 @@
     </div>
     <p style="margin-top:1rem;">WASD — движение &nbsp;|&nbsp; Мышь — камера &nbsp;|&nbsp; ESC — пауза</p>
     <p style="margin-top:0.5rem; opacity:0.6; font-size:0.85rem;">Q — магазин &nbsp;|&nbsp; 1-6 — инвентарь &nbsp;|&nbsp; E — коробка &nbsp;|&nbsp; ЛКМ — взаимодействие</p>
+    <div id="quality-selector" style="margin-top:1.2rem;">
+      <span style="opacity:0.7; font-size:0.85rem;">Графика: </span>
+      <button class="quality-btn" data-quality="low">Низкая</button>
+      <button class="quality-btn" data-quality="medium">Средняя</button>
+      <button class="quality-btn active" data-quality="high">Высокая</button>
+    </div>
   </div>
 
   <div id="tutorial-overlay" style="display:none">
@@ -426,7 +432,7 @@
     const collidables = [];
 
     // --- Build world ---
-    const { beds, waitingChairs, cashierDesk, bedMeshes, chairMeshes } = Game.World.setup(THREE, scene, collidables);
+    const { beds, waitingChairs, cashierDesk, bedMeshes, chairMeshes, sunLight } = Game.World.setup(THREE, scene, collidables);
 
     // --- Setup controls ---
     const controls = Game.Controls.setup(THREE, camera, collidables, PointerLockControls);
@@ -452,12 +458,60 @@
     Game.Tutorial.setup(controls, THREE, camera, scene);
     Game.Interaction.setup(THREE, camera, controls);
 
+    // --- Quality settings ---
+    let useComposer = true;
+    const savedQuality = localStorage.getItem('graphicsQuality') || 'high';
+
+    function applyQuality(level) {
+      localStorage.setItem('graphicsQuality', level);
+      document.querySelectorAll('.quality-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.quality === level);
+      });
+      if (level === 'low') {
+        renderer.setPixelRatio(1);
+        renderer.shadowMap.enabled = false;
+        scene.fog.near = 15;
+        scene.fog.far = 35;
+        useComposer = false;
+      } else if (level === 'medium') {
+        renderer.setPixelRatio(1);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.BasicShadowMap;
+        sunLight.shadow.mapSize.width = 512;
+        sunLight.shadow.mapSize.height = 512;
+        scene.fog.near = 20;
+        scene.fog.far = 50;
+        useComposer = true;
+      } else {
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        sunLight.shadow.mapSize.width = 1024;
+        sunLight.shadow.mapSize.height = 1024;
+        scene.fog.near = 25;
+        scene.fog.far = 60;
+        useComposer = true;
+      }
+      renderer.shadowMap.needsUpdate = true;
+    }
+
+    applyQuality(savedQuality);
+
+    document.querySelectorAll('.quality-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        applyQuality(btn.dataset.quality);
+      });
+    });
+
     // --- Animation loop ---
     const clock = new THREE.Clock();
+    let frameCount = 0;
 
     function animate() {
       requestAnimationFrame(animate);
       const delta = Math.min(clock.getDelta(), 0.05);
+      frameCount++;
 
       if (controls.isLocked) {
         Game.Controls.update(delta);
@@ -465,18 +519,29 @@
 
       Game.Interaction.update();
       Game.Patients.update(delta);
-      Game.Furniture.update(delta);
-      Game.WashingMachine.update(delta);
       Game.Consumables.update(delta);
-      Game.Cashier.update(delta);
-      Game.Shelves.update(delta);
-      Game.ToolPanel.update(delta);
       Game.Staff.update(delta);
-      Game.Trash.update(delta);
-      Game.Shift.update(delta);
-      Game.Tutorial.update(delta);
+      Game.Cashier.update(delta);
 
-      composer.render();
+      // Throttled updates (every 2nd frame)
+      if (frameCount % 2 === 0) {
+        Game.Furniture.update(delta * 2);
+        Game.WashingMachine.update(delta * 2);
+        Game.Shelves.update(delta * 2);
+        Game.ToolPanel.update(delta * 2);
+        Game.Trash.update(delta * 2);
+        Game.Shift.update(delta * 2);
+      }
+
+      if (Game.Tutorial.isActive && Game.Tutorial.isActive()) {
+        Game.Tutorial.update(delta);
+      }
+
+      if (useComposer) {
+        composer.render();
+      } else {
+        renderer.render(scene, camera);
+      }
     }
     animate();
   </script>

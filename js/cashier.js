@@ -189,19 +189,15 @@
       return;
     }
 
-    interactRay.setFromCamera(screenCenter, camera);
-
-    // Check terminal meshes
-    var hitTerminal = interactRay.intersectObjects(terminalMeshes, false).length > 0;
-
-    // Check current patient mesh (if at cashier)
+    var cachedHits = Game.Interaction.getHits('cashier');
+    var hitTerminal = false;
     var hitPatient = false;
-    if (!hitTerminal && currentPatient && currentPatient.state === 'atCashier') {
-      var patientMeshes = [];
-      currentPatient.mesh.traverse(function(child) {
-        if (child.isMesh) patientMeshes.push(child);
-      });
-      hitPatient = interactRay.intersectObjects(patientMeshes, false).length > 0;
+    if (cachedHits) {
+      var hitObj = cachedHits[0].object;
+      for (var t = 0; t < terminalMeshes.length; t++) {
+        if (hitObj === terminalMeshes[t]) { hitTerminal = true; break; }
+      }
+      if (!hitTerminal) hitPatient = true;
     }
 
     var hintEl = document.getElementById('interact-hint');

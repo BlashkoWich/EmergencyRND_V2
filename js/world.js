@@ -13,7 +13,7 @@
       // --- Indoor floor (tile) ---
       var indoorFloor = new THREE.Mesh(
         new THREE.BoxGeometry(BW, 0.1, BD),
-        new THREE.MeshStandardMaterial({ map: H.createTileTexture(THREE), roughness: 0.35 })
+        new THREE.MeshLambertMaterial({ map: H.createTileTexture(THREE) })
       );
       indoorFloor.position.set(0, -0.05, -BD / 2);
       indoorFloor.receiveShadow = true;
@@ -23,7 +23,7 @@
       // --- Outdoor ground: asphalt sidewalk ---
       var sidewalk = new THREE.Mesh(
         new THREE.BoxGeometry(60, 0.1, 60),
-        new THREE.MeshStandardMaterial({ map: H.createAsphaltTexture(THREE), roughness: 0.8 })
+        new THREE.MeshLambertMaterial({ map: H.createAsphaltTexture(THREE) })
       );
       sidewalk.position.set(0, -0.06, 24);
       sidewalk.receiveShadow = true;
@@ -31,7 +31,7 @@
       collidables.push(sidewalk);
 
       // --- Grass areas ---
-      var grassMat = new THREE.MeshStandardMaterial({ map: H.createGrassTexture(THREE), roughness: 0.9 });
+      var grassMat = new THREE.MeshLambertMaterial({ map: H.createGrassTexture(THREE) });
       var grassL = new THREE.Mesh(new THREE.BoxGeometry(20, 0.1, 40), grassMat);
       grassL.position.set(-20, -0.04, 20); grassL.receiveShadow = true; scene.add(grassL); collidables.push(grassL);
       var grassR = new THREE.Mesh(new THREE.BoxGeometry(20, 0.1, 40), grassMat);
@@ -40,7 +40,7 @@
       // --- Ceiling (only over building) ---
       var ceilMesh = new THREE.Mesh(
         new THREE.BoxGeometry(BW, 0.1, BD),
-        new THREE.MeshStandardMaterial({ color: 0xf5f5f5, roughness: 0.9 })
+        new THREE.MeshLambertMaterial({ color: 0xf5f5f5 })
       );
       ceilMesh.position.set(0, 3.05, -BD / 2);
       ceilMesh.receiveShadow = true;
@@ -60,7 +60,7 @@
       H.createWall(THREE, scene, collidables, 0, BZ2, doorHalf * 2, T, { h: 0.5, y: 2.75 }); // Lintel
 
       // Door frame posts
-      var frameMat = new THREE.MeshStandardMaterial({ color: 0x99a8b8, roughness: 0.5 });
+      var frameMat = new THREE.MeshLambertMaterial({ color: 0x99a8b8 });
       for (var i = 0; i < 2; i++) {
         var dx = i === 0 ? -doorHalf : doorHalf;
         var post = new THREE.Mesh(new THREE.BoxGeometry(0.08, 3, 0.25), frameMat);
@@ -73,8 +73,8 @@
       // === FURNITURE ===
 
       // --- Reception desk ---
-      var deskMat = new THREE.MeshStandardMaterial({ color: 0x6688aa, roughness: 0.4, metalness: 0.1 });
-      var deskPanelMat = new THREE.MeshStandardMaterial({ color: 0x557799, roughness: 0.5 });
+      var deskMat = new THREE.MeshLambertMaterial({ color: 0x6688aa });
+      var deskPanelMat = new THREE.MeshLambertMaterial({ color: 0x557799 });
 
       var deskTop = new THREE.Mesh(new THREE.BoxGeometry(3, 0.08, 1.0), deskMat);
       deskTop.position.set(0, 1.0, -9.0); deskTop.castShadow = true; scene.add(deskTop); collidables.push(deskTop);
@@ -91,8 +91,8 @@
       deskSide2.position.set(1.5, 0.5, -9.0); scene.add(deskSide2); collidables.push(deskSide2);
 
       // --- 3 Chairs (waiting area, along east wall) ---
-      var chairMat = new THREE.MeshStandardMaterial({ color: 0x3366aa, roughness: 0.6 });
-      var chairLegMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3, metalness: 0.5 });
+      var chairMat = new THREE.MeshLambertMaterial({ color: 0x3366aa });
+      var chairLegMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
 
       var chairMeshes = [];
       function createChair(x, z, rotY) {
@@ -122,9 +122,9 @@
       H.createSign(THREE, scene, '\u0417\u041E\u041D\u0410 \u041E\u0416\u0418\u0414\u0410\u041D\u0418\u042F', 7.88, 2.5, -3.2, -Math.PI / 2);
 
       // --- 2 Medical beds ---
-      var bedFrameMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.3, metalness: 0.4 });
-      var mattressMat = new THREE.MeshStandardMaterial({ color: 0x88bbaa, roughness: 0.7 });
-      var pillowMat = new THREE.MeshStandardMaterial({ color: 0xddeedd, roughness: 0.8 });
+      var bedFrameMat = new THREE.MeshLambertMaterial({ color: 0xcccccc });
+      var mattressMat = new THREE.MeshLambertMaterial({ color: 0x88bbaa });
+      var pillowMat = new THREE.MeshLambertMaterial({ color: 0xddeedd });
 
       var bedMeshes = [];
       function createBed(x, z, rotY) {
@@ -153,8 +153,8 @@
       // === OUTDOOR ENVIRONMENT ===
 
       // --- Trees ---
-      var trunkMat = new THREE.MeshStandardMaterial({ color: 0x8B5A2B, roughness: 0.9 });
-      var leafMat = new THREE.MeshStandardMaterial({ color: 0x3a7a2a, roughness: 0.8 });
+      var trunkMat = new THREE.MeshLambertMaterial({ color: 0x8B5A2B });
+      var leafMat = new THREE.MeshLambertMaterial({ color: 0x3a7a2a });
       function createTree(x, z) {
         var trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.2, 2.5, 8), trunkMat);
         trunk.position.set(x, 1.25, z); trunk.castShadow = true; scene.add(trunk);
@@ -171,8 +171,8 @@
       createTree(8, 15);
 
       // --- Benches ---
-      var benchMat = new THREE.MeshStandardMaterial({ color: 0x8B6F47, roughness: 0.7 });
-      var benchLegMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.4, metalness: 0.5 });
+      var benchMat = new THREE.MeshLambertMaterial({ color: 0x8B6F47 });
+      var benchLegMat = new THREE.MeshLambertMaterial({ color: 0x555555 });
       function createBench(x, z, rotY) {
         var g = new THREE.Group();
         var seat = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.06, 0.45), benchMat);
@@ -203,12 +203,12 @@
       var sunLight = new THREE.DirectionalLight(0xfff5e0, 1.2);
       sunLight.position.set(10, 15, 5);
       sunLight.castShadow = true;
-      sunLight.shadow.mapSize.width = 2048;
-      sunLight.shadow.mapSize.height = 2048;
-      sunLight.shadow.camera.left = -25;
-      sunLight.shadow.camera.right = 25;
-      sunLight.shadow.camera.top = 25;
-      sunLight.shadow.camera.bottom = -25;
+      sunLight.shadow.mapSize.width = 1024;
+      sunLight.shadow.mapSize.height = 1024;
+      sunLight.shadow.camera.left = -10;
+      sunLight.shadow.camera.right = 10;
+      sunLight.shadow.camera.top = 2;
+      sunLight.shadow.camera.bottom = -12;
       sunLight.shadow.camera.near = 1;
       sunLight.shadow.camera.far = 40;
       scene.add(sunLight);
@@ -217,18 +217,13 @@
       scene.add(new THREE.AmbientLight(0xffffff, 0.3));
 
       var fixtureGeo = new THREE.BoxGeometry(0.9, 0.04, 0.3);
-      var fixtureMat = new THREE.MeshStandardMaterial({
-        color: 0xffffff, emissive: 0xeef4ff, emissiveIntensity: 0.8, roughness: 0.3
+      var fixtureMat = new THREE.MeshLambertMaterial({
+        color: 0xffffff, emissive: 0xeef4ff, emissiveIntensity: 0.8
       });
 
-      function addLight(x, z, intensity, castShadow) {
+      function addLight(x, z, intensity) {
         var light = new THREE.PointLight(0xf0f5ff, intensity, 12);
         light.position.set(x, 2.9, z);
-        if (castShadow) {
-          light.castShadow = true;
-          light.shadow.mapSize.width = 512;
-          light.shadow.mapSize.height = 512;
-        }
         scene.add(light);
         var fixture = new THREE.Mesh(fixtureGeo, fixtureMat);
         fixture.position.set(x, 2.98, z);
@@ -237,28 +232,28 @@
 
       for (var x = -6; x <= 6; x += 4) {
         for (var z = -10; z <= -2; z += 4) {
-          addLight(x, z, 0.8, Math.abs(x) < 4);
+          addLight(x, z, 0.8);
         }
       }
 
       // --- Cashier desk (right of reception) ---
       var cashierDeskGroup = new THREE.Group();
 
-      var cashierTableMat = new THREE.MeshStandardMaterial({ color: 0x8B6F47, roughness: 0.6 });
+      var cashierTableMat = new THREE.MeshLambertMaterial({ color: 0x8B6F47 });
       var cashierTable = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.6), cashierTableMat);
       cashierTable.position.set(0, 0.4, 0); cashierTable.castShadow = true; cashierDeskGroup.add(cashierTable);
 
       // Card terminal on the table (positions relative to group origin)
-      var terminalMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.4, metalness: 0.3 });
+      var terminalMat = new THREE.MeshLambertMaterial({ color: 0x2a2a2a });
       var terminalBody = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.04, 0.28), terminalMat);
       terminalBody.position.set(0, 0.84, 0); terminalBody.castShadow = true; cashierDeskGroup.add(terminalBody);
 
-      var terminalScreenMat = new THREE.MeshStandardMaterial({ color: 0x1a3a1a, roughness: 0.3, emissive: 0x0a1a0a, emissiveIntensity: 0.5 });
+      var terminalScreenMat = new THREE.MeshLambertMaterial({ color: 0x1a3a1a, emissive: 0x0a1a0a, emissiveIntensity: 0.5 });
       var terminalScreen = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.005, 0.10), terminalScreenMat);
       terminalScreen.position.set(0, 0.865, 0.08); cashierDeskGroup.add(terminalScreen);
 
       // Terminal keypad area (light gray dots area)
-      var keypadMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.5 });
+      var keypadMat = new THREE.MeshLambertMaterial({ color: 0x3a3a3a });
       var keypadArea = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.005, 0.12), keypadMat);
       keypadArea.position.set(0, 0.865, -0.08); cashierDeskGroup.add(keypadArea);
 
@@ -289,7 +284,8 @@
           collisionBox: cashierTableBox,
           terminalMeshes: [terminalBody, terminalScreen, keypadArea],
           patientPos: new THREE.Vector3(3.5, 0, -8.0)
-        }
+        },
+        sunLight: sunLight
       };
     }
   };

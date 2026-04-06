@@ -16,8 +16,8 @@
   function createShelf(x, z, rotY, collidables) {
     var group = new THREE.Group();
 
-    var woodMat = new THREE.MeshStandardMaterial({ color: 0x8B6F47, roughness: 0.6 });
-    var sideMat = new THREE.MeshStandardMaterial({ color: 0x7A6040, roughness: 0.65 });
+    var woodMat = new THREE.MeshLambertMaterial({ color: 0x8B6F47 });
+    var sideMat = new THREE.MeshLambertMaterial({ color: 0x7A6040 });
 
     // Back panel
     var back = new THREE.Mesh(new THREE.BoxGeometry(1.2, 1.5, 0.05), woodMat);
@@ -324,16 +324,14 @@
 
     var activeItem = Game.Inventory.getActive();
 
-    interactRay.setFromCamera(screenCenter, camera);
-
     var newHovered = null;
     var newMode = null;
     var newHoveredSlot = null;
 
-    // Try take mode first: raycast against item meshes on shelves
-    if (!Game.Inventory.isFull() && allItemMeshes.length > 0) {
-      var itemHits = interactRay.intersectObjects(allItemMeshes, false);
-      if (itemHits.length > 0) {
+    // Try take mode first: use cached hits from shelvesItems
+    if (!Game.Inventory.isFull()) {
+      var itemHits = Game.Interaction.getHits('shelvesItems');
+      if (itemHits) {
         var result = getSlotFromItemMesh(itemHits[0].object);
         if (result) {
           newHovered = result.shelf;
@@ -343,11 +341,11 @@
       }
     }
 
-    // Place mode: raycast against shelf structure (instruments go on tool panel, not shelves)
+    // Place mode: use cached hits from shelvesPlace
     if (!newHovered && activeItem && !Game.Consumables.isInstrument(activeItem)) {
-      var hits = interactRay.intersectObjects(allShelfParts);
-      if (hits.length > 0) {
-        var shelf = getShelfFromMesh(hits[0].object);
+      var placeHits = Game.Interaction.getHits('shelvesPlace');
+      if (placeHits) {
+        var shelf = getShelfFromMesh(placeHits[0].object);
         if (shelf && hasAvailableSlot(shelf, activeItem)) {
           newHovered = shelf;
           newMode = 'place';

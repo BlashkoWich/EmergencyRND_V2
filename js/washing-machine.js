@@ -28,21 +28,21 @@
     machineGroup = new THREE.Group();
 
     // Main body — white box
-    var bodyMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.4, metalness: 0.1 });
+    var bodyMat = new THREE.MeshLambertMaterial({ color: 0xdddddd });
     var body = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.0, 0.7), bodyMat);
     body.position.y = 0.5;
     body.castShadow = true;
     machineGroup.add(body);
 
     // Top panel — slightly darker
-    var topMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.3, metalness: 0.2 });
+    var topMat = new THREE.MeshLambertMaterial({ color: 0xcccccc });
     var top = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.06, 0.7), topMat);
     top.position.y = 1.03;
     top.castShadow = true;
     machineGroup.add(top);
 
     // Door — dark circle on front face
-    var doorMat = new THREE.MeshStandardMaterial({ color: 0x333344, roughness: 0.2, metalness: 0.5 });
+    var doorMat = new THREE.MeshLambertMaterial({ color: 0x333344 });
     var doorGeo = new THREE.CylinderGeometry(0.22, 0.22, 0.02, 24);
     drumMesh = new THREE.Mesh(doorGeo, doorMat);
     drumMesh.rotation.x = Math.PI / 2;
@@ -50,7 +50,7 @@
     machineGroup.add(drumMesh);
 
     // Door rim
-    var rimMat = new THREE.MeshStandardMaterial({ color: 0x999999, roughness: 0.3, metalness: 0.4 });
+    var rimMat = new THREE.MeshLambertMaterial({ color: 0x999999 });
     var rimGeo = new THREE.TorusGeometry(0.23, 0.02, 8, 24);
     var rim = new THREE.Mesh(rimGeo, rimMat);
     rim.rotation.x = Math.PI / 2;
@@ -58,26 +58,26 @@
     machineGroup.add(rim);
 
     // Control panel area (above door)
-    var panelMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa, roughness: 0.5 });
+    var panelMat = new THREE.MeshLambertMaterial({ color: 0xaaaaaa });
     var panel = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.12, 0.02), panelMat);
     panel.position.set(0, 0.85, 0.36);
     machineGroup.add(panel);
 
     // Status light
-    var lightMat = new THREE.MeshStandardMaterial({ color: 0x44cc44, emissive: 0x44cc44, emissiveIntensity: 0.5, roughness: 0.3 });
+    var lightMat = new THREE.MeshLambertMaterial({ color: 0x44cc44, emissive: 0x44cc44, emissiveIntensity: 0.5 });
     statusLight = new THREE.Mesh(new THREE.SphereGeometry(0.03, 8, 8), lightMat);
     statusLight.position.set(0.2, 0.85, 0.37);
     machineGroup.add(statusLight);
 
     // Progress bar background (only visible during wash)
-    var progBgMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.5 });
+    var progBgMat = new THREE.MeshLambertMaterial({ color: 0x333333 });
     progressBg = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.06, 0.02), progBgMat);
     progressBg.position.set(0, 1.15, 0.36);
     progressBg.visible = false;
     machineGroup.add(progressBg);
 
     // Progress bar fill
-    var progFillMat = new THREE.MeshStandardMaterial({ color: 0x44cc44, emissive: 0x228822, emissiveIntensity: 0.3, roughness: 0.4 });
+    var progFillMat = new THREE.MeshLambertMaterial({ color: 0x44cc44, emissive: 0x228822, emissiveIntensity: 0.3 });
     progressFill = new THREE.Mesh(new THREE.BoxGeometry(0.68, 0.04, 0.025), progFillMat);
     progressFill.position.set(0, 1.15, 0.365);
     progressFill.visible = false;
@@ -108,7 +108,6 @@
   }
 
   function setStatusColor(color, intensity) {
-    statusLight.material = statusLight.material.clone();
     statusLight.material.color.setHex(color);
     statusLight.material.emissive.setHex(color);
     statusLight.material.emissiveIntensity = intensity || 0.5;
@@ -136,9 +135,8 @@
       return;
     }
 
-    interactRay.setFromCamera(screenCenter, camera);
-    var hits = interactRay.intersectObjects([machineGroup], true);
-    var nowHovered = hits.length > 0 && hits[0].distance <= 5;
+    var hits = Game.Interaction.getHits('washingMachine');
+    var nowHovered = hits !== null;
 
     if (nowHovered !== isHovered) {
       if (nowHovered) highlightMachine();

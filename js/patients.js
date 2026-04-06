@@ -262,9 +262,9 @@
   function createPatientMesh() {
     var group = new THREE.Group();
     var bodyColor = BODY_COLORS[Math.floor(Math.random() * BODY_COLORS.length)];
-    var bodyMat = new THREE.MeshStandardMaterial({ color: bodyColor, roughness: 0.7 });
-    var skinMat = new THREE.MeshStandardMaterial({ color: 0xf0c8a0, roughness: 0.6 });
-    var legMat = new THREE.MeshStandardMaterial({ color: 0x334455, roughness: 0.7 });
+    var bodyMat = new THREE.MeshLambertMaterial({ color: bodyColor });
+    var skinMat = new THREE.MeshLambertMaterial({ color: 0xf0c8a0 });
+    var legMat = new THREE.MeshLambertMaterial({ color: 0x334455 });
 
     // Hierarchy: group > poseContainer > bodyContainer + legPivots
     var poseContainer = new THREE.Group();
@@ -344,7 +344,6 @@
 
   function tintMaterial(patient, targetMesh, tintColor, factor) {
     var origColor = targetMesh.material.color.getHex();
-    targetMesh.material = targetMesh.material.clone();
     targetMesh.material.color.lerp(new THREE.Color(tintColor), factor);
     patient.mesh.userData.illnessMaterials.push({ mesh: targetMesh, originalColor: origColor });
   }
@@ -360,7 +359,7 @@
 
     var region = getIllnessRegion(cType, diag);
     var sev = getIllnessSeverityScale(patient);
-    var whiteMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.5 });
+    var whiteMat = new THREE.MeshLambertMaterial({ color: 0xeeeeee });
 
     // Helper: scale a body part and register for reset
     function swell(mesh, factor) {
@@ -458,7 +457,7 @@
       if (applyThroat) {
         // Swollen red neck cylinder
         var neckR = 0.1 + 0.05 * sev * im;
-        var neckMat = new THREE.MeshStandardMaterial({ color: 0xcc4444, roughness: 0.6 });
+        var neckMat = new THREE.MeshLambertMaterial({ color: 0xcc4444 });
         var swollenNeck = new THREE.Mesh(new THREE.CylinderGeometry(neckR, 0.08, 0.12, 8), neckMat);
         swollenNeck.position.set(0, 1.22, 0);
         swollenNeck.castShadow = true;
@@ -649,23 +648,10 @@
       return;
     }
 
-    interactRay.setFromCamera(screenCenter, camera);
-
-    var meshes = [];
-    for (var i = 0; i < patients.length; i++) {
-      var p = patients[i];
-      if (p.animating) continue;
-      if (p.state === 'queued' || p.state === 'interacting' || p.state === 'atBed' || p.state === 'waiting') {
-        p.mesh.traverse(function(child) {
-          if (child.isMesh) meshes.push(child);
-        });
-      }
-    }
-
-    var hits = interactRay.intersectObjects(meshes);
+    var hits = Game.Interaction.getHits('patients');
     var newHovered = null;
 
-    if (hits.length > 0) {
+    if (hits) {
       newHovered = getPatientFromMesh(hits[0].object);
       if (newHovered && newHovered.animating) newHovered = null;
     }
@@ -1157,18 +1143,21 @@
   var PARTICLE_SPAWN_INTERVAL = 0.15;
   var PARTICLE_LIFETIME = 1.2;
   var PARTICLE_SPEED = 0.6;
+  var PARTICLE_POOL_SIZE = 30;
 
-  function createParticleSprite() {
+  var healParticleTexture = null;
+  var particlePool = [];
+  var activeParticleCount = 0;
+
+  function initParticlePool() {
     if (!healParticleTexture) {
       var c = document.createElement('canvas');
       c.width = 32; c.height = 32;
       var ctx = c.getContext('2d');
-      // Green cross particle
       ctx.fillStyle = '#00ff88';
       ctx.globalAlpha = 0.9;
       ctx.fillRect(12, 4, 8, 24);
       ctx.fillRect(4, 12, 24, 8);
-      // Soft glow
       var grad = ctx.createRadialGradient(16, 16, 0, 16, 16, 16);
       grad.addColorStop(0, 'rgba(100, 255, 160, 0.3)');
       grad.addColorStop(1, 'rgba(100, 255, 160, 0)');
@@ -1177,29 +1166,37 @@
       ctx.fillRect(0, 0, 32, 32);
       healParticleTexture = new THREE.CanvasTexture(c);
     }
-    var mat = new THREE.SpriteMaterial({ map: healParticleTexture, transparent: true, depthTest: false });
-    var sprite = new THREE.Sprite(mat);
-    sprite.scale.set(0.12, 0.12, 1);
-    return sprite;
+    for (var i = 0; i < PARTICLE_POOL_SIZE; i++) {
+      var mat = new THREE.SpriteMaterial({ map: healParticleTexture, transparent: true, depthTest: false });
+      var sprite = new THREE.Sprite(mat);
+      sprite.scale.set(0.12, 0.12, 1);
+      sprite.visible = false;
+      scene.add(sprite);
+      particlePool.push({
+        sprite: sprite,
+        life: 0,
+        maxLife: PARTICLE_LIFETIME,
+        vx: 0, vy: 0, vz: 0
+      });
+    }
   }
 
-  var healParticleTexture = null;
-
   function spawnHealParticle(patient) {
-    var sprite = createParticleSprite();
+    if (activeParticleCount >= PARTICLE_POOL_SIZE) return;
+    var part = particlePool[activeParticleCount];
+    activeParticleCount++;
     var px = patient.mesh.position.x + (Math.random() - 0.5) * 0.5;
     var pz = patient.mesh.position.z + (Math.random() - 0.5) * 0.3;
     var py = patient.mesh.position.y + 0.4 + Math.random() * 0.6;
-    sprite.position.set(px, py, pz);
-    scene.add(sprite);
-    healParticles.push({
-      sprite: sprite,
-      life: PARTICLE_LIFETIME,
-      maxLife: PARTICLE_LIFETIME,
-      vx: (Math.random() - 0.5) * 0.2,
-      vy: PARTICLE_SPEED + Math.random() * 0.3,
-      vz: (Math.random() - 0.5) * 0.2
-    });
+    part.sprite.position.set(px, py, pz);
+    part.sprite.visible = true;
+    part.sprite.material.opacity = 1;
+    part.sprite.scale.set(0.12, 0.12, 1);
+    part.life = PARTICLE_LIFETIME;
+    part.maxLife = PARTICLE_LIFETIME;
+    part.vx = (Math.random() - 0.5) * 0.2;
+    part.vy = PARTICLE_SPEED + Math.random() * 0.3;
+    part.vz = (Math.random() - 0.5) * 0.2;
   }
 
   function updateHealParticles(delta) {
@@ -1216,13 +1213,19 @@
       }
     }
 
-    // Update existing particles
-    for (var i = healParticles.length - 1; i >= 0; i--) {
-      var part = healParticles[i];
+    // Update active particles (swap-with-last removal)
+    for (var i = activeParticleCount - 1; i >= 0; i--) {
+      var part = particlePool[i];
       part.life -= delta;
       if (part.life <= 0) {
-        scene.remove(part.sprite);
-        healParticles.splice(i, 1);
+        part.sprite.visible = false;
+        activeParticleCount--;
+        // Swap with last active
+        if (i < activeParticleCount) {
+          var temp = particlePool[i];
+          particlePool[i] = particlePool[activeParticleCount];
+          particlePool[activeParticleCount] = temp;
+        }
         continue;
       }
       part.sprite.position.x += part.vx * delta;
@@ -1439,7 +1442,6 @@
       Game.Inventory.showNotification('Лечение начато!', 'rgba(34, 139, 34, 0.85)');
       for (var j = 0; j < patient.mesh.userData.bodyParts.length; j++) {
         var part = patient.mesh.userData.bodyParts[j];
-        part.material = part.material.clone();
         part.material.emissive = new THREE.Color(0x00ff44);
         part.material.emissiveIntensity = 0.8;
       }
@@ -1449,7 +1451,6 @@
       Game.Inventory.showNotification('Препарат применён! Осталось: ' + patient.pendingConsumables.length, 'rgba(70, 130, 180, 0.85)');
       for (var j = 0; j < patient.mesh.userData.bodyParts.length; j++) {
         var part = patient.mesh.userData.bodyParts[j];
-        part.material = part.material.clone();
         part.material.emissive = new THREE.Color(0x4488ff);
         part.material.emissiveIntensity = 0.5;
       }
@@ -1468,10 +1469,8 @@
     patient.animating = true;
     Game.Inventory.showNotification('Неправильный препарат!');
 
-    // Clone materials for red flash
     for (var j = 0; j < patient.mesh.userData.bodyParts.length; j++) {
       var part = patient.mesh.userData.bodyParts[j];
-      part.material = part.material.clone();
       part.material.emissive = new THREE.Color(0xff2222);
       part.material.emissiveIntensity = 0.5;
     }
@@ -1700,10 +1699,7 @@
           var opacity = Math.max(0, 1 - p.fadeTimer / 0.8);
           p.mesh.traverse(function(child) {
             if (child.isMesh && child.material) {
-              if (!child.material.transparent) {
-                child.material = child.material.clone();
-                child.material.transparent = true;
-              }
+              child.material.transparent = true;
               child.material.opacity = opacity;
             }
           });
@@ -1900,6 +1896,7 @@
       interactRay = new THREE.Raycaster();
       interactRay.far = 5;
       screenCenter = new THREE.Vector2(0, 0);
+      initParticlePool();
 
       // Cache UI elements
       hintEl = document.getElementById('interact-hint');

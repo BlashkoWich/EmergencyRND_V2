@@ -44,11 +44,11 @@
   function createStaffMesh(type) {
     var info = STAFF_TYPES[type];
     var group = new THREE.Group();
-    var coatMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6 });
-    var skinMat = new THREE.MeshStandardMaterial({ color: 0xf0c8a0, roughness: 0.6 });
-    var pantsMat = new THREE.MeshStandardMaterial({ color: 0x334455, roughness: 0.7 });
-    var accentMat = new THREE.MeshStandardMaterial({ color: info.color, roughness: 0.5 });
-    var hatMat = new THREE.MeshStandardMaterial({ color: info.hatColor, roughness: 0.5 });
+    var coatMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    var skinMat = new THREE.MeshLambertMaterial({ color: 0xf0c8a0 });
+    var pantsMat = new THREE.MeshLambertMaterial({ color: 0x334455 });
+    var accentMat = new THREE.MeshLambertMaterial({ color: info.color });
+    var hatMat = new THREE.MeshLambertMaterial({ color: info.hatColor });
 
     var poseContainer = new THREE.Group();
     group.add(poseContainer);
@@ -65,7 +65,7 @@
     collar.position.y = 1.22; collar.castShadow = true; bodyContainer.add(collar);
 
     // Name badge on chest
-    var badgeMat = new THREE.MeshStandardMaterial({ color: info.color, roughness: 0.3 });
+    var badgeMat = new THREE.MeshLambertMaterial({ color: info.color });
     var badge = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, 0.01), badgeMat);
     badge.position.set(0.1, 0.95, 0.14); bodyContainer.add(badge);
 
@@ -1239,8 +1239,8 @@
   function createBasket(x, z, label, wallLabel) {
     var group = new THREE.Group();
 
-    var basketMat = new THREE.MeshStandardMaterial({ color: 0x8B7355, roughness: 0.7 });
-    var innerMat = new THREE.MeshStandardMaterial({ color: 0xA89070, roughness: 0.8 });
+    var basketMat = new THREE.MeshLambertMaterial({ color: 0x8B7355 });
+    var innerMat = new THREE.MeshLambertMaterial({ color: 0xA89070 });
 
     // Bottom
     var bottom = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.04, 0.5), basketMat);
@@ -1341,27 +1341,31 @@
       return;
     }
 
-    interactRay.setFromCamera(screenCenter, camera);
-
+    var cachedHits = Game.Interaction.getHits('staff');
     var newHovered = null;
     var newMode = null;
 
-    // Check both baskets
-    var basketKeys = ['clean', 'dirty'];
-    for (var b = 0; b < basketKeys.length; b++) {
-      var basket = baskets[basketKeys[b]];
-      if (!basket.mesh) continue;
-      var hits = interactRay.intersectObjects([basket.mesh], true);
-      if (hits.length > 0 && hits[0].distance <= 5) {
-        newHovered = basket;
-
-        var activeItem = Game.Inventory.getActive();
-        if (activeItem && activeItem === basket.type) {
-          newMode = 'place';
-        } else if (basket.items.length > 0 && !Game.Inventory.isFull()) {
-          newMode = 'take';
+    if (cachedHits) {
+      var hitObj = cachedHits[0].object;
+      var basketKeys = ['clean', 'dirty'];
+      for (var b = 0; b < basketKeys.length; b++) {
+        var basket = baskets[basketKeys[b]];
+        if (!basket.mesh) continue;
+        var current = hitObj;
+        while (current) {
+          if (current === basket.mesh) {
+            newHovered = basket;
+            var activeItem = Game.Inventory.getActive();
+            if (activeItem && activeItem === basket.type) {
+              newMode = 'place';
+            } else if (basket.items.length > 0 && !Game.Inventory.isFull()) {
+              newMode = 'take';
+            }
+            break;
+          }
+          current = current.parent;
         }
-        break;
+        if (newHovered) break;
       }
     }
 
@@ -1399,7 +1403,6 @@
   function highlightBasket(basket) {
     basket.mesh.traverse(function(child) {
       if (child.isMesh) {
-        child.material = child.material.clone();
         child.material.emissive = new THREE.Color(0x00ff44);
         child.material.emissiveIntensity = 0.35;
       }

@@ -8,7 +8,7 @@
       var y = opts.y || h / 2;
       var color = opts.color || 0xe8f0f8;
       var geo = new THREE.BoxGeometry(w, h, d);
-      var mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.75, metalness: 0.0 });
+      var mat = new THREE.MeshLambertMaterial({ color: color });
       var mesh = new THREE.Mesh(geo, mat);
       mesh.position.set(x, y, z);
       mesh.castShadow = true;
@@ -31,7 +31,7 @@
       ctx.fillText(text, 256, 64);
       var tex = new THREE.CanvasTexture(canvas);
       var geo = new THREE.PlaneGeometry(1.2, 0.3);
-      var mat = new THREE.MeshStandardMaterial({ map: tex, roughness: 0.5 });
+      var mat = new THREE.MeshLambertMaterial({ map: tex });
       var mesh = new THREE.Mesh(geo, mat);
       mesh.position.set(x, y, z);
       mesh.rotation.y = rotY || 0;

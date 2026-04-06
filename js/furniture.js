@@ -42,9 +42,9 @@
   // --- Mesh creation (mirrors world.js) ---
 
   function createBedMesh(x, z, rotY) {
-    var bedFrameMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.3, metalness: 0.4 });
-    var mattressMat = new THREE.MeshStandardMaterial({ color: 0x88bbaa, roughness: 0.7 });
-    var pillowMat = new THREE.MeshStandardMaterial({ color: 0xddeedd, roughness: 0.8 });
+    var bedFrameMat = new THREE.MeshLambertMaterial({ color: 0xcccccc });
+    var mattressMat = new THREE.MeshLambertMaterial({ color: 0x88bbaa });
+    var pillowMat = new THREE.MeshLambertMaterial({ color: 0xddeedd });
 
     var g = new THREE.Group();
     var frame = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.5, 0.9), bedFrameMat);
@@ -68,8 +68,8 @@
   }
 
   function createChairMesh(x, z, rotY) {
-    var chairMat = new THREE.MeshStandardMaterial({ color: 0x3366aa, roughness: 0.6 });
-    var chairLegMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3, metalness: 0.5 });
+    var chairMat = new THREE.MeshLambertMaterial({ color: 0x3366aa });
+    var chairLegMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
 
     var g = new THREE.Group();
     var seat = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.06, 0.5), chairMat);
@@ -143,8 +143,8 @@
   // --- Dirty bed overlay ---
 
   function createDirtyOverlay(item) {
-    var overlayMat = new THREE.MeshStandardMaterial({
-      color: 0xaa8844, transparent: true, opacity: 0.5, roughness: 0.9
+    var overlayMat = new THREE.MeshLambertMaterial({
+      color: 0xaa8844, transparent: true, opacity: 0.5
     });
     var overlay = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.02, 0.8), overlayMat);
     overlay.position.y = 0.63;
@@ -340,16 +340,8 @@
       return;
     }
 
-    interactRay.setFromCamera(screenCenter, camera);
-    var meshes = [];
-    for (var i = 0; i < furnitureItems.length; i++) {
-      if (furnitureItems[i] !== carriedFurniture) {
-        meshes.push(furnitureItems[i].group);
-      }
-    }
-
-    var hits = interactRay.intersectObjects(meshes, true);
-    var newHovered = hits.length > 0 ? getFurnitureFromMesh(hits[0].object) : null;
+    var hits = Game.Interaction.getHits('furniture');
+    var newHovered = hits ? getFurnitureFromMesh(hits[0].object) : null;
 
     if (newHovered !== hoveredFurniture) {
       if (hoveredFurniture) unhighlightGroup(hoveredFurniture.group);

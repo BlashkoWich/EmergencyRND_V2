@@ -44,7 +44,7 @@
 
     // Main board
     var boardGeo = new THREE.BoxGeometry(0.8, 0.5, 0.06);
-    signBoardMat = new THREE.MeshStandardMaterial({ color: 0xcc3333, roughness: 0.4 });
+    signBoardMat = new THREE.MeshLambertMaterial({ color: 0xcc3333 });
     var board = new THREE.Mesh(boardGeo, signBoardMat);
     signGroup.add(board);
     signMeshes.push(board);
@@ -55,14 +55,14 @@
     signCanvas.height = 160;
     signTexture = new THREE.CanvasTexture(signCanvas);
     signTexture.minFilter = THREE.LinearFilter;
-    var faceMat = new THREE.MeshStandardMaterial({ map: signTexture, roughness: 0.3 });
+    var faceMat = new THREE.MeshLambertMaterial({ map: signTexture });
     var face = new THREE.Mesh(new THREE.PlaneGeometry(0.72, 0.42), faceMat);
     face.position.z = 0.031;
     signGroup.add(face);
     signMeshes.push(face);
 
     // Border frame (4 strips)
-    var frameMat = new THREE.MeshStandardMaterial({ color: 0xdddddd, roughness: 0.3 });
+    var frameMat = new THREE.MeshLambertMaterial({ color: 0xdddddd });
     // top
     var ft = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.04, 0.07), frameMat);
     ft.position.y = 0.27;
@@ -86,7 +86,7 @@
 
     // Two mounting brackets
     var bracketGeo = new THREE.BoxGeometry(0.05, 0.15, 0.12);
-    var bracketMat = new THREE.MeshStandardMaterial({ color: 0x888888, metalness: 0.5, roughness: 0.3 });
+    var bracketMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
     var b1 = new THREE.Mesh(bracketGeo, bracketMat);
     b1.position.set(-0.3, 0.27, -0.06);
     signGroup.add(b1);
@@ -152,9 +152,8 @@
       return;
     }
 
-    interactRay.setFromCamera(screenCenter, camera);
-    var intersects = interactRay.intersectObjects(signMeshes, false);
-    var hit = intersects.length > 0;
+    var intersects = Game.Interaction.getHits('shift');
+    var hit = intersects !== null;
 
     if (hit && !prevHovered) {
       highlightSign();

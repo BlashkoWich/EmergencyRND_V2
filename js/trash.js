@@ -79,8 +79,8 @@
 
     if (variant === 'banana') {
       // Banana peel — curved yellow shape with brown spots
-      var peelMat = new THREE.MeshStandardMaterial({ color: 0xddc830, roughness: 0.7 });
-      var brownMat = new THREE.MeshStandardMaterial({ color: 0x8b6914, roughness: 0.8 });
+      var peelMat = new THREE.MeshLambertMaterial({ color: 0xddc830 });
+      var brownMat = new THREE.MeshLambertMaterial({ color: 0x8b6914 });
 
       // Main peel body — flat curved
       var body = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.02, 0.08), peelMat);
@@ -89,17 +89,17 @@
       group.add(body);
 
       // Peel flaps splayed out
-      var flap1 = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.015, 0.06), peelMat.clone());
+      var flap1 = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.015, 0.06), peelMat);
       flap1.position.set(-0.08, 0.015, 0.06);
       flap1.rotation.set(0.3, 0.2, -0.4);
       group.add(flap1);
 
-      var flap2 = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.015, 0.06), peelMat.clone());
+      var flap2 = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.015, 0.06), peelMat);
       flap2.position.set(0.06, 0.015, -0.05);
       flap2.rotation.set(-0.2, -0.3, 0.3);
       group.add(flap2);
 
-      var flap3 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.015, 0.05), peelMat.clone());
+      var flap3 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.015, 0.05), peelMat);
       flap3.position.set(0.10, 0.02, 0.03);
       flap3.rotation.set(0.1, 0.5, 0.5);
       group.add(flap3);
@@ -110,11 +110,11 @@
       group.add(tip);
 
       // Brown spots
-      var spot1 = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.022, 0.02), brownMat.clone());
+      var spot1 = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.022, 0.02), brownMat);
       spot1.position.set(0.02, 0.02, 0.01);
       group.add(spot1);
 
-      var spot2 = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.022, 0.025), brownMat.clone());
+      var spot2 = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.022, 0.025), brownMat);
       spot2.position.set(-0.04, 0.02, -0.02);
       group.add(spot2);
 
@@ -122,7 +122,7 @@
       // Crumpled food bag — several tilted boxes simulating folds
       var bagColors = [0xee3333, 0xff8800, 0x2288dd, 0x44bb44];
       var mainColor = bagColors[Math.floor(Math.random() * bagColors.length)];
-      var bagMat = new THREE.MeshStandardMaterial({ color: mainColor, roughness: 0.8 });
+      var bagMat = new THREE.MeshLambertMaterial({ color: mainColor });
 
       // Main crumpled body
       var main = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.10, 0.12), bagMat);
@@ -131,18 +131,18 @@
       group.add(main);
 
       // Crumpled folds
-      var fold1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.10), bagMat.clone());
+      var fold1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.06, 0.10), bagMat);
       fold1.position.set(0.06, 0.08, 0.02);
       fold1.rotation.set(-0.3, 0.4, 0.5);
       group.add(fold1);
 
-      var fold2 = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.04, 0.08), bagMat.clone());
+      var fold2 = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.04, 0.08), bagMat);
       fold2.position.set(-0.04, 0.09, -0.03);
       fold2.rotation.set(0.4, -0.2, -0.3);
       group.add(fold2);
 
       // Grease stain
-      var stainMat = new THREE.MeshStandardMaterial({ color: 0x998855, roughness: 0.9 });
+      var stainMat = new THREE.MeshLambertMaterial({ color: 0x998855 });
       var stain = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.002, 0.05), stainMat);
       stain.position.set(0.01, 0.101, 0.02);
       stain.rotation.x = 0.15;
@@ -150,8 +150,8 @@
 
     } else if (variant === 'apple') {
       // Apple core — small cylinder with stem
-      var coreMat = new THREE.MeshStandardMaterial({ color: 0xccaa66, roughness: 0.7 });
-      var skinMat = new THREE.MeshStandardMaterial({ color: 0xcc3333, roughness: 0.6 });
+      var coreMat = new THREE.MeshLambertMaterial({ color: 0xccaa66 });
+      var skinMat = new THREE.MeshLambertMaterial({ color: 0xcc3333 });
 
       // Core body
       var core = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.04, 0.08, 8), coreMat);
@@ -165,20 +165,20 @@
       skin1.rotation.z = 0.3;
       group.add(skin1);
 
-      var skin2 = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.05, 0.02), skinMat.clone());
+      var skin2 = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.05, 0.02), skinMat);
       skin2.position.set(-0.025, 0.04, -0.015);
       skin2.rotation.z = 0.3;
       group.add(skin2);
 
       // Stem
-      var stemMat = new THREE.MeshStandardMaterial({ color: 0x665533, roughness: 0.9 });
+      var stemMat = new THREE.MeshLambertMaterial({ color: 0x665533 });
       var stem = new THREE.Mesh(new THREE.CylinderGeometry(0.005, 0.005, 0.05, 4), stemMat);
       stem.position.set(0.01, 0.09, 0);
       stem.rotation.set(0.1, 0, 0.2);
       group.add(stem);
 
       // Brown oxidation spots
-      var oxidMat = new THREE.MeshStandardMaterial({ color: 0x886633, roughness: 0.9 });
+      var oxidMat = new THREE.MeshLambertMaterial({ color: 0x886633 });
       var oxid = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.03, 0.015), oxidMat);
       oxid.position.set(0, 0.04, 0.025);
       oxid.rotation.z = 0.3;
@@ -186,7 +186,7 @@
 
     } else if (variant === 'cup') {
       // Crushed paper cup — tilted cylinder, dented
-      var cupMat = new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 0.6 });
+      var cupMat = new THREE.MeshLambertMaterial({ color: 0xf0f0f0 });
 
       // Main cup body (slightly squished via scale)
       var cup = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.03, 0.12, 8), cupMat);
@@ -198,9 +198,8 @@
 
       // Colored brand stripe
       var stripeColors = [0xcc2222, 0x2266cc, 0x22aa44];
-      var stripeMat = new THREE.MeshStandardMaterial({
-        color: stripeColors[Math.floor(Math.random() * stripeColors.length)],
-        roughness: 0.6
+      var stripeMat = new THREE.MeshLambertMaterial({
+        color: stripeColors[Math.floor(Math.random() * stripeColors.length)]
       });
       var stripe = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.032, 0.04, 8), stripeMat);
       stripe.position.set(0, 0.03, 0);
@@ -210,8 +209,8 @@
       group.add(stripe);
 
       // Coffee/liquid stain on floor
-      var stainMat = new THREE.MeshStandardMaterial({
-        color: 0x664422, roughness: 0.9, transparent: true, opacity: 0.5
+      var stainMat = new THREE.MeshLambertMaterial({
+        color: 0x664422, transparent: true, opacity: 0.5
       });
       var stain = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.003, 0.06), stainMat);
       stain.position.set(0.05, 0.001, 0);
@@ -424,15 +423,9 @@
     }
     if (!Game.Interaction.isActive('trash')) { clearHover(); return false; }
 
-    interactRay.setFromCamera(screenCenter, camera);
-    var meshes = [];
-    for (var i = 0; i < trashItems.length; i++) {
-      meshes.push(trashItems[i].mesh);
-    }
-
-    var hits = interactRay.intersectObjects(meshes, true);
+    var hits = Game.Interaction.getHits('trash');
     var newHovered = null;
-    if (hits.length > 0 && hits[0].distance <= 5) {
+    if (hits) {
       var hitObj = hits[0].object;
       for (var i = 0; i < trashItems.length; i++) {
         var current = hitObj;

@@ -76,7 +76,7 @@
 
     // Body — dark gray cylinder, slight taper
     var bodyGeo = new THREE.CylinderGeometry(0.28, 0.22, 0.7, 14);
-    var bodyMat = new THREE.MeshStandardMaterial({ color: 0x3a3a3a, roughness: 0.6, metalness: 0.15 });
+    var bodyMat = new THREE.MeshLambertMaterial({ color: 0x3a3a3a });
     var body = new THREE.Mesh(bodyGeo, bodyMat);
     body.position.y = 0.35;
     body.castShadow = true;
@@ -84,7 +84,7 @@
 
     // Rim — torus at top
     var rimGeo = new THREE.TorusGeometry(0.28, 0.025, 8, 18);
-    var rimMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.3, metalness: 0.4 });
+    var rimMat = new THREE.MeshLambertMaterial({ color: 0x555555 });
     var rim = new THREE.Mesh(rimGeo, rimMat);
     rim.rotation.x = Math.PI / 2;
     rim.position.y = 0.7;
@@ -92,14 +92,14 @@
 
     // Red accent stripe
     var stripeGeo = new THREE.CylinderGeometry(0.26, 0.26, 0.06, 14);
-    var stripeMat = new THREE.MeshStandardMaterial({ color: 0xcc3333, roughness: 0.5 });
+    var stripeMat = new THREE.MeshLambertMaterial({ color: 0xcc3333 });
     var stripe = new THREE.Mesh(stripeGeo, stripeMat);
     stripe.position.y = 0.55;
     group.add(stripe);
 
     // Inner void (dark top to look open)
     var innerGeo = new THREE.CylinderGeometry(0.24, 0.19, 0.68, 14);
-    var innerMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9 });
+    var innerMat = new THREE.MeshLambertMaterial({ color: 0x1a1a1a });
     var inner = new THREE.Mesh(innerGeo, innerMat);
     inner.position.y = 0.36;
     group.add(inner);
@@ -154,7 +154,6 @@
     // Fade materials to gray
     box.mesh.traverse(function(child) {
       if (child.isMesh && child.material) {
-        child.material = child.material.clone();
         child.material.color.set(0x888888);
         child.material.opacity = 0.7;
         child.material.transparent = true;
@@ -170,12 +169,12 @@
 
     if (type === 'strepsils') {
       // Blister pack: flat base + 6 hemispherical bumps (2 rows x 3)
-      var baseMat = new THREE.MeshStandardMaterial({ color: info.color, roughness: 0.4, metalness: 0.1 });
+      var baseMat = new THREE.MeshLambertMaterial({ color: info.color });
       var base = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.02, 0.10), baseMat);
       base.castShadow = true;
       group.add(base);
 
-      var bumpMat = new THREE.MeshStandardMaterial({ color: 0xee5555, roughness: 0.3, metalness: 0.2 });
+      var bumpMat = new THREE.MeshLambertMaterial({ color: 0xee5555 });
       var bumpGeo = new THREE.SphereGeometry(0.016, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2);
       for (var row = 0; row < 2; row++) {
         for (var col = 0; col < 3; col++) {
@@ -187,40 +186,40 @@
       }
 
       // Foil back (bottom)
-      var foilMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.2, metalness: 0.6 });
+      var foilMat = new THREE.MeshLambertMaterial({ color: 0xcccccc });
       var foil = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.003, 0.09), foilMat);
       foil.position.y = -0.01;
       group.add(foil);
 
     } else if (type === 'painkiller') {
       // Pill bottle: cylinder body + white cap + label band
-      var bodyMat = new THREE.MeshStandardMaterial({ color: info.color, roughness: 0.4 });
+      var bodyMat = new THREE.MeshLambertMaterial({ color: info.color });
       var body = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.10, 12), bodyMat);
       body.castShadow = true;
       group.add(body);
 
       // White cap
-      var capMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.3 });
+      var capMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
       var cap = new THREE.Mesh(new THREE.CylinderGeometry(0.038, 0.038, 0.025, 12), capMat);
       cap.position.y = 0.0625;
       cap.castShadow = true;
       group.add(cap);
 
       // White label band
-      var labelMat = new THREE.MeshStandardMaterial({ color: 0xeeeeee, roughness: 0.5 });
+      var labelMat = new THREE.MeshLambertMaterial({ color: 0xeeeeee });
       var label = new THREE.Mesh(new THREE.CylinderGeometry(0.037, 0.037, 0.035, 12), labelMat);
       label.position.y = -0.005;
       group.add(label);
 
     } else if (type === 'antihistamine') {
       // Medicine box with white cross on front
-      var boxMat = new THREE.MeshStandardMaterial({ color: info.color, roughness: 0.5 });
+      var boxMat = new THREE.MeshLambertMaterial({ color: info.color });
       var box = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.10, 0.05), boxMat);
       box.castShadow = true;
       group.add(box);
 
       // White cross on front face
-      var crossMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4 });
+      var crossMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
       var crossH = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.015, 0.002), crossMat);
       crossH.position.set(0, 0, 0.026);
       group.add(crossH);
@@ -230,29 +229,29 @@
 
     } else if (type === 'linen_clean') {
       // Folded clean bedsheet — light blue/white stack
-      var sheetMat = new THREE.MeshStandardMaterial({ color: 0xdde4f0, roughness: 0.8 });
+      var sheetMat = new THREE.MeshLambertMaterial({ color: 0xdde4f0 });
       var sheet = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.08, 0.15), sheetMat);
       sheet.castShadow = true;
       group.add(sheet);
       // Fold line
-      var foldMat = new THREE.MeshStandardMaterial({ color: 0xc8d0e0, roughness: 0.7 });
+      var foldMat = new THREE.MeshLambertMaterial({ color: 0xc8d0e0 });
       var fold = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.005, 0.002), foldMat);
       fold.position.set(0, 0.043, 0);
       group.add(fold);
       // Top accent stripe
-      var stripeMat = new THREE.MeshStandardMaterial({ color: 0x99aacc, roughness: 0.6 });
+      var stripeMat = new THREE.MeshLambertMaterial({ color: 0x99aacc });
       var stripe = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.003, 0.04), stripeMat);
       stripe.position.set(0, 0.042, 0.03);
       group.add(stripe);
 
     } else if (type === 'linen_dirty') {
       // Folded dirty bedsheet — brownish/yellow tint
-      var dirtyMat = new THREE.MeshStandardMaterial({ color: 0x998870, roughness: 0.9 });
+      var dirtyMat = new THREE.MeshLambertMaterial({ color: 0x998870 });
       var dirtySheet = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.08, 0.15), dirtyMat);
       dirtySheet.castShadow = true;
       group.add(dirtySheet);
       // Stain spots
-      var stainMat = new THREE.MeshStandardMaterial({ color: 0x776650, roughness: 0.9 });
+      var stainMat = new THREE.MeshLambertMaterial({ color: 0x776650 });
       var stain1 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.003, 0.03), stainMat);
       stain1.position.set(-0.04, 0.042, 0.02);
       group.add(stain1);
@@ -273,13 +272,13 @@
 
     if (type === 'instrument_stethoscope') {
       // Stethoscope: chest piece disk + tube + earpiece
-      var diskMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3, metalness: 0.6 });
+      var diskMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
       var disk = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 0.01, 16), diskMat);
       disk.position.y = 0;
       disk.castShadow = true;
       group.add(disk);
 
-      var tubeMat = new THREE.MeshStandardMaterial({ color: info.color, roughness: 0.5 });
+      var tubeMat = new THREE.MeshLambertMaterial({ color: info.color });
       var tube = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.12, 8), tubeMat);
       tube.position.y = 0.065;
       tube.castShadow = true;
@@ -296,7 +295,7 @@
       group.add(earR);
 
       // Ear tips
-      var tipMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.4 });
+      var tipMat = new THREE.MeshLambertMaterial({ color: 0x333333 });
       var tipL = new THREE.Mesh(new THREE.SphereGeometry(0.008, 6, 4), tipMat);
       tipL.position.set(-0.025, 0.155, 0);
       group.add(tipL);
@@ -306,13 +305,13 @@
 
     } else if (type === 'instrument_hammer') {
       // Reflex hammer: handle + rubber head
-      var handleMat = new THREE.MeshStandardMaterial({ color: 0x444444, roughness: 0.5, metalness: 0.3 });
+      var handleMat = new THREE.MeshLambertMaterial({ color: 0x444444 });
       var handle = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.14, 8), handleMat);
       handle.castShadow = true;
       group.add(handle);
 
       // Rubber triangular head (flattened cylinder on its side)
-      var headMat = new THREE.MeshStandardMaterial({ color: info.color, roughness: 0.7 });
+      var headMat = new THREE.MeshLambertMaterial({ color: info.color });
       var head = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 0.012, 12), headMat);
       head.position.y = 0.075;
       head.rotation.z = Math.PI / 2;
@@ -320,33 +319,33 @@
       group.add(head);
 
       // Small metal band at junction
-      var bandMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3, metalness: 0.5 });
+      var bandMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
       var band = new THREE.Mesh(new THREE.CylinderGeometry(0.01, 0.01, 0.008, 8), bandMat);
       band.position.y = 0.065;
       group.add(band);
 
     } else if (type === 'instrument_rhinoscope') {
       // Rhinoscope: cylinder body + cone tip + light
-      var bodyMat = new THREE.MeshStandardMaterial({ color: info.color, roughness: 0.4, metalness: 0.3 });
+      var bodyMat = new THREE.MeshLambertMaterial({ color: info.color });
       var body = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.12, 10), bodyMat);
       body.castShadow = true;
       group.add(body);
 
       // Handle grip
-      var gripMat = new THREE.MeshStandardMaterial({ color: 0x555555, roughness: 0.7 });
+      var gripMat = new THREE.MeshLambertMaterial({ color: 0x555555 });
       var grip = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.04, 8), gripMat);
       grip.position.y = -0.04;
       group.add(grip);
 
       // Cone tip
-      var tipMat = new THREE.MeshStandardMaterial({ color: 0xcccccc, roughness: 0.3, metalness: 0.5 });
+      var tipMat = new THREE.MeshLambertMaterial({ color: 0xcccccc });
       var tip = new THREE.Mesh(new THREE.ConeGeometry(0.012, 0.03, 8), tipMat);
       tip.position.y = 0.075;
       tip.castShadow = true;
       group.add(tip);
 
       // Light at tip (emissive)
-      var lightMat = new THREE.MeshStandardMaterial({ color: 0xffffcc, emissive: 0xffffcc, emissiveIntensity: 0.5, roughness: 0.2 });
+      var lightMat = new THREE.MeshLambertMaterial({ color: 0xffffcc, emissive: 0xffffcc, emissiveIntensity: 0.5 });
       var light = new THREE.Mesh(new THREE.SphereGeometry(0.006, 6, 4), lightMat);
       light.position.y = 0.092;
       group.add(light);
@@ -365,14 +364,14 @@
     var group = new THREE.Group();
 
     // Box in the drug's color
-    var boxMat = new THREE.MeshStandardMaterial({ color: info.color, roughness: 0.6 });
+    var boxMat = new THREE.MeshLambertMaterial({ color: info.color });
     var box = new THREE.Mesh(new THREE.BoxGeometry(BOX_SIZE.x, BOX_SIZE.y, BOX_SIZE.z), boxMat);
     box.castShadow = true;
     group.add(box);
 
     // Slightly darker edge strip on top
     var darkerColor = new THREE.Color(info.color).multiplyScalar(0.7);
-    var edgeMat = new THREE.MeshStandardMaterial({ color: darkerColor, roughness: 0.7 });
+    var edgeMat = new THREE.MeshLambertMaterial({ color: darkerColor });
     var edgeT = new THREE.Mesh(new THREE.BoxGeometry(BOX_SIZE.x + 0.01, 0.02, BOX_SIZE.z + 0.01), edgeMat);
     edgeT.position.y = BOX_SIZE.y / 2;
     group.add(edgeT);
@@ -776,16 +775,8 @@
       return false;
     }
 
-    interactRay.setFromCamera(screenCenter, camera);
-    var meshes = [];
-    for (var i = 0; i < groundBoxes.length; i++) {
-      if (groundBoxes[i].grounded && !groundBoxes[i].pickedUp) {
-        meshes.push(groundBoxes[i].mesh);
-      }
-    }
-
-    var hits = interactRay.intersectObjects(meshes, true);
-    var newHovered = hits.length > 0 ? getBoxFromMesh(hits[0].object) : null;
+    var hits = Game.Interaction.getHits('boxes');
+    var newHovered = hits ? getBoxFromMesh(hits[0].object) : null;
 
     if (newHovered !== hoveredBox) {
       if (hoveredBox) unhighlightGroup(hoveredBox.mesh);
@@ -816,16 +807,8 @@
       return false;
     }
 
-    interactRay.setFromCamera(screenCenter, camera);
-    var meshes = [];
-    for (var i = 0; i < groundItems.length; i++) {
-      if (groundItems[i].grounded && !groundItems[i].pickedUp) {
-        meshes.push(groundItems[i].mesh);
-      }
-    }
-
-    var hits = interactRay.intersectObjects(meshes, true);
-    var newHovered = hits.length > 0 ? getItemFromMesh(hits[0].object) : null;
+    var hits = Game.Interaction.getHits('consumables');
+    var newHovered = hits ? getItemFromMesh(hits[0].object) : null;
 
     if (newHovered !== hoveredItem) {
       if (hoveredItem) unhighlightGroup(hoveredItem.mesh);
