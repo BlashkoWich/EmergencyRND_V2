@@ -381,6 +381,7 @@
   }
 
   function updateSpawning(delta) {
+    if (Game.Levels.getLevel() < 3) return;
     spawnTimer += delta;
     if (spawnTimer >= nextSpawnTime) {
       if (trashItems.length < MAX_TRASH) {
