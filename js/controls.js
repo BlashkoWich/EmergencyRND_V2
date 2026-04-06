@@ -39,16 +39,38 @@
       this._moveX = new THREE.Vector3();
       this._moveZ = new THREE.Vector3();
 
-      // Filter out bogus large mouse deltas (known Pointer Lock API browser bug)
-      var MAX_MOUSE_DELTA = 150;
-      document.addEventListener('mousemove', function(e) {
-        if (Math.abs(e.movementX) > MAX_MOUSE_DELTA || Math.abs(e.movementY) > MAX_MOUSE_DELTA) {
-          e.stopImmediatePropagation();
-        }
-      }, true);
-
       var controls = new PointerLockControls(camera, document.body);
       controls.pointerSpeed = 0.5;
+
+      // Replace PointerLockControls' mousemove with our own that clamps deltas
+      // (prevents camera teleportation from Pointer Lock API browser bug spikes)
+      controls.disconnect();
+      document.addEventListener('pointerlockchange', function() {
+        if (document.pointerLockElement === document.body) {
+          controls.isLocked = true;
+          controls.dispatchEvent({ type: 'lock' });
+        } else {
+          controls.isLocked = false;
+          controls.dispatchEvent({ type: 'unlock' });
+        }
+      });
+
+      var MAX_DELTA = 100;
+      var HALF_PI = Math.PI / 2;
+      var _euler = new THREE.Euler(0, 0, 0, 'YXZ');
+      document.addEventListener('mousemove', function(e) {
+        if (!controls.isLocked) return;
+        var mx = e.movementX || 0;
+        var my = e.movementY || 0;
+        if (mx > MAX_DELTA) mx = MAX_DELTA; else if (mx < -MAX_DELTA) mx = -MAX_DELTA;
+        if (my > MAX_DELTA) my = MAX_DELTA; else if (my < -MAX_DELTA) my = -MAX_DELTA;
+        _euler.setFromQuaternion(camera.quaternion);
+        _euler.y -= mx * 0.002 * controls.pointerSpeed;
+        _euler.x -= my * 0.002 * controls.pointerSpeed;
+        _euler.x = Math.max(-HALF_PI, Math.min(HALF_PI, _euler.x));
+        camera.quaternion.setFromEuler(_euler);
+      });
+
       this._controls = controls;
       var self = this;
 
@@ -123,7 +145,7 @@
         return;
       }
 
-      // Camera rotation is handled directly by PointerLockControls (no smoothing)
+      // Camera rotation is handled by custom mousemove listener (clamps deltas, no smoothing)
 
       // --- Smooth movement ---
       var keys = this._keys;

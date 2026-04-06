@@ -20,10 +20,12 @@
 - Скорость движения: `4.0` ед/сек (обычная), `7.0` ед/сек (спринт)
 - Высота камеры: `1.6` (базовая, меняется при прыжке)
 
-## Mouse Delta Filter
-- Capture-phase `mousemove` listener на `document`, срабатывает ДО PointerLockControls
-- Блокирует события с `|movementX|` или `|movementY|` > 150 через `stopImmediatePropagation()`
-- Предотвращает резкие прыжки/перевороты камеры от аномальных дельт браузера (баг Pointer Lock API)
+## Mouse Input
+- PointerLockControls используется только для lock/unlock (внутренний mousemove отключён через `disconnect()`)
+- Вращение камеры — собственный `mousemove` listener с clamp дельт: `MAX_DELTA = 100`
+- Математика идентична PointerLockControls r164: `euler.y -= mx * 0.002 * pointerSpeed`, pitch clamp ±π/2
+- `pointerSpeed = 0.5`
+- Clamp вместо фильтрации: аномальный спайк от браузера не телепортирует камеру, а ограничивается максимальным поворотом за событие
 
 ## Controls Internal State
 ```js
