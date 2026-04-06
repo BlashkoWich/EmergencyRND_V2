@@ -117,22 +117,11 @@
   // --- Highlight ---
 
   function highlightGroup(group) {
-    group.traverse(function(child) {
-      if (child.isMesh) {
-        child.material = child.material.clone();
-        child.material.emissive = new THREE.Color(0x00ff44);
-        child.material.emissiveIntensity = 0.35;
-      }
-    });
+    Game.Outline.setHover([group]);
   }
 
   function unhighlightGroup(group) {
-    group.traverse(function(child) {
-      if (child.isMesh && child.material.emissive) {
-        child.material.emissive = new THREE.Color(0x000000);
-        child.material.emissiveIntensity = 0;
-      }
-    });
+    Game.Outline.clearHover();
   }
 
   var lastCarryColor = null; // 'green' | 'red' | null
@@ -141,28 +130,14 @@
     // color: 'green' or 'red'
     if (color === lastCarryColor) return;
     lastCarryColor = color;
-    var emissiveColor = color === 'green' ? new THREE.Color(0x00ff44) : new THREE.Color(0xff2222);
-    group.traverse(function(child) {
-      if (child.isMesh) {
-        if (!child.userData._origMaterial) {
-          child.material = child.material.clone();
-          child.userData._origMaterial = true;
-        }
-        child.material.emissive = emissiveColor;
-        child.material.emissiveIntensity = 0.45;
-      }
-    });
+    var outlineColor = color === 'green' ? 0x00ff44 : 0xff2222;
+    Game.Outline.setHover([group], outlineColor);
   }
 
   function clearCarryOutline(group) {
     if (lastCarryColor === null) return;
     lastCarryColor = null;
-    group.traverse(function(child) {
-      if (child.isMesh) {
-        child.material.emissive = new THREE.Color(0x000000);
-        child.material.emissiveIntensity = 0;
-      }
-    });
+    Game.Outline.clearHover();
   }
 
   // --- Dirty bed overlay ---

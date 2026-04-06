@@ -179,24 +179,11 @@
   }
 
   function highlightSign() {
-    for (var i = 0; i < signMeshes.length; i++) {
-      var m = signMeshes[i];
-      if (!m.isMesh) continue;
-      m.userData.origEmissive = m.material.emissive ? m.material.emissive.getHex() : 0;
-      m.material.emissive = new THREE.Color(0x00ff44);
-      m.material.emissiveIntensity = 0.35;
-    }
+    Game.Outline.setHover(signMeshes);
   }
 
   function unhighlightSign() {
-    for (var i = 0; i < signMeshes.length; i++) {
-      var m = signMeshes[i];
-      if (!m.isMesh) continue;
-      if (m.material.emissive) {
-        m.material.emissive.setHex(m.userData.origEmissive || 0);
-        m.material.emissiveIntensity = 0;
-      }
-    }
+    Game.Outline.clearHover();
   }
 
   var shiftEnding = false; // true when 20:00 reached but patients still in clinic

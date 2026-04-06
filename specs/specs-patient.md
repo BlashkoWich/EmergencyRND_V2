@@ -146,8 +146,8 @@ waitingChairs = [
 - `interactRay`: Raycaster, far=5, направление из центра экрана (`screenCenter = Vector2(0,0)`)
 - Каждый кадр: `setFromCamera(screenCenter, camera)` → пересечение со всеми мешами пациентов в состоянии `queued`/`interacting`/`atBed`/`waiting` (кроме `animating`)
 - `getPatientFromMesh(object)`: обход вверх по parent до группы с `userData.bodyParts`
-- При наведении: emissive = `0x00ff44`, intensity = 0.35 (зелёная подсветка)
-- При уходе: emissive сбрасывается в `0x000000`
+- При наведении: зелёная обводка через `Game.Outline.setHover([patient.mesh])`
+- При уходе: обводка убирается через `Game.Outline.clearHover()`
 
 ## Popup Flow
 1. ЛКМ на подсвеченного пациента �� состоянии `queued` или `waiting` → `openPopup(patient)`

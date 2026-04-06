@@ -96,41 +96,21 @@
   }
 
   function highlightShelf(shelf) {
-    for (var i = 0; i < shelf.highlightParts.length; i++) {
-      var part = shelf.highlightParts[i];
-      part.material = part.material.clone();
-      part.material.emissive = new THREE.Color(0x00ff44);
-      part.material.emissiveIntensity = 0.35;
-    }
+    Game.Outline.setHover([shelf.group]);
   }
 
   function unhighlightShelf(shelf) {
-    for (var i = 0; i < shelf.highlightParts.length; i++) {
-      var part = shelf.highlightParts[i];
-      part.material.emissive = new THREE.Color(0x000000);
-      part.material.emissiveIntensity = 0;
-    }
+    Game.Outline.clearHover();
   }
 
   function highlightItemMesh(mesh) {
     if (!mesh) return;
-    mesh.traverse(function(child) {
-      if (child.isMesh) {
-        child.material = child.material.clone();
-        child.material.emissive = new THREE.Color(0x00ff44);
-        child.material.emissiveIntensity = 0.35;
-      }
-    });
+    Game.Outline.setHover([mesh]);
   }
 
   function unhighlightItemMesh(mesh) {
     if (!mesh) return;
-    mesh.traverse(function(child) {
-      if (child.isMesh) {
-        child.material.emissive = new THREE.Color(0x000000);
-        child.material.emissiveIntensity = 0;
-      }
-    });
+    Game.Outline.clearHover();
   }
 
   function getShelfFromMesh(mesh) {

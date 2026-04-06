@@ -397,22 +397,11 @@
   // ====== HIGHLIGHT ======
 
   function highlightTrash(group) {
-    group.traverse(function(child) {
-      if (child.isMesh) {
-        child.material = child.material.clone();
-        child.material.emissive = new THREE.Color(0x00ff44);
-        child.material.emissiveIntensity = 0.35;
-      }
-    });
+    Game.Outline.setHover([group]);
   }
 
   function unhighlightTrash(group) {
-    group.traverse(function(child) {
-      if (child.isMesh && child.material.emissive) {
-        child.material.emissive = new THREE.Color(0x000000);
-        child.material.emissiveIntensity = 0;
-      }
-    });
+    Game.Outline.clearHover();
   }
 
   // ====== PLAYER INTERACTION ======

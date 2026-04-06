@@ -100,25 +100,11 @@
   }
 
   function highlightMachine() {
-    machineGroup.traverse(function(child) {
-      if (child.isMesh && child !== statusLight && child !== progressBg && child !== progressFill) {
-        if (!child.userData._wmOrigMaterial) {
-          child.material = child.material.clone();
-          child.userData._wmOrigMaterial = true;
-        }
-        child.material.emissive = new THREE.Color(0x00ff44);
-        child.material.emissiveIntensity = 0.35;
-      }
-    });
+    Game.Outline.setHover([machineGroup]);
   }
 
   function unhighlightMachine() {
-    machineGroup.traverse(function(child) {
-      if (child.isMesh && child.userData._wmOrigMaterial) {
-        child.material.emissive = new THREE.Color(0x000000);
-        child.material.emissiveIntensity = 0;
-      }
-    });
+    Game.Outline.clearHover();
   }
 
   function setStatusColor(color, intensity) {

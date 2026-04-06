@@ -611,20 +611,11 @@
   }
 
   function highlightPatient(patient) {
-    for (var i = 0; i < patient.mesh.userData.bodyParts.length; i++) {
-      var part = patient.mesh.userData.bodyParts[i];
-      part.material = part.material.clone();
-      part.material.emissive = new THREE.Color(0x00ff44);
-      part.material.emissiveIntensity = 0.35;
-    }
+    Game.Outline.setHover([patient.mesh]);
   }
 
   function unhighlightPatient(patient) {
-    for (var i = 0; i < patient.mesh.userData.bodyParts.length; i++) {
-      var part = patient.mesh.userData.bodyParts[i];
-      part.material.emissive = new THREE.Color(0x000000);
-      part.material.emissiveIntensity = 0;
-    }
+    Game.Outline.clearHover();
   }
 
   function getPatientFromMesh(object) {

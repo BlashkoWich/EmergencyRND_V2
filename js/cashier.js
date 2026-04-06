@@ -166,18 +166,7 @@
   }
 
   function clearCashierHighlight() {
-    for (var i = 0; i < terminalMeshes.length; i++) {
-      var m = terminalMeshes[i];
-      m.material.emissive = new THREE.Color(0x000000);
-      m.material.emissiveIntensity = 0;
-    }
-    if (currentPatient && currentPatient.mesh.userData.bodyParts) {
-      for (var j = 0; j < currentPatient.mesh.userData.bodyParts.length; j++) {
-        var part = currentPatient.mesh.userData.bodyParts[j];
-        part.material.emissive = new THREE.Color(0x000000);
-        part.material.emissiveIntensity = 0;
-      }
-    }
+    Game.Outline.clearHover();
   }
 
   function updateHoverDetection() {
@@ -220,22 +209,9 @@
     var nowHovered = (hitTerminal || hitPatient) && currentPatient && currentPatient.state === 'atCashier';
 
     if (nowHovered && !prevHovered) {
-      // Highlight terminal meshes
-      for (var i = 0; i < terminalMeshes.length; i++) {
-        var m = terminalMeshes[i];
-        m.material = m.material.clone();
-        m.material.emissive = new THREE.Color(0x00ff44);
-        m.material.emissiveIntensity = 0.35;
-      }
-      // Highlight patient
-      if (currentPatient && currentPatient.mesh.userData.bodyParts) {
-        for (var j = 0; j < currentPatient.mesh.userData.bodyParts.length; j++) {
-          var part = currentPatient.mesh.userData.bodyParts[j];
-          part.material = part.material.clone();
-          part.material.emissive = new THREE.Color(0x00ff44);
-          part.material.emissiveIntensity = 0.35;
-        }
-      }
+      var outlineObjects = terminalMeshes.slice();
+      if (currentPatient) outlineObjects.push(currentPatient.mesh);
+      Game.Outline.setHover(outlineObjects);
     } else if (!nowHovered && prevHovered) {
       clearCashierHighlight();
     }

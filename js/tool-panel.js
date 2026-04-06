@@ -142,42 +142,20 @@
 
   function highlightSlotItem(slot) {
     if (!slot || !slot.itemMesh) return;
-    slot.itemMesh.traverse(function(child) {
-      if (child.isMesh) {
-        child.material = child.material.clone();
-        child.material.emissive = new THREE.Color(0x00ff44);
-        child.material.emissiveIntensity = 0.35;
-      }
-    });
+    Game.Outline.setHover([slot.itemMesh]);
   }
 
   function unhighlightSlotItem(slot) {
     if (!slot || !slot.itemMesh) return;
-    slot.itemMesh.traverse(function(child) {
-      if (child.isMesh) {
-        child.material.emissive = new THREE.Color(0x000000);
-        child.material.emissiveIntensity = 0;
-      }
-    });
+    Game.Outline.clearHover();
   }
 
   function highlightPanel() {
-    panelGroup.traverse(function(child) {
-      if (child.isMesh) {
-        child.material = child.material.clone();
-        child.material.emissive = new THREE.Color(0x00ff44);
-        child.material.emissiveIntensity = 0.35;
-      }
-    });
+    Game.Outline.setHover([panelGroup]);
   }
 
   function unhighlightPanel() {
-    panelGroup.traverse(function(child) {
-      if (child.isMesh) {
-        child.material.emissive = new THREE.Color(0x000000);
-        child.material.emissiveIntensity = 0;
-      }
-    });
+    Game.Outline.clearHover();
   }
 
   function findSlotForType(type) {
