@@ -634,17 +634,14 @@
   function updateInteraction() {
     if (!controls.isLocked || popupPatient || Game.Cashier.isPopupOpen()) {
       if (hoveredPatient) { unhighlightPatient(hoveredPatient); hoveredPatient = null; }
-      hintEl.style.display = 'none';
       return;
     }
     if (Game.Diagnostics && Game.Diagnostics.isActive()) {
       if (hoveredPatient) { unhighlightPatient(hoveredPatient); hoveredPatient = null; }
-      hintEl.style.display = 'none';
       return;
     }
     if (!Game.Interaction.isActive('patients')) {
       if (hoveredPatient) { unhighlightPatient(hoveredPatient); hoveredPatient = null; }
-      hintEl.style.display = 'none';
       return;
     }
 

@@ -26,21 +26,21 @@
     group.add(back);
 
     // Side panels
-    var sideL = new THREE.Mesh(new THREE.BoxGeometry(0.04, 1.5, 0.4), sideMat);
-    sideL.position.set(-0.58, 0.75, 0);
+    var sideL = new THREE.Mesh(new THREE.BoxGeometry(0.04, 1.5, 0.35), sideMat);
+    sideL.position.set(-0.58, 0.75, 0.025);
     sideL.castShadow = true;
     group.add(sideL);
 
-    var sideR = new THREE.Mesh(new THREE.BoxGeometry(0.04, 1.5, 0.4), sideMat);
-    sideR.position.set(0.58, 0.75, 0);
+    var sideR = new THREE.Mesh(new THREE.BoxGeometry(0.04, 1.5, 0.35), sideMat);
+    sideR.position.set(0.58, 0.75, 0.025);
     sideR.castShadow = true;
     group.add(sideR);
 
     // 3 shelf boards
     var boardYs = [0.3, 0.7, 1.1];
     for (var i = 0; i < boardYs.length; i++) {
-      var board = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.04, 0.4), woodMat);
-      board.position.set(0, boardYs[i], 0);
+      var board = new THREE.Mesh(new THREE.BoxGeometry(1.12, 0.04, 0.35), woodMat);
+      board.position.set(0, boardYs[i], 0.025);
       board.castShadow = true;
       group.add(board);
     }

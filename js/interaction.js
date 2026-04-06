@@ -60,13 +60,37 @@
         }
       }
 
+      // Prefer non-furniture module when both compete for the same object
+      if (newActive === 'furniture') {
+        var otherBest = null;
+        var otherBestDist = Infinity;
+        for (var key in hitResults) {
+          if (key !== 'furniture' && hitResults[key][0].distance < otherBestDist) {
+            otherBestDist = hitResults[key][0].distance;
+            otherBest = key;
+          }
+        }
+        if (otherBest) newActive = otherBest;
+      }
+
       // Hysteresis: keep previous module active for a few frames to prevent flicker
       if (newActive === prevActive) {
         holdFrames = HOLD_MIN;
       } else if (newActive !== null) {
-        // Switched to a different module — switch immediately
-        prevActive = newActive;
-        holdFrames = HOLD_MIN;
+        // When falling back from a specialized module to furniture, hold for a few frames
+        if (newActive === 'furniture' && prevActive !== null && prevActive !== 'furniture') {
+          holdFrames--;
+          if (holdFrames > 0) {
+            newActive = prevActive;
+          } else {
+            prevActive = newActive;
+            holdFrames = HOLD_MIN;
+          }
+        } else {
+          // Switched to a different module — switch immediately
+          prevActive = newActive;
+          holdFrames = HOLD_MIN;
+        }
       } else {
         // Nothing hit — hold previous for a few frames
         holdFrames--;
@@ -78,6 +102,12 @@
       }
 
       activeModule = newActive;
+
+      // Central hint reset — hide hint when no module is active
+      if (!activeModule) {
+        var hintEl = document.getElementById('interact-hint');
+        if (hintEl) hintEl.style.display = 'none';
+      }
     },
 
     isActive: function(name) {
