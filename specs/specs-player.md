@@ -35,6 +35,9 @@ _raycaster                // для коллизий
 _collisionOrigin          // Vector3, точка начала рейкаста (y=0.5, центр тела)
 _savedQuat                // Quaternion|null, сохраняется при lock, восстанавливается в первом update
 _forward, _right, _moveDir, _moveX, _moveZ  // pre-allocated Vector3, переиспользуются каждый кадр (без GC-давления)
+_mouseDX = 0              // накопленная дельта мыши X (сбрасывается каждый кадр в update)
+_mouseDY = 0              // накопленная дельта мыши Y (сбрасывается каждый кадр в update)
+_mouseEuler               // Euler('YXZ'), переиспользуется для вращения камеры
 _moveSpeed = 4.0
 _sprintSpeed = 7.0
 _collisionDistance = 0.4
