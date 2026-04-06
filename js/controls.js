@@ -12,7 +12,7 @@
     _sprintSpeed: 7.0,
     _collisionDistance: 0.4,
     _collisionOrigin: null,
-    _savedQuat: null, // saved quaternion to restore after re-lock
+    _savedQuat: null,
     _forward: null,
     _right: null,
     _moveDir: null,
@@ -26,11 +26,6 @@
     _velocityX: 0,
     _velocityZ: 0,
     _moveDamping: 12.0,
-    _pendingMouseX: 0,
-    _pendingMouseY: 0,
-    _mouseSmoothFactor: 0.6,
-    _smoothMouseX: 0,
-    _smoothMouseY: 0,
 
     setup: function(THREE, camera, collidables, PointerLockControls) {
       this._THREE = THREE;
@@ -44,18 +39,12 @@
       this._moveX = new THREE.Vector3();
       this._moveZ = new THREE.Vector3();
 
-      // Intercept mouse events: accumulate deltas for smooth application in update()
+      // Filter out bogus large mouse deltas (known Pointer Lock API browser bug)
       var MAX_MOUSE_DELTA = 150;
-      var self = this;
       document.addEventListener('mousemove', function(e) {
         if (Math.abs(e.movementX) > MAX_MOUSE_DELTA || Math.abs(e.movementY) > MAX_MOUSE_DELTA) {
           e.stopImmediatePropagation();
-          return;
         }
-        // Accumulate mouse deltas — will be smoothly applied in update()
-        self._pendingMouseX += e.movementX;
-        self._pendingMouseY += e.movementY;
-        e.stopImmediatePropagation(); // Prevent PointerLockControls from handling
       }, true);
 
       var controls = new PointerLockControls(camera, document.body);
@@ -68,15 +57,12 @@
 
       overlay.addEventListener('click', function() { controls.lock(); });
       controls.addEventListener('lock', function() {
-        // Save camera orientation to restore on next frame,
-        // preventing the jump from accumulated mouse delta during lock transition
         self._savedQuat = camera.quaternion.clone();
         overlay.style.display = 'none';
         crosshairEl.style.display = 'block';
       });
       controls.addEventListener('unlock', function() {
         if (Game.Tutorial && Game.Tutorial.isActive()) {
-          // During tutorial action steps, re-lock on next click
           if (Game.Tutorial.isAllowed('movement')) {
             var reLock = function() {
               document.removeEventListener('click', reLock);
@@ -128,32 +114,16 @@
     },
 
     update: function(delta) {
-      var THREE = this._THREE;
       var camera = this._camera;
 
       // Restore saved orientation after re-lock to prevent camera jump
       if (this._savedQuat) {
         camera.quaternion.copy(this._savedQuat);
         this._savedQuat = null;
-        this._pendingMouseX = 0;
-        this._pendingMouseY = 0;
-        this._smoothMouseX = 0;
-        this._smoothMouseY = 0;
         return;
       }
 
-      // --- Smooth mouse look ---
-      var sf = this._mouseSmoothFactor;
-      this._smoothMouseX += (this._pendingMouseX - this._smoothMouseX) * sf;
-      this._smoothMouseY += (this._pendingMouseY - this._smoothMouseY) * sf;
-      this._pendingMouseX -= this._smoothMouseX;
-      this._pendingMouseY -= this._smoothMouseY;
-
-      // Apply smoothed rotation (matching PointerLockControls logic)
-      var sensitivity = this._controls.pointerSpeed * 0.002;
-      camera.rotation.y -= this._smoothMouseX * sensitivity;
-      camera.rotation.x -= this._smoothMouseY * sensitivity;
-      camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
+      // Camera rotation is handled directly by PointerLockControls (no smoothing)
 
       // --- Smooth movement ---
       var keys = this._keys;
@@ -207,17 +177,15 @@
         }
       }
 
-      // Jump initiation
+      // Jump
       if (keys.jump && this._isGrounded) {
         this._velocityY = this._jumpSpeed;
         this._isGrounded = false;
       }
 
-      // Apply gravity
       this._velocityY += this._gravity * delta;
       camera.position.y += this._velocityY * delta;
 
-      // Ground clamp
       if (camera.position.y <= this._groundY) {
         camera.position.y = this._groundY;
         this._velocityY = 0;

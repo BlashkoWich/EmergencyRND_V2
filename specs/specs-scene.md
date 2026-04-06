@@ -37,12 +37,13 @@
 - 6 деревьев (CylinderGeometry ствол + SphereGeometry крона)
 - 2 скамейки у входа (x=-4 и x=4, z=2)
 - Небо: `scene.background = 0x87ceeb`
-- HemisphereLight (небо/земля) + DirectionalLight (солнце, тени 2048x2048)
-- Fog: `(0x87ceeb, 25, 60)`
+- HemisphereLight (небо/земля) + DirectionalLight (солнце, тени 1024x1024, shadow camera -10..10 x -12..2)
+- Fog: зависит от настройки качества (Low: 15-35, Medium: 20-50, High: 25-60)
 
 ### Lighting
-- **Indoor**: AmbientLight(0.3) + сетка PointLight (x: -6..6 шаг 4, z: -10..-2 шаг 4)
-- **Outdoor**: HemisphereLight(0.6) + DirectionalLight(1.2)
+- **Indoor**: AmbientLight(0.3) + сетка из 9 PointLight (x: -6..6 шаг 4, z: -10..-2 шаг 4). **Тени отключены** на всех PointLight (только освещение)
+- **Outdoor**: HemisphereLight(0.6) + DirectionalLight(1.2, castShadow=true)
+- Fixture-меши (светильники) — эмиссивные (`MeshLambertMaterial` с `emissive`)
 
 ## Collision System
 - Raycasting по 2 осям (X, Z) независимо — скольжение вдоль стен

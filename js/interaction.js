@@ -6,6 +6,9 @@
   var modules = [];
   var activeModule = null;
   var hitResults = {};
+  var prevActive = null;
+  var holdFrames = 0;
+  var HOLD_MIN = 4; // keep active module for at least N frames to prevent flicker
 
   window.Game.Interaction = {
     setup: function(_THREE, _camera, _controls) {
@@ -26,10 +29,15 @@
     },
 
     update: function() {
-      activeModule = null;
+      var newActive = null;
       hitResults = {};
 
-      if (!controls.isLocked) return;
+      if (!controls.isLocked) {
+        activeModule = null;
+        prevActive = null;
+        holdFrames = 0;
+        return;
+      }
 
       ray.setFromCamera(center, camera);
 
@@ -47,10 +55,29 @@
           hitResults[mod.name] = hits;
           if (hits[0].distance < bestDist) {
             bestDist = hits[0].distance;
-            activeModule = mod.name;
+            newActive = mod.name;
           }
         }
       }
+
+      // Hysteresis: keep previous module active for a few frames to prevent flicker
+      if (newActive === prevActive) {
+        holdFrames = HOLD_MIN;
+      } else if (newActive !== null) {
+        // Switched to a different module — switch immediately
+        prevActive = newActive;
+        holdFrames = HOLD_MIN;
+      } else {
+        // Nothing hit — hold previous for a few frames
+        holdFrames--;
+        if (holdFrames > 0) {
+          newActive = prevActive;
+        } else {
+          prevActive = null;
+        }
+      }
+
+      activeModule = newActive;
     },
 
     isActive: function(name) {

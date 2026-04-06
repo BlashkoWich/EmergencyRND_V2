@@ -513,12 +513,18 @@
       Game.FPS.frames = 0;
     }, 1000);
 
-    // --- Animation loop ---
+    // --- Animation loop (locked to 60 FPS) ---
     const clock = new THREE.Clock();
     let frameCount = 0;
+    const FPS_LIMIT = 60;
+    const FRAME_MIN_TIME = 1000 / FPS_LIMIT;
+    let lastFrameTime = 0;
 
-    function animate() {
+    function animate(now) {
       requestAnimationFrame(animate);
+      if (now - lastFrameTime < FRAME_MIN_TIME) return;
+      lastFrameTime = now - ((now - lastFrameTime) % FRAME_MIN_TIME);
+
       const delta = Math.min(clock.getDelta(), 0.05);
       frameCount++;
       Game.FPS.frames++;
@@ -553,7 +559,7 @@
         renderer.render(scene, camera);
       }
     }
-    animate();
+    animate(0);
   </script>
 </body>
 </html>
