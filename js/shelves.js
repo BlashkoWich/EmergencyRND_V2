@@ -96,7 +96,7 @@
   }
 
   function highlightShelf(shelf) {
-    Game.Outline.setHover([shelf.group]);
+    Game.Outline.setHover([shelf.mesh]);
   }
 
   function unhighlightShelf(shelf) {
