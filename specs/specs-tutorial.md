@@ -7,7 +7,7 @@
 
 ### Архитектура
 IIFE-модуль `Game.Tutorial` — конечный автомат (state machine) с массивом шагов `STEPS[]`. Каждый шаг определяет:
-- `text` — текст инструкции (русский)
+- `text` — текст инструкции (через `Game.Lang.t('tutorial.stepN')`)
 - `trigger` — событие для перехода к следующему шагу (`'next_button'` / `'shift_opened'` / `'popup_opened'` и т.д.)
 - `allowed[]` — список разрешённых действий (всё остальное заблокировано)
 - `pauseTime` — останавливать ли игровое время
@@ -20,6 +20,8 @@ IIFE-модуль `Game.Tutorial` — конечный автомат (state mac
 - `arrowOffsetY` — высота стрелки над целью
 - `onEnter` / `onExit` — коллбэки при входе/выходе из шага
 - `isFinal` — последний шаг (кнопка "Начать!")
+
+Все тексты шагов локализованы через `Game.Lang.t('tutorial.stepN')`. Шаги с динамическим HTML используют `Game.Lang.t('tutorial.stepNhtml', [params])`.
 
 ### Публичный API
 ```js
@@ -124,7 +126,7 @@ Game.Tutorial.update(delta)                           // обновление 3D
   <div id="tutorial-panel">
     <div id="tutorial-step-num"></div>
     <div id="tutorial-text"></div>
-    <button id="tutorial-next">Далее</button>
+    <button id="tutorial-next" data-lang-key="tutorial.next">Далее</button>
   </div>
 </div>
 ```

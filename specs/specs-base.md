@@ -35,13 +35,34 @@
 - `Game.Ads` — система рекламы за деньги (попап предложения, фиктивный ролик, награда $200)
 - `Game.Tutorial` — пошаговый туториал (state machine, 3D-стрелки, spotlight, блокировка действий)
 
-Порядок загрузки: helpers → world → patients → controls → consumables → inventory → shop → ads → furniture → washing-machine → shelves → tool-panel → diagnostics → staff → trash → shift → cashier → tutorial → inline module (оркестратор).
+- `Game.Lang` — система локализации (переводы ru/en, функция t(), переключение языка)
+
+Порядок загрузки: lang → helpers → world → patients → controls → consumables → inventory → shop → ads → furniture → washing-machine → shelves → tool-panel → diagnostics → staff → trash → shift → cashier → tutorial → inline module (оркестратор).
+
+## IMPORTANT: Локализация (i18n)
+**Все тексты в игре ОБЯЗАНЫ быть на всех доступных языках (ru, en).** При разработке любой новой фичи или изменении текста:
+
+1. **Никогда не хардкодить строки на русском/английском** — все пользовательские строки берутся из `Game.Lang.t('key')`.
+2. **Добавлять перевод сразу на все языки** — при добавлении нового ключа в `js/lang.js`, значение должно быть в секциях `ru` и `en`.
+3. **Для HTML-элементов** — использовать атрибут `data-lang-key="key"` (или `data-lang-html` для HTML-контента). Текст заполняется автоматически через `Game.Lang.applyAll()`.
+4. **Для JS-генерируемого текста** — вызывать `Game.Lang.t('key')` или `Game.Lang.t('key', [param1, param2])` для параметризированных строк.
+5. **Для canvas-текстур (3D надписи)** — использовать `Game.Lang.t('sign.xxx')`.
+6. **Язык выбирается на стартовом экране** и сохраняется в `localStorage('gameLang')`. По умолчанию — `ru`.
+7. **Переключение языка** вызывает `location.reload()`.
+
+### API `Game.Lang`:
+- `Game.Lang.t(key)` — возвращает перевод (строка, массив или объект)
+- `Game.Lang.t(key, [params])` — подстановка `{0}`, `{1}` в строку
+- `Game.Lang.setLang(code)` — сохраняет язык и перезагружает страницу
+- `Game.Lang.getLang()` — текущий код языка ('ru' | 'en')
+- `Game.Lang.applyAll()` — обновляет все DOM-элементы с `[data-lang-key]`
 
 ## File Structure
 ```
 index.html              — HTML + importmap + module-оркестратор (~100 строк)
 styles.css              — вся CSS-стилизация UI
 js/
+  lang.js               — система локализации (все переводы ru/en, Game.Lang API)
   helpers.js            — createWall, createSign, процедурные текстуры
   world.js              — здание, мебель, уличная среда, освещение
   patients.js           — система пациентов (данные, спавн, движение, лечение, UI попапа)
@@ -87,6 +108,13 @@ specs/
 | Fog far | 35 | 50 | 60 |
 
 Переменная `useComposer` (boolean) переключает между `composer.render()` и `renderer.render()`.
+
+## Language Settings (переключатель на стартовом экране)
+Два языка: Русский / English. Сохраняется в `localStorage('gameLang')`, по умолчанию `'ru'`.
+- Селектор расположен в `#overlay` под переключателем графики
+- Кнопки `.lang-btn` с `data-lang="ru"` / `data-lang="en"`
+- При переключении: `Game.Lang.setLang(code)` → сохранение в localStorage → `location.reload()`
+- При загрузке: `Game.Lang` читает `localStorage('gameLang')`, устанавливает активную кнопку, вызывает `applyAll()` на DOMContentLoaded
 
 ## FPS Counter
 Зелёный счётчик в правом верхнем углу (`#fps-counter`). Обновляется раз в секунду через `setInterval`. Использует `Game.FPS.frames` (инкрементируется в animate loop).

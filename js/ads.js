@@ -85,7 +85,7 @@
     var pct = Math.min((adElapsed / AD_DURATION) * 100, 100);
     progressBar.style.width = pct + '%';
     var remaining = AD_DURATION - adElapsed;
-    timerLabel.textContent = remaining > 0 ? remaining + ' сек' : 'Готово!';
+    timerLabel.textContent = remaining > 0 ? Game.Lang.t('ad.timer', [remaining]) : Game.Lang.t('ad.done');
   }
 
   function completeAd() {

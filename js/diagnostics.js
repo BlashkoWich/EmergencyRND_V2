@@ -24,33 +24,22 @@
   };
 
   var STETH_POINT_POSITIONS = [
-    { x: 300, y: 180, label: 'Сердце' },
-    { x: 220, y: 160, label: 'Левое лёгкое' },
-    { x: 380, y: 160, label: 'Правое лёгкое' },
-    { x: 300, y: 320, label: 'Живот' },
-    { x: 300, y: 100, label: 'Горло' }
+    { x: 300, y: 180, label: Game.Lang.t('diag.bodyPart.heart') },
+    { x: 220, y: 160, label: Game.Lang.t('diag.bodyPart.leftLung') },
+    { x: 380, y: 160, label: Game.Lang.t('diag.bodyPart.rightLung') },
+    { x: 300, y: 320, label: Game.Lang.t('diag.bodyPart.abdomen') },
+    { x: 300, y: 100, label: Game.Lang.t('diag.bodyPart.throat') }
   ];
 
   // Determine correct auscultation point from complaint text
   function getStethCorrectPoint(complaint) {
     var c = complaint.toLowerCase();
-    // Throat/voice keywords → Горло (4)
-    if (c.indexOf('горл') !== -1 || c.indexOf('голос') !== -1 || c.indexOf('глотать') !== -1 ||
-        c.indexOf('глота') !== -1 || c.indexOf('перш') !== -1 || c.indexOf('сипит') !== -1 ||
-        c.indexOf('гнусав') !== -1 || c.indexOf('ангин') !== -1 || c.indexOf('миндал') !== -1 ||
-        c.indexOf('лающий') !== -1 || c.indexOf('слюну') !== -1 || c.indexOf('рот') !== -1) return 4;
-    // Left lung/side keywords → Левое лёгкое (1)
-    if (c.indexOf('слева') !== -1 || c.indexOf('в боку') !== -1 || c.indexOf('справа') !== -1 ||
-        c.indexOf('плевр') !== -1) return 1;
-    // Chest/breathing/wheeze → Правое лёгкое (2) or heart
-    if (c.indexOf('свист') !== -1 || c.indexOf('хрип') !== -1 || c.indexOf('булькает') !== -1 ||
-        c.indexOf('мокрот') !== -1 || c.indexOf('задых') !== -1 || c.indexOf('обструкт') !== -1) return 2;
-    // Chest center/sternum → Сердце (0)
-    if (c.indexOf('за грудин') !== -1 || c.indexOf('грудь') !== -1 || c.indexOf('сжалось') !== -1 ||
-        c.indexOf('груди') !== -1) return 0;
-    // Cough deep → Живот (3) for diaphragm-related
-    if (c.indexOf('до рвоты') !== -1 || c.indexOf('живот') !== -1) return 3;
-    // Default: throat
+    var kw = Game.Lang.t('diag.steth.keywords');
+    if (kw.throat && kw.throat.some(function(w) { return c.indexOf(w) !== -1; })) return 4;
+    if (kw.leftLung && kw.leftLung.some(function(w) { return c.indexOf(w) !== -1; })) return 1;
+    if (kw.rightLung && kw.rightLung.some(function(w) { return c.indexOf(w) !== -1; })) return 2;
+    if (kw.heart && kw.heart.some(function(w) { return c.indexOf(w) !== -1; })) return 0;
+    if (kw.abdomen && kw.abdomen.some(function(w) { return c.indexOf(w) !== -1; })) return 3;
     return 4;
   }
 
@@ -64,8 +53,8 @@
     steth.mouseY = canvasH / 2;
     steth.complaint = patient.complaint || '';
 
-    titleEl.textContent = 'Фонендоскоп — Найдите точку аускультации';
-    statusEl.textContent = 'Наведите на точку и удерживайте 3 секунды';
+    titleEl.textContent = Game.Lang.t('diag.steth.title');
+    statusEl.textContent = Game.Lang.t('diag.steth.status');
     controlsEl.innerHTML = '';
   }
 
@@ -98,7 +87,7 @@
           return;
         } else {
           steth.dimmed.push(steth.hoveredIndex);
-          statusEl.textContent = 'Здесь ничего не слышно. Попробуйте другую точку.';
+          statusEl.textContent = Game.Lang.t('diag.steth.wrong');
           steth.holdTimer = 0;
         }
       }
@@ -241,8 +230,8 @@
     hammer.mouseY = canvasH / 2;
     hammer.canClick = true;
 
-    titleEl.textContent = 'Рефлекс-молоток — Проверьте рефлексы';
-    statusEl.textContent = 'Кликните по точке на колене когда шкала в зелёной зоне (0/' + hammer.requiredHits + ')';
+    titleEl.textContent = Game.Lang.t('diag.hammer.title');
+    statusEl.textContent = Game.Lang.t('diag.hammer.status', [0, hammer.requiredHits]);
     controlsEl.innerHTML = '';
   }
 
@@ -252,9 +241,9 @@
     var inGreen = hammer.barValue >= hammer.greenMin && hammer.barValue <= hammer.greenMax;
     if (!inGreen) {
       if (hammer.barValue < hammer.greenMin) {
-        hammer.feedbackText = 'Слишком слабо!';
+        hammer.feedbackText = Game.Lang.t('diag.hammer.tooWeak');
       } else {
-        hammer.feedbackText = 'Слишком сильно!';
+        hammer.feedbackText = Game.Lang.t('diag.hammer.tooStrong');
       }
       hammer.feedbackColor = '#ff6644';
       hammer.feedbackTimer = 1.2;
@@ -266,15 +255,15 @@
     hammer.kicking = true;
     hammer.kickTimer = hammer.kickDuration;
     hammer.canClick = false;
-    hammer.feedbackText = 'Рефлекс!';
+    hammer.feedbackText = Game.Lang.t('diag.hammer.reflex');
     hammer.feedbackColor = '#44ff88';
     hammer.feedbackTimer = 0.8;
 
     if (hammer.successCount >= hammer.requiredHits) {
-      statusEl.textContent = 'Рефлексы проверены! (' + hammer.successCount + '/' + hammer.requiredHits + ')';
+      statusEl.textContent = Game.Lang.t('diag.hammer.done', [hammer.successCount, hammer.requiredHits]);
       setTimeout(function() { onSuccess(); }, 800);
     } else {
-      statusEl.textContent = 'Кликните по точке когда шкала в зелёной зоне (' + hammer.successCount + '/' + hammer.requiredHits + ')';
+      statusEl.textContent = Game.Lang.t('diag.hammer.status', [hammer.successCount, hammer.requiredHits]);
     }
   }
 
@@ -381,7 +370,7 @@
     ctx.fillStyle = 'rgba(255, 200, 100, 0.6)';
     ctx.font = '11px Segoe UI, Arial, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('Рефлекторная точка', hammer.targetX + 50, hammer.targetY - 25);
+    ctx.fillText(Game.Lang.t('diag.hammer.reflexPoint'), hammer.targetX + 50, hammer.targetY - 25);
 
     // --- Power bar ---
     var barX = 420, barY = 80, barW = 40, barH = 300;
@@ -424,9 +413,9 @@
     ctx.fillStyle = '#7a9ab0';
     ctx.font = '10px Segoe UI, Arial, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('СИЛА', barX + barW / 2, barY - 8);
-    ctx.fillText('слабо', barX + barW / 2, barY + barH + 16);
-    ctx.fillText('сильно', barX + barW / 2, barY - 22);
+    ctx.fillText(Game.Lang.t('diag.hammer.power'), barX + barW / 2, barY - 8);
+    ctx.fillText(Game.Lang.t('diag.hammer.weak'), barX + barW / 2, barY + barH + 16);
+    ctx.fillText(Game.Lang.t('diag.hammer.strong'), barX + barW / 2, barY - 22);
 
     // Success counter
     ctx.fillStyle = '#fff';
@@ -563,8 +552,8 @@
     maze.mouseX = maze.playerX;
     maze.mouseY = maze.playerY;
 
-    titleEl.textContent = 'Риноскоп — Пройдите к очагу воспаления';
-    statusEl.textContent = 'Проведите прибор через носовой проход к красной точке';
+    titleEl.textContent = Game.Lang.t('diag.rhino.title');
+    statusEl.textContent = Game.Lang.t('diag.rhino.status');
     controlsEl.innerHTML = '';
   }
 
@@ -727,7 +716,7 @@
     ctx.fillStyle = 'rgba(100, 200, 255, 0.7)';
     ctx.font = '10px Segoe UI, Arial, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('СТАРТ', startCX, startCY - 12);
+    ctx.fillText(Game.Lang.t('diag.start'), startCX, startCY - 12);
 
     // Exit marker (inflammation, bottom-right)
     var exitCX = maze.offsetX + maze.exitCol * maze.cellSize + maze.cellSize / 2;
@@ -743,7 +732,7 @@
     ctx.fillStyle = '#ff6644';
     ctx.font = '10px Segoe UI, Arial, sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('ОЧАГ', exitCX, exitCY - 12);
+    ctx.fillText(Game.Lang.t('diag.target'), exitCX, exitCY - 12);
 
     // Player dot
     ctx.beginPath();

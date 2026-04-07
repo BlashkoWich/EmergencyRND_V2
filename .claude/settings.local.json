@@ -3,7 +3,23 @@
     "allow": [
       "mcp__Claude_Preview__preview_start",
       "Bash(npx --version)",
-      "Bash(grep -rn \"hire\\\\|HIRE\" /a/EmergencyRND_V2/js/*.js)"
+      "Bash(grep -rn \"hire\\\\|HIRE\" /a/EmergencyRND_V2/js/*.js)",
+      "Bash(node -e \"try { require\\(''A:/EmergencyRND_V2/js/lang.js''\\); console.log\\(''ERROR: should not work as module''\\); } catch\\(e\\) { console.log\\(''Not a module \\(expected for IIFE\\)''\\); }\")",
+      "Bash(node -e \":*)",
+      "Bash(grep -l '[а-яА-ЯёЁ]' A:/EmergencyRND_V2/js/*.js)",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Read(//a/EmergencyRND_V2/**)",
+      "Bash(done)",
+      "Bash(node -c A:/EmergencyRND_V2/js/lang.js)",
+      "Bash(node -c A:/EmergencyRND_V2/js/shift.js)",
+      "Bash(node -c A:/EmergencyRND_V2/js/shop.js)",
+      "Bash(node -c A:/EmergencyRND_V2/js/cashier.js)",
+      "Bash(node -c A:/EmergencyRND_V2/js/levels.js)",
+      "Bash(python3 -c \":*)",
+      "Bash(python -c \"with open\\(''A:/EmergencyRND_V2/specs/specs-patient.md'', ''r'', encoding=''utf-8''\\) as f: lines = f.readlines\\(\\); [print\\(repr\\(l\\)\\) for l in lines[4:13]]\")",
+      "Bash(node -e \"const fs=require\\(''fs''\\); const d=fs.readFileSync\\(''A:/EmergencyRND_V2/specs/specs-patient.md'',''utf8''\\); const lines=d.split\\(''\\\\n''\\); for\\(let i=4;i<13;i++\\) console.log\\(i+'': ''+JSON.stringify\\(lines[i]\\)\\)\")",
+      "Bash(node -e \"const fs=require\\(''fs''\\); const buf=fs.readFileSync\\(''A:/EmergencyRND_V2/specs/specs-patient.md''\\); const d=buf.toString\\(''utf8''\\); const lines=d.split\\(''\\\\n''\\); console.log\\(''line8 hex:'', Buffer.from\\(lines[8]\\).toString\\(''hex''\\).match\\(/../g\\).join\\('' ''\\)\\)\")"
     ]
   }
 }

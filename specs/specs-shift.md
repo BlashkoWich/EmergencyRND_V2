@@ -86,14 +86,14 @@ dayEndPopupOpen = false // попап итогов дня показан
 - 2 кронштейна: `BoxGeometry(0.05, 0.15, 0.12)`, серые металлические (0x888888)
 
 ### Цвета
-- **Открыто**: доска зелёная (0x22aa44), текст "ОТКРЫТО" белый
-- **Закрыто**: доска красная (0xcc3333), текст "ЗАКРЫТО" белый
+- **Открыто**: доска зелёная (0x22aa44), текст `Game.Lang.t('shift.sign.open')` белый
+- **Закрыто**: доска красная (0xcc3333), текст `Game.Lang.t('shift.sign.closed')` белый
 
 ### Взаимодействие
 - Raycaster far=5, от screen center
 - Hover: зелёная обводка (Game.Outline) на всех мешах таблички
 - Клик (ЛКМ): открывает смену (только если `!shiftOpen && !shiftEnding`)
-- Подсказки: "ЛКМ — Открыть смену" / "Смена идёт..." / "Приём окончен..."
+- Подсказки: `Game.Lang.t('shift.hint.open')` / `Game.Lang.t('shift.hint.ongoing')` / `Game.Lang.t('shift.hint.ending')`
 - Приоритет: ниже всех остальных систем взаимодействия
 
 ## HUD — Время и день
@@ -101,7 +101,7 @@ dayEndPopupOpen = false // попап итогов дня показан
 ### Элемент: `#time-hud`
 - Позиция: top center, z-index 5
 - Содержит:
-  - `#day-value`: "День N" (цвет #7abfff)
+  - `#day-value`: `Game.Lang.t('hud.day', [dayNumber])` (цвет #7abfff)
   - `#time-value`: "HH:MM" (моноширинный шрифт)
 - Стиль: полупрозрачный тёмный фон, backdrop-filter blur
 
@@ -123,10 +123,10 @@ dayEndPopupOpen = false // попап итогов дня показан
 ### Тексты задач
 | Состояние | Текст задачи |
 |-----------|-------------|
-| Смена не открыта | "Откройте смену! Подойдите к табличке у входа." |
-| Смена активна | "Обслуживайте пациентов!" |
-| shiftEnding, пациенты есть | "Дообслужите оставшихся пациентов! (N)" |
-| shiftEnding, пациентов нет | "Все пациенты обслужены!" |
+| Смена не открыта | `Game.Lang.t('shift.task.open')` |
+| Смена активна | `Game.Lang.t('shift.task.serve')` |
+| shiftEnding, пациенты есть | `Game.Lang.t('shift.task.finish', [remaining])` |
+| shiftEnding, пациентов нет | `Game.Lang.t('shift.task.allDone')` |
 | Попап итогов дня | (пусто) |
 
 ## Попап итогов дня
@@ -136,7 +136,7 @@ dayEndPopupOpen = false // попап итогов дня показан
 - Стиль: тёмно-синий фон (#0f1e2e), скруглённые углы, тень
 
 ### Содержимое
-- Заголовок: "Итоги дня N"
+- Заголовок: `Game.Lang.t('dayEnd.title')` + номер дня
 - Статистика:
   - Вылечено пациентов: `dayStats.patientsServed`
   - Потеряно пациентов: `dayStats.patientsLost`
@@ -205,16 +205,16 @@ interactRay (Raycaster, far=5), screenCenter (Vector2(0,0))
 | ID | Тип | Назначение |
 |----|-----|------------|
 | `time-hud` | div | Контейнер времени и дня |
-| `day-value` | span | "День N" |
+| `day-value` | span | `Game.Lang.t('hud.day', [dayNumber])` |
 | `time-value` | span | "HH:MM" |
 | `task-container` | div | Контейнер задачи с маскотом |
 | `task-mascot` | div | Портрет медсестры (background-image) |
 | `task-bubble` | div | Speech bubble задачи |
-| `task-text` | div | Текст активной задачи |
+| `task-text` | div | текст из `Game.Lang.t()` |
 | `day-end-popup` | div | Попап итогов дня |
 | `day-end-number` | span | Номер дня в заголовке |
 | `stat-served` | span | Вылечено пациентов |
 | `stat-lost` | span | Потеряно пациентов |
 | `stat-earned` | span | Заработано |
 | `stat-spent` | span | Потрачено |
-| `day-end-next` | button | Кнопка "Перейти в следующий день" |
+| `day-end-next` | button | Кнопка "Перейти в следующий день", `data-lang-key="dayEnd.next"` |

@@ -51,7 +51,7 @@
     var hired = Game.Staff.getHiredStaff();
     listEl.innerHTML = '';
     if (hired.length === 0) {
-      listEl.innerHTML = '<div class="staff-empty-hint">Пока никого нет</div>';
+      listEl.innerHTML = '<div class="staff-empty-hint">' + Game.Lang.t('shop.staffSection.empty') + '</div>';
       return;
     }
     for (var i = 0; i < hired.length; i++) {
@@ -61,7 +61,7 @@
       row.className = 'staff-hired-item';
       row.innerHTML = '<span class="shop-item-icon" style="background:#' + info.color.toString(16).padStart(6, '0') + '"></span>' +
         '<span class="staff-hired-name">' + info.name + '</span>' +
-        '<button class="staff-fire-btn" data-id="' + s.id + '">Уволить — $' + info.salary + '</button>';
+        '<button class="staff-fire-btn" data-id="' + s.id + '">' + Game.Lang.t('shop.fire', [info.salary]) + '</button>';
       listEl.appendChild(row);
     }
     // Attach fire handlers
@@ -85,7 +85,7 @@
       var onGround = Game.Consumables.countGroundItems(type);
       var inBoxes = Game.Consumables.countBoxItems(type);
       var total = inInventory + onGround + inBoxes;
-      countEls[type].textContent = total > 0 ? '(есть: ' + total + ')' : '';
+      countEls[type].textContent = total > 0 ? Game.Lang.t('shop.count', [total]) : '';
     }
     // Instruments
     var instrTypes = Game.Consumables.INSTRUMENT_TYPES;
@@ -94,7 +94,7 @@
       var inInventory = Game.Inventory.countType(type);
       var onGround = Game.Consumables.countGroundItems(type);
       var total = inInventory + onGround;
-      countEls[type].textContent = total > 0 ? '(есть: ' + total + ')' : '';
+      countEls[type].textContent = total > 0 ? Game.Lang.t('shop.count', [total]) : '';
     }
   }
 
@@ -107,10 +107,10 @@
       if (!btn) continue;
       var basePrice = type === 'linen_clean' ? 100 : 80;
       if (!firstOrderUsed[type]) {
-        btn.textContent = 'Заказать — Бесплатно!';
+        btn.textContent = Game.Lang.t('shop.order.free');
         btn.style.background = '#2a8a5a';
       } else {
-        btn.textContent = 'Купить — $' + basePrice;
+        btn.textContent = Game.Lang.t('shop.buy', [basePrice]);
         btn.style.background = '';
       }
     }
@@ -124,10 +124,10 @@
       var btn = itemEl.querySelector('.shop-buy-btn');
       if (!btn) continue;
       if (!firstOrderUsed[type]) {
-        btn.textContent = 'Заказать — Бесплатно!';
+        btn.textContent = Game.Lang.t('shop.order.free');
         btn.style.background = '#2a8a5a';
       } else {
-        btn.textContent = 'Купить — $220';
+        btn.textContent = Game.Lang.t('shop.buy', [220]);
         btn.style.background = '';
       }
     }
@@ -140,15 +140,15 @@
       var level = entry.level;
       if (level < upgradeLevel) {
         // Already purchased
-        btn.textContent = 'Куплено \u2713';
+        btn.textContent = Game.Lang.t('shop.purchased');
         btn.classList.add('disabled');
       } else if (level === upgradeLevel) {
         // Available for purchase
-        btn.textContent = 'Купить — $' + upgradeLevels[level].price;
+        btn.textContent = Game.Lang.t('shop.buy', [upgradeLevels[level].price]);
         btn.classList.remove('disabled');
       } else {
         // Locked — need previous level first
-        btn.textContent = 'Сначала купите ур. ' + level;
+        btn.textContent = Game.Lang.t('shop.buyFirst', [level]);
         btn.classList.add('disabled');
       }
     }
@@ -178,7 +178,7 @@
             if (Game.Levels && !Game.Levels.isTabUnlocked(tabName)) {
               var unlockLevel = UNLOCK_LEVELS_MAP[tabName] || '?';
               Game.Inventory.showNotification(
-                'Разблокируется на уровне ' + unlockLevel,
+                Game.Lang.t('notify.unlockLevel', [unlockLevel]),
                 'rgba(200, 150, 50, 0.85)'
               );
               return;
@@ -221,7 +221,7 @@
             if (price > 0) Game.Cashier.spend(price);
             if (isFree) {
               firstOrderUsed[t] = true;
-              Game.Inventory.showNotification('Первый заказ бесплатно!', 'rgba(34, 139, 34, 0.85)');
+              Game.Inventory.showNotification(Game.Lang.t('notify.firstOrderFree'), 'rgba(34, 139, 34, 0.85)');
               refreshFreeLabels();
             }
             Game.Consumables.spawnBoxInDeliveryZone(t);
@@ -258,7 +258,7 @@
             if (price > 0) Game.Cashier.spend(price);
             if (isFree) {
               firstOrderUsed[t] = true;
-              Game.Inventory.showNotification('Первый заказ бесплатно!', 'rgba(34, 139, 34, 0.85)');
+              Game.Inventory.showNotification(Game.Lang.t('notify.firstOrderFree'), 'rgba(34, 139, 34, 0.85)');
               refreshInstrumentFreeLabels();
             }
             Game.Consumables.spawnInstrumentInDeliveryZone(t);
@@ -278,7 +278,7 @@
           btn.addEventListener('click', function() {
             var balance = Game.Cashier.getBalance();
             if (balance < price) {
-              Game.Inventory.showNotification('Недостаточно средств!');
+              Game.Inventory.showNotification(Game.Lang.t('notify.insufficientFunds'));
               return;
             }
             Game.Cashier.spend(price);
@@ -299,14 +299,14 @@
             var price = upgradeLevels[level].price;
             var balance = Game.Cashier.getBalance();
             if (balance < price) {
-              Game.Inventory.showNotification('Недостаточно средств!');
+              Game.Inventory.showNotification(Game.Lang.t('notify.insufficientFunds'));
               return;
             }
             Game.Cashier.spend(price);
             upgradeLevel = level + 1;
             Game.Inventory.setMaxStack(upgradeLevels[level].stack);
             Game.Inventory.showNotification(
-              'Теперь можно хранить ' + upgradeLevels[level].stack + ' препаратов в слоте!',
+              Game.Lang.t('notify.upgradeSlot', [upgradeLevels[level].stack]),
               'rgba(34, 139, 34, 0.85)'
             );
             refreshUpgradeButtons();

@@ -15,11 +15,11 @@
 
 ```js
 STAFF_TYPES = {
-  administrator: { name: 'Администратор', salary: 100, color: 0x2266aa, hatColor: 0x1a4a88 },
-  cashier:       { name: 'Кассир',        salary: 100, color: 0x22aa66, hatColor: 0x188844 },
-  diagnostician: { name: 'Диагност',      salary: 100, color: 0x8844cc, hatColor: 0x6633aa },
-  nurse:         { name: 'Медсестра',      salary: 100, color: 0xcc4488, hatColor: 0xaa3366 },
-  janitor:       { name: 'Уборщик',       salary: 100, color: 0x888844, hatColor: 0x666633 }
+  administrator: { name: Game.Lang.t('staff.administrator'), salary: 100, color: 0x2266aa, hatColor: 0x1a4a88 },
+  cashier:       { name: Game.Lang.t('staff.cashier'),       salary: 100, color: 0x22aa66, hatColor: 0x188844 },
+  diagnostician: { name: Game.Lang.t('staff.diagnostician'), salary: 100, color: 0x8844cc, hatColor: 0x6633aa },
+  nurse:         { name: Game.Lang.t('staff.nurse'),         salary: 100, color: 0xcc4488, hatColor: 0xaa3366 },
+  janitor:       { name: Game.Lang.t('staff.janitor'),       salary: 100, color: 0x888844, hatColor: 0x666633 }
 }
 ```
 
@@ -244,10 +244,10 @@ returning → idle
 
 | Сотрудник | Блокировка для игрока |
 |-----------|----------------------|
-| Администратор | Пациент с `staffProcessing=true` → "Администратор оформляет пациента" |
-| Кассир | Терминал полностью заблокирован → "Кассир уже работает" |
-| Диагност | Мини-игра на конкретном пациенте → "Диагност уже проводит обследование" |
-| Медсестра | Лечение конкретного пациента → "Медсестра уже лечит этого пациента" |
+| Администратор | Пациент с `staffProcessing=true` → `Game.Lang.t('staff.status.processing')` |
+| Кассир | Терминал полностью заблокирован → `Game.Lang.t('staff.status.cashierWorking')` |
+| Диагност | Мини-игра на конкретном пациенте → `Game.Lang.t('staff.status.diagnosing')` |
+| Медсестра | Лечение конкретного пациента → `Game.Lang.t('staff.status.treating')` |
 | Уборщик | Ничего не блокирует |
 
 ## Новые флаги на объекте пациента

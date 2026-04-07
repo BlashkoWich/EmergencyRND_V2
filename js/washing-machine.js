@@ -154,17 +154,17 @@
 
       if (isWashing) {
         var remaining = Math.ceil(getWashDuration() - washTimer);
-        hintEl.textContent = 'Стирка... ' + remaining + ' сек.';
+        hintEl.textContent = Game.Lang.t('wash.hint.washing', [remaining]);
       } else if (dirtyLinenCount === 0 && !hasDirtyInInventory) {
-        hintEl.textContent = 'Загрузите грязное бельё (ЛКМ)';
+        hintEl.textContent = Game.Lang.t('wash.hint.loadDirty');
       } else if (hasDirtyInInventory && dirtyLinenCount < MAX_LOAD && dirtyLinenCount > 0) {
-        hintEl.textContent = 'ЛКМ — Загрузить бельё (' + dirtyLinenCount + '/' + MAX_LOAD + ')  |  E — Запустить стирку';
+        hintEl.textContent = Game.Lang.t('wash.hint.loadAndStart', [dirtyLinenCount, MAX_LOAD]);
       } else if (hasDirtyInInventory && dirtyLinenCount < MAX_LOAD) {
-        hintEl.textContent = 'ЛКМ — Загрузить бельё (' + dirtyLinenCount + '/' + MAX_LOAD + ')';
+        hintEl.textContent = Game.Lang.t('wash.hint.load', [dirtyLinenCount, MAX_LOAD]);
       } else if (hasDirtyInInventory && dirtyLinenCount >= MAX_LOAD && dirtyLinenCount > 0) {
-        hintEl.textContent = 'Машинка полная (' + MAX_LOAD + '/' + MAX_LOAD + ')  |  E — Запустить стирку';
+        hintEl.textContent = Game.Lang.t('wash.hint.fullStart', [MAX_LOAD, MAX_LOAD]);
       } else if (dirtyLinenCount > 0) {
-        hintEl.textContent = 'E — Запустить стирку (' + dirtyLinenCount + ' шт.)';
+        hintEl.textContent = Game.Lang.t('wash.hint.start', [dirtyLinenCount]);
       }
       hintEl.style.display = 'block';
     }
@@ -177,7 +177,7 @@
     progressBg.visible = true;
     progressFill.visible = true;
     progressFill.scale.x = 0.01;
-    Game.Inventory.showNotification('Стирка запущена! (' + dirtyLinenCount + ' шт.)', 'rgba(34, 139, 34, 0.85)');
+    Game.Inventory.showNotification(Game.Lang.t('wash.started', [dirtyLinenCount]), 'rgba(34, 139, 34, 0.85)');
     if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('wash_started');
   }
 
@@ -192,7 +192,7 @@
     // Add clean linen to clean basket
     Game.Staff.addToBasket('clean', 'linen_clean', count);
 
-    Game.Inventory.showNotification('Стирка завершена! Заберите бельё.', 'rgba(34, 139, 34, 0.85)');
+    Game.Inventory.showNotification(Game.Lang.t('wash.finished'), 'rgba(34, 139, 34, 0.85)');
     if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('wash_finished');
   }
 
@@ -228,7 +228,7 @@
     if (!Game.Inventory.findAndActivate('linen_dirty')) return;
 
     if (dirtyLinenCount >= MAX_LOAD) {
-      Game.Inventory.showNotification('Машинка полная (' + MAX_LOAD + '/' + MAX_LOAD + ')');
+      Game.Inventory.showNotification(Game.Lang.t('wash.full', [MAX_LOAD, MAX_LOAD]));
       return;
     }
 
@@ -236,7 +236,7 @@
     dirtyLinenCount++;
     if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('linen_loaded');
     setStatusColor(0xcc8844, 0.5);
-    Game.Inventory.showNotification('Загружено бельё (' + dirtyLinenCount + '/' + MAX_LOAD + ')', 'rgba(34, 139, 34, 0.85)');
+    Game.Inventory.showNotification(Game.Lang.t('wash.loaded', [dirtyLinenCount, MAX_LOAD]), 'rgba(34, 139, 34, 0.85)');
   }
 
   function onKeyDown(e) {
@@ -250,7 +250,7 @@
 
     if (isWashing) return;
     if (dirtyLinenCount <= 0) {
-      Game.Inventory.showNotification('Сначала загрузите грязное бельё');
+      Game.Inventory.showNotification(Game.Lang.t('wash.loadFirst'));
       return;
     }
 

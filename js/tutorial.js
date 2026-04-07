@@ -21,7 +21,7 @@
   var STEPS = [
     // 0: Welcome
     {
-      text: 'Добро пожаловать в Частную Клинику!\nЯ проведу вас по основам работы.\nДавайте начнём!',
+      text: Game.Lang.t('tutorial.step0'),
       trigger: 'next_button',
       allowed: [],
       pauseTime: true,
@@ -29,7 +29,7 @@
     },
     // 1: Open shift
     {
-      text: 'Подойдите к табличке с надписью "ЗАКРЫТО" у входа и нажмите ЛКМ, чтобы открыть смену.',
+      text: Game.Lang.t('tutorial.step1'),
       trigger: 'shift_opened',
       allowed: ['movement', 'camera', 'sign_click'],
       pauseTime: true,
@@ -39,7 +39,7 @@
     },
     // 2: Patient arrives
     {
-      text: 'Первый пациент пришёл!\nПодойдите к нему и нажмите ЛКМ, чтобы посмотреть его медкарту.',
+      text: Game.Lang.t('tutorial.step2'),
       trigger: 'popup_opened',
       allowed: ['movement', 'camera', 'patient_click'],
       pauseTime: true,
@@ -50,7 +50,7 @@
     },
     // 3: Explain popup (popup visible)
     {
-      text: 'Это медицинская карта пациента:\n\n• Имя, возраст и тяжесть состояния\n• Витальные показатели: температура, пульс, давление\n• Жалоба пациента — что его беспокоит\n• Диагноз и назначенный препарат\n• Полоска здоровья — текущее состояние',
+      text: Game.Lang.t('tutorial.step3'),
       trigger: 'next_button',
       allowed: [],
       pauseTime: true,
@@ -62,7 +62,7 @@
     },
     // 4: Send to bed
     {
-      text: '«В зону ожидания» — пациент ждёт на стуле, пока вы заняты другими.\n\n«На кровать» — пациент ложится, и вы можете начать лечение.\n\nНажмите «На кровать»!',
+      text: Game.Lang.t('tutorial.step4'),
       trigger: 'patient_sent_to_bed',
       allowed: ['btn_bed'],
       pauseTime: true,
@@ -88,9 +88,8 @@
       onEnter: function() {
         var name = getRequiredConsumableName();
         var colorHex = getRequiredConsumableColor();
-        textEl.innerHTML = 'Пациенту нужен препарат. Откройте магазин, нажав <b>Q</b>, и закажите:<br><br>' +
-          '<span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:' + colorHex + ';vertical-align:middle;margin-right:6px;"></span>' +
-          '<b>' + name + '</b><br><br>Первый заказ каждого вида — <span style="color:#4ade80">бесплатный</span>!';
+        var colorSpan = '<span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:' + colorHex + ';vertical-align:middle;margin-right:6px;"></span>';
+        textEl.innerHTML = Game.Lang.t('tutorial.step5html', [colorSpan, name]);
       }
     },
     // 6: Buy the required medication (shop visible)
@@ -104,9 +103,8 @@
       onEnter: function() {
         var name = getRequiredConsumableName();
         var colorHex = getRequiredConsumableColor();
-        textEl.innerHTML = 'Нажмите кнопку «Заказать» напротив:<br><br>' +
-          '<span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:' + colorHex + ';vertical-align:middle;margin-right:6px;"></span>' +
-          '<b>' + name + '</b>';
+        var colorSpan = '<span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:' + colorHex + ';vertical-align:middle;margin-right:6px;"></span>';
+        textEl.innerHTML = Game.Lang.t('tutorial.step6html', [colorSpan, name]);
         lockShopBuyButtonsExcept(getRequiredConsumableType());
       },
       onExit: function() {
@@ -115,7 +113,7 @@
     },
     // 7: Close shop
     {
-      text: 'Отлично! Товар уже в пути.\nЗакройте магазин кнопкой ✕ или клавишей Q.',
+      text: Game.Lang.t('tutorial.step7'),
       trigger: 'shop_closed',
       allowed: ['shop_close'],
       pauseTime: true,
@@ -130,7 +128,7 @@
     },
     // 8: Pick up from delivery box
     {
-      text: 'Коробка с препаратом появилась в зоне доставки у входа.\nПодойдите к ней и нажмите ЛКМ, чтобы взять препарат.',
+      text: Game.Lang.t('tutorial.step8'),
       trigger: 'item_picked_up',
       allowed: ['movement', 'camera', 'pickup_item'],
       pauseTime: true,
@@ -140,7 +138,7 @@
     },
     // 9: Apply medication
     {
-      text: 'Теперь подойдите к пациенту на кровати и нажмите ЛКМ, чтобы применить препарат.',
+      text: Game.Lang.t('tutorial.step9'),
       trigger: 'patient_treated',
       allowed: ['movement', 'camera', 'treat_patient'],
       pauseTime: true,
@@ -151,7 +149,7 @@
     },
     // 10: Recovery info
     {
-      text: 'Препарат применён! Пациент выздоравливает — полоска здоровья заполняется.\n\nКогда он полностью выздоровеет, он сам пойдёт к кассе для оплаты.',
+      text: Game.Lang.t('tutorial.step10'),
       trigger: 'next_button',
       allowed: [],
       pauseTime: false,
@@ -159,7 +157,7 @@
     },
     // 11: Go to cashier
     {
-      text: 'Пациент выздоровел и идёт к кассе!\nПодойдите к терминалу оплаты (справа от стойки) и нажмите ЛКМ.',
+      text: Game.Lang.t('tutorial.step11'),
       trigger: 'terminal_opened',
       allowed: ['movement', 'camera', 'cashier_click'],
       pauseTime: false,
@@ -169,7 +167,7 @@
     },
     // 12: Payment
     {
-      text: 'Введите сумму к оплате, используя клавиатуру терминала, и нажмите OK.',
+      text: Game.Lang.t('tutorial.step12'),
       trigger: 'payment_done',
       allowed: ['terminal_keys', 'terminal_ok'],
       pauseTime: false,
@@ -178,7 +176,7 @@
     },
     // 13: Dirty bed notice
     {
-      text: 'Оплата принята!\n\nОбратите внимание: после ухода пациента кровать стала грязной. На грязную кровать нельзя положить нового пациента!\n\nДавайте научимся менять бельё.',
+      text: Game.Lang.t('tutorial.step13'),
       trigger: 'next_button',
       allowed: [],
       pauseTime: true,
@@ -186,7 +184,7 @@
     },
     // 14: Open shop to buy linen
     {
-      text: 'Откройте магазин (Q) и закажите чистое постельное бельё.',
+      text: Game.Lang.t('tutorial.step14'),
       trigger: 'shop_opened',
       allowed: ['movement', 'camera', 'shop_open'],
       pauseTime: true,
@@ -202,9 +200,7 @@
       position: 'left',
       spotlight: '#shop-tab-consumables',
       onEnter: function() {
-        textEl.innerHTML = 'Нажмите кнопку «Заказать» напротив:<br><br>' +
-          '<span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#dde4f0;vertical-align:middle;margin-right:6px;border:1px solid #aab;"></span>' +
-          '<b>Постельное бельё</b>';
+        textEl.innerHTML = Game.Lang.t('tutorial.step15html', [Game.Lang.t('item.linen_clean')]);
         lockShopBuyButtonsExcept('linen_clean');
       },
       onExit: function() {
@@ -213,7 +209,7 @@
     },
     // 16: Close shop
     {
-      text: 'Отлично! Закройте магазин.',
+      text: Game.Lang.t('tutorial.step16'),
       trigger: 'shop_closed',
       allowed: ['shop_close'],
       pauseTime: true,
@@ -228,7 +224,7 @@
     },
     // 17: Pick up linen from box
     {
-      text: 'Подойдите к коробке с бельём в зоне доставки и возьмите чистое бельё на ЛКМ.',
+      text: Game.Lang.t('tutorial.step17'),
       trigger: 'item_picked_up',
       allowed: ['movement', 'camera', 'pickup_item'],
       pauseTime: true,
@@ -238,7 +234,7 @@
     },
     // 18: Replace linen on dirty bed
     {
-      text: 'Теперь подойдите к грязной кровати и нажмите ЛКМ, чтобы заменить бельё.',
+      text: Game.Lang.t('tutorial.step18'),
       trigger: 'linen_replaced',
       allowed: ['movement', 'camera', 'linen_replace'],
       pauseTime: true,
@@ -248,7 +244,7 @@
     },
     // 19: Washing intro
     {
-      text: 'Кровать снова чистая!\n\nНо у вас в инвентаре осталось грязное бельё. Его можно постирать в стиральной машине!\n\nВыберите грязное бельё в инвентаре (клавиши 1-6) и подойдите к стиральной машине.',
+      text: Game.Lang.t('tutorial.step19'),
       trigger: 'next_button',
       allowed: [],
       pauseTime: true,
@@ -256,7 +252,7 @@
     },
     // 20: Load dirty linen into washing machine
     {
-      text: 'Выберите грязное бельё в инвентаре и нажмите ЛКМ на стиральной машине, чтобы загрузить.',
+      text: Game.Lang.t('tutorial.step20'),
       trigger: 'linen_loaded',
       allowed: ['movement', 'camera', 'washing_machine'],
       pauseTime: true,
@@ -266,7 +262,7 @@
     },
     // 21: Start wash (press E)
     {
-      text: 'Бельё загружено! Нажмите E, чтобы запустить стирку.',
+      text: Game.Lang.t('tutorial.step21'),
       trigger: 'wash_started',
       allowed: ['movement', 'camera', 'washing_machine'],
       pauseTime: true,
@@ -276,7 +272,7 @@
     },
     // 22: Wait for wash to finish
     {
-      text: 'Стирка запущена! Подождите, пока машинка закончит...\n\nЭто займёт 5 секунд.',
+      text: Game.Lang.t('tutorial.step22'),
       trigger: 'wash_finished',
       allowed: ['movement', 'camera'],
       pauseTime: false, // time must pass for wash cycle
@@ -285,7 +281,7 @@
     },
     // 23: Pick up clean linen
     {
-      text: 'Стирка завершена! Чистое бельё появилось на машинке.\nПодберите его на ЛКМ.',
+      text: Game.Lang.t('tutorial.step23'),
       trigger: 'item_picked_up',
       allowed: ['movement', 'camera', 'pickup_item'],
       pauseTime: true,
@@ -295,7 +291,7 @@
     },
     // 24: Done!
     {
-      text: 'Отлично! Теперь у вас снова есть чистое бельё.\n\nВы изучили все основы!\nТеперь управляйте клиникой самостоятельно.\n\nУдачи!',
+      text: Game.Lang.t('tutorial.step24'),
       trigger: 'next_button',
       allowed: [],
       pauseTime: true,
@@ -312,9 +308,9 @@
 
   function getRequiredConsumableName() {
     var type = getRequiredConsumableType();
-    if (!type) return 'препарат';
+    if (!type) return Game.Lang.t('tutorial.defaultMedicine');
     var info = Game.Consumables.TYPES[type];
-    return info ? info.name : 'препарат';
+    return info ? info.name : Game.Lang.t('tutorial.defaultMedicine');
   }
 
   function getRequiredConsumableColor() {
@@ -466,14 +462,14 @@
 
     var s = STEPS[step];
 
-    stepNumEl.textContent = 'Шаг ' + (step + 1) + ' из ' + STEPS.length;
+    stepNumEl.textContent = Game.Lang.t('tutorial.stepOf', [step + 1, STEPS.length]);
     if (s.text) {
       textEl.textContent = s.text;
     }
 
     if (s.trigger === 'next_button') {
       nextBtn.style.display = 'block';
-      nextBtn.textContent = s.isFinal ? 'Начать!' : 'Далее';
+      nextBtn.textContent = s.isFinal ? Game.Lang.t('tutorial.start') : Game.Lang.t('tutorial.next');
     } else {
       nextBtn.style.display = 'none';
     }
@@ -680,7 +676,7 @@
           goToStep(step + 1);
         } else {
           var correctName = getRequiredConsumableName();
-          Game.Inventory.showNotification('Это не тот препарат! Нужен: ' + correctName, 'rgba(200, 50, 50, 0.85)');
+          Game.Inventory.showNotification(Game.Lang.t('notify.wrongItem', [correctName]), 'rgba(200, 50, 50, 0.85)');
         }
         return;
       }

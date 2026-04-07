@@ -116,7 +116,7 @@
       ctx.font = 'bold 42px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('ОТКРЫТО', 128, 80);
+      ctx.fillText(Game.Lang.t('shift.sign.open'), 128, 80);
     } else {
       ctx.fillStyle = '#aa2222';
       ctx.fillRect(0, 0, 256, 160);
@@ -125,7 +125,7 @@
       ctx.font = 'bold 42px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('ЗАКРЫТО', 128, 80);
+      ctx.fillText(Game.Lang.t('shift.sign.closed'), 128, 80);
     }
 
     signTexture.needsUpdate = true;
@@ -167,11 +167,11 @@
     if (hit) {
       var hintEl = document.getElementById('interact-hint');
       if (shiftOpen) {
-        hintEl.textContent = 'Смена идёт...';
+        hintEl.textContent = Game.Lang.t('shift.hint.ongoing');
       } else if (shiftEnding) {
-        hintEl.textContent = 'Приём окончен. Дообслужите пациентов.';
+        hintEl.textContent = Game.Lang.t('shift.hint.ending');
       } else {
-        hintEl.textContent = 'ЛКМ — Открыть смену';
+        hintEl.textContent = Game.Lang.t('shift.hint.open');
       }
       hintEl.style.display = 'block';
     }
@@ -206,7 +206,7 @@
     dayStats = { patientsServed: 0, patientsLost: 0, moneyEarned: 0, moneySpent: 0 };
     updateSignTexture();
     updateTaskText();
-    Game.Inventory.showNotification('Смена началась! День ' + dayNumber, 'rgba(34, 139, 34, 0.85)');
+    Game.Inventory.showNotification(Game.Lang.t('shift.started', [dayNumber]), 'rgba(34, 139, 34, 0.85)');
     // Spawn first patient
     if (Game.Patients && Game.Patients.spawnFirstPatient) {
       Game.Patients.spawnFirstPatient();
@@ -219,7 +219,7 @@
     shiftOpen = false;
     shiftEnding = true;
     updateSignTexture();
-    Game.Inventory.showNotification('20:00 — Приём окончен! Дообслужите оставшихся пациентов.', 'rgba(200, 150, 50, 0.85)');
+    Game.Inventory.showNotification(Game.Lang.t('shift.ended'), 'rgba(200, 150, 50, 0.85)');
   }
 
   function finishDay() {
@@ -240,16 +240,16 @@
       return;
     }
     if (!shiftOpen && !shiftEnding) {
-      taskTextEl.textContent = 'Откройте смену! Подойдите к табличке у входа.';
+      taskTextEl.textContent = Game.Lang.t('shift.task.open');
     } else if (shiftEnding) {
       var remaining = getRemainingPatients();
       if (remaining > 0) {
-        taskTextEl.textContent = 'Дообслужите оставшихся пациентов! (' + remaining + ')';
+        taskTextEl.textContent = Game.Lang.t('shift.task.finish', [remaining]);
       } else {
-        taskTextEl.textContent = 'Все пациенты обслужены!';
+        taskTextEl.textContent = Game.Lang.t('shift.task.allDone');
       }
     } else if (shiftOpen) {
-      taskTextEl.textContent = 'Обслуживайте пациентов!';
+      taskTextEl.textContent = Game.Lang.t('shift.task.serve');
     }
   }
 
@@ -541,7 +541,7 @@
   // ====== HUD UPDATE ======
   function updateHUD() {
     if (timeValueEl) timeValueEl.textContent = getFormattedTime();
-    if (dayValueEl) dayValueEl.textContent = 'День ' + dayNumber;
+    if (dayValueEl) dayValueEl.textContent = Game.Lang.t('hud.day', [dayNumber]);
   }
 
   // ====== CLICK HANDLER ======

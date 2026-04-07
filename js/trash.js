@@ -444,7 +444,7 @@
     }
 
     if (hoveredTrash) {
-      hintEl.textContent = 'Убрать мусор (ЛКМ)';
+      hintEl.textContent = Game.Lang.t('trash.hint');
       hintEl.style.display = 'block';
       return true;
     }

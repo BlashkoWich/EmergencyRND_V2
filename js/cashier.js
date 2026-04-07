@@ -65,8 +65,8 @@
 
     // Show breakdown
     if (screenBreakdownEl) {
-      var text = '$' + info.treatment + ' лечение';
-      if (info.diagnosis > 0) text += ' + $' + info.diagnosis + ' диагностика';
+      var text = '$' + info.treatment + ' ' + Game.Lang.t('cashier.treatment');
+      if (info.diagnosis > 0) text += ' + $' + info.diagnosis + ' ' + Game.Lang.t('cashier.diagnostics');
       screenBreakdownEl.textContent = text;
     }
 
@@ -74,8 +74,8 @@
     if (screenXpEl) {
       var xpBase = XP_BY_SEVERITY[currentPatient.severity.key] || 10;
       var xpDiag = currentPatient.wasDiagnosed ? XP_DIAGNOSIS_BONUS : 0;
-      var xpText = '+' + xpBase + ' XP лечение';
-      if (xpDiag > 0) xpText += ' + ' + xpDiag + ' XP диагностика';
+      var xpText = '+' + xpBase + ' ' + Game.Lang.t('cashier.xpTreatment');
+      if (xpDiag > 0) xpText += ' + ' + xpDiag + ' ' + Game.Lang.t('cashier.xpDiagnostics');
       screenXpEl.textContent = xpText;
     }
 
@@ -92,7 +92,7 @@
   function openTerminal() {
     if (!currentPatient || isOpen) return;
     if (Game.Staff && Game.Staff.isStaffCashierHired()) {
-      Game.Inventory.showNotification('Кассир уже работает');
+      Game.Inventory.showNotification(Game.Lang.t('cashier.staffWorking'));
       return;
     }
     isOpen = true;
@@ -223,10 +223,10 @@
 
     var hintEl = document.getElementById('interact-hint');
     if (hoveredTerminal) {
-      hintEl.textContent = '\u041B\u041A\u041C \u2014 \u041E\u043F\u043B\u0430\u0442\u0430  |  \u0417\u0430\u0436\u043C\u0438 E \u2014 \u041F\u0435\u0440\u0435\u043C\u0435\u0441\u0442\u0438\u0442\u044C';
+      hintEl.textContent = Game.Lang.t('cashier.hint.pay');
       hintEl.style.display = 'block';
     } else if (nowHoveredDesk) {
-      hintEl.textContent = '\u0417\u0430\u0436\u043C\u0438 E \u2014 \u041F\u0435\u0440\u0435\u043C\u0435\u0441\u0442\u0438\u0442\u044C \u043A\u0430\u0441\u0441\u043E\u0432\u044B\u0439 \u0441\u0442\u043E\u043B';
+      hintEl.textContent = Game.Lang.t('cashier.hint.move');
       hintEl.style.display = 'block';
     }
   }

@@ -15,46 +15,46 @@
       stroke-dasharray="100.53" stroke-dashoffset="100.53" stroke-linecap="round"
       transform="rotate(-90 20 20)"/>
   </svg>
-  <div id="interact-hint">Нажмите ЛКМ для взаимодействия</div>
+  <div id="interact-hint" data-lang-key="hint.interact"></div>
   <div id="held-box-hint"></div>
   <div id="patient-popup">
     <div id="popup-severity-band"></div>
     <div class="popup-header">
       <h2 id="popup-name"></h2>
       <div class="popup-meta">
-        <span class="popup-meta-item"><span class="meta-label">Возраст:</span> <span id="popup-age"></span></span>
-        <span class="popup-meta-item"><span class="meta-label">Тяжесть:</span> <span id="popup-severity"></span></span>
+        <span class="popup-meta-item"><span class="meta-label" data-lang-key="popup.age"></span> <span id="popup-age"></span></span>
+        <span class="popup-meta-item"><span class="meta-label" data-lang-key="popup.severity"></span> <span id="popup-severity"></span></span>
       </div>
     </div>
     <div class="popup-vitals">
       <div class="vital-cell">
-        <div class="vital-label">ТЕМП</div>
+        <div class="vital-label" data-lang-key="popup.temp"></div>
         <div class="vital-value" id="popup-temp"></div>
       </div>
       <div class="vital-cell">
-        <div class="vital-label">ПУЛЬС</div>
+        <div class="vital-label" data-lang-key="popup.pulse"></div>
         <div class="vital-value" id="popup-pulse"></div>
       </div>
       <div class="vital-cell">
-        <div class="vital-label">АД</div>
+        <div class="vital-label" data-lang-key="popup.bp"></div>
         <div class="vital-value" id="popup-bp"></div>
       </div>
     </div>
     <div class="popup-hp-container">
-      <div class="popup-hp-label">Состояние <span id="popup-hp-text"></span></div>
+      <div class="popup-hp-label"><span data-lang-key="popup.condition"></span> <span id="popup-hp-text"></span></div>
       <div class="popup-hp-track"><div class="popup-hp-fill" id="popup-hp-fill"></div></div>
     </div>
     <div class="popup-clinical">
       <div class="clinical-block complaint-block">
-        <div class="clinical-label">Жалоба</div>
+        <div class="clinical-label" data-lang-key="popup.complaint"></div>
         <div class="clinical-value" id="popup-complaint"></div>
       </div>
       <div class="clinical-block">
-        <div class="clinical-label">Диагноз</div>
+        <div class="clinical-label" data-lang-key="popup.diagnosis"></div>
         <div class="clinical-value" id="popup-diagnosis"></div>
       </div>
       <div class="clinical-block">
-        <div class="clinical-label">Назначение</div>
+        <div class="clinical-label" data-lang-key="popup.prescription"></div>
         <div class="clinical-value"><span id="popup-supply-icon"></span><span id="popup-supply"></span></div>
       </div>
       <div id="popup-instrument-hint" style="display:none; padding: 7px 0 7px 12px; margin-bottom: 4px; border-left: 2px solid rgba(255,170,68,0.4); font-size: 0.88rem;"></div>
@@ -62,125 +62,125 @@
     <div id="outdoor-warning" style="display:none; color:#ff8844; font-size:0.85rem; padding:4px 12px; border-left:2px solid rgba(255,136,68,0.4);"></div>
     <div id="dirty-linen-warning" style="display:none; color:#cc8844; font-size:0.85rem; padding:4px 12px; border-left:2px solid rgba(204,136,68,0.4);"></div>
     <div class="buttons">
-      <button id="btn-bed">На кровать <span id="bed-count" style="opacity:0.7"></span></button>
-      <button id="btn-wait">В зону ожидания <span id="chair-count" style="opacity:0.7"></span></button>
-      <button id="btn-dismiss">Подождать</button>
+      <button id="btn-bed"><span data-lang-key="popup.btn.bed"></span> <span id="bed-count" style="opacity:0.7"></span></button>
+      <button id="btn-wait"><span data-lang-key="popup.btn.wait"></span> <span id="chair-count" style="opacity:0.7"></span></button>
+      <button id="btn-dismiss" data-lang-key="popup.btn.dismiss"></button>
     </div>
   </div>
   <div id="shop-popup">
-    <h2>Магазин</h2>
+    <h2 data-lang-key="shop.title"></h2>
     <div id="shop-tabs">
-      <button class="shop-tab active" data-tab="consumables">Расходники</button>
-      <button class="shop-tab" data-tab="instruments">Инструменты</button>
-      <button class="shop-tab" data-tab="furniture">Мебель</button>
-      <button class="shop-tab" data-tab="upgrades">Прокачка</button>
-      <button class="shop-tab" data-tab="staff">Сотрудники</button>
+      <button class="shop-tab active" data-tab="consumables" data-lang-key="shop.tab.consumables"></button>
+      <button class="shop-tab" data-tab="instruments" data-lang-key="shop.tab.instruments"></button>
+      <button class="shop-tab" data-tab="furniture" data-lang-key="shop.tab.furniture"></button>
+      <button class="shop-tab" data-tab="upgrades" data-lang-key="shop.tab.upgrades"></button>
+      <button class="shop-tab" data-tab="staff" data-lang-key="shop.tab.staff"></button>
     </div>
     <div id="shop-tab-consumables" class="shop-tab-content">
       <div class="shop-item" data-type="strepsils">
         <span class="shop-item-icon" style="background:#cc3333"></span>
-        <span class="shop-item-name">Стрепсилс</span>
-        <button class="shop-buy-btn">Купить — $80</button>
+        <span class="shop-item-name" data-lang-key="item.strepsils"></span>
+        <button class="shop-buy-btn"></button>
       </div>
       <div class="shop-item" data-type="painkiller">
         <span class="shop-item-icon" style="background:#3366cc"></span>
-        <span class="shop-item-name">Обезболивающее</span>
-        <button class="shop-buy-btn">Купить — $80</button>
+        <span class="shop-item-name" data-lang-key="item.painkiller"></span>
+        <button class="shop-buy-btn"></button>
       </div>
       <div class="shop-item" data-type="antihistamine">
         <span class="shop-item-icon" style="background:#33aa55"></span>
-        <span class="shop-item-name">Антигистаминное</span>
-        <button class="shop-buy-btn">Купить — $80</button>
+        <span class="shop-item-name" data-lang-key="item.antihistamine"></span>
+        <button class="shop-buy-btn"></button>
       </div>
       <div class="shop-item" data-type="linen_clean">
         <span class="shop-item-icon" style="background:#dde4f0"></span>
-        <span class="shop-item-name">Постельное бельё</span>
-        <button class="shop-buy-btn">Купить — $100</button>
+        <span class="shop-item-name" data-lang-key="item.linen_clean"></span>
+        <button class="shop-buy-btn"></button>
       </div>
     </div>
     <div id="shop-tab-instruments" class="shop-tab-content" style="display:none">
       <div class="shop-item shop-instrument-item" data-type="instrument_stethoscope">
         <span class="shop-item-icon" style="background:#8866cc"></span>
-        <span class="shop-item-name">Фонендоскоп</span>
-        <button class="shop-buy-btn" style="background:#2a8a5a">Заказать — Бесплатно!</button>
+        <span class="shop-item-name" data-lang-key="item.instrument_stethoscope"></span>
+        <button class="shop-buy-btn" style="background:#2a8a5a"></button>
       </div>
       <div class="shop-item shop-instrument-item" data-type="instrument_hammer">
         <span class="shop-item-icon" style="background:#cc8844"></span>
-        <span class="shop-item-name">Рефлекс-молоток</span>
-        <button class="shop-buy-btn" style="background:#2a8a5a">Заказать — Бесплатно!</button>
+        <span class="shop-item-name" data-lang-key="item.instrument_hammer"></span>
+        <button class="shop-buy-btn" style="background:#2a8a5a"></button>
       </div>
       <div class="shop-item shop-instrument-item" data-type="instrument_rhinoscope">
         <span class="shop-item-icon" style="background:#44aacc"></span>
-        <span class="shop-item-name">Риноскоп</span>
-        <button class="shop-buy-btn" style="background:#2a8a5a">Заказать — Бесплатно!</button>
+        <span class="shop-item-name" data-lang-key="item.instrument_rhinoscope"></span>
+        <button class="shop-buy-btn" style="background:#2a8a5a"></button>
       </div>
     </div>
     <div id="shop-tab-furniture" class="shop-tab-content" style="display:none">
       <div class="shop-item" data-type="bed" data-category="furniture">
         <span class="shop-item-icon" style="background:#88bbaa"></span>
-        <span class="shop-item-name">Кровать</span>
-        <button class="shop-buy-btn">Купить — $360</button>
+        <span class="shop-item-name" data-lang-key="furniture.bed"></span>
+        <button class="shop-buy-btn"></button>
       </div>
       <div class="shop-item" data-type="chair" data-category="furniture">
         <span class="shop-item-icon" style="background:#3366aa"></span>
-        <span class="shop-item-name">Стул</span>
-        <button class="shop-buy-btn">Купить — $140</button>
+        <span class="shop-item-name" data-lang-key="furniture.chair"></span>
+        <button class="shop-buy-btn"></button>
       </div>
     </div>
     <div id="shop-tab-upgrades" class="shop-tab-content" style="display:none">
       <div class="shop-item shop-upgrade-item" data-upgrade="stack1">
         <span class="shop-item-icon" style="background:#e8a030"></span>
-        <span class="shop-item-name">Больше препаратов (ур. 1)</span>
-        <span class="shop-upgrade-desc">10 шт. в слоте</span>
-        <button class="shop-buy-btn">Купить — $100</button>
+        <span class="shop-item-name" data-lang-key="shop.upgrade1.name"></span>
+        <span class="shop-upgrade-desc" data-lang-key="shop.upgrade1.desc"></span>
+        <button class="shop-buy-btn"></button>
       </div>
       <div class="shop-item shop-upgrade-item" data-upgrade="stack2">
         <span class="shop-item-icon" style="background:#e8a030"></span>
-        <span class="shop-item-name">Больше препаратов (ур. 2)</span>
-        <span class="shop-upgrade-desc">15 шт. в слоте</span>
-        <button class="shop-buy-btn">Купить — $200</button>
+        <span class="shop-item-name" data-lang-key="shop.upgrade2.name"></span>
+        <span class="shop-upgrade-desc" data-lang-key="shop.upgrade2.desc"></span>
+        <button class="shop-buy-btn"></button>
       </div>
       <div class="shop-item shop-upgrade-item" data-upgrade="stack3">
         <span class="shop-item-icon" style="background:#e8a030"></span>
-        <span class="shop-item-name">Больше препаратов (ур. 3)</span>
-        <span class="shop-upgrade-desc">20 шт. в слоте</span>
-        <button class="shop-buy-btn">Купить — $500</button>
+        <span class="shop-item-name" data-lang-key="shop.upgrade3.name"></span>
+        <span class="shop-upgrade-desc" data-lang-key="shop.upgrade3.desc"></span>
+        <button class="shop-buy-btn"></button>
       </div>
     </div>
     <div id="shop-tab-staff" class="shop-tab-content" style="display:none">
-      <div class="staff-section-header">Доступные</div>
+      <div class="staff-section-header" data-lang-key="shop.staffSection.available"></div>
       <div class="staff-hire-item" data-type="administrator">
         <span class="shop-item-icon" style="background:#2266aa"></span>
-        <span class="shop-item-name">Администратор</span>
-        <span class="staff-salary">$100/день</span>
-        <button class="shop-buy-btn staff-hire-btn">Нанять</button>
+        <span class="shop-item-name" data-lang-key="staff.administrator"></span>
+        <span class="staff-salary">$100/<span data-lang-key="shop.perDay"></span></span>
+        <button class="shop-buy-btn staff-hire-btn" data-lang-key="shop.hire"></button>
       </div>
       <div class="staff-hire-item" data-type="cashier">
         <span class="shop-item-icon" style="background:#22aa66"></span>
-        <span class="shop-item-name">Кассир</span>
-        <span class="staff-salary">$100/день</span>
-        <button class="shop-buy-btn staff-hire-btn">Нанять</button>
+        <span class="shop-item-name" data-lang-key="staff.cashier"></span>
+        <span class="staff-salary">$100/<span data-lang-key="shop.perDay"></span></span>
+        <button class="shop-buy-btn staff-hire-btn" data-lang-key="shop.hire"></button>
       </div>
       <div class="staff-hire-item" data-type="diagnostician">
         <span class="shop-item-icon" style="background:#8844cc"></span>
-        <span class="shop-item-name">Диагност</span>
-        <span class="staff-salary">$100/день</span>
-        <button class="shop-buy-btn staff-hire-btn">Нанять</button>
+        <span class="shop-item-name" data-lang-key="staff.diagnostician"></span>
+        <span class="staff-salary">$100/<span data-lang-key="shop.perDay"></span></span>
+        <button class="shop-buy-btn staff-hire-btn" data-lang-key="shop.hire"></button>
       </div>
       <div class="staff-hire-item" data-type="nurse">
         <span class="shop-item-icon" style="background:#cc4488"></span>
-        <span class="shop-item-name">Медсестра</span>
-        <span class="staff-salary">$100/день</span>
-        <button class="shop-buy-btn staff-hire-btn">Нанять</button>
+        <span class="shop-item-name" data-lang-key="staff.nurse"></span>
+        <span class="staff-salary">$100/<span data-lang-key="shop.perDay"></span></span>
+        <button class="shop-buy-btn staff-hire-btn" data-lang-key="shop.hire"></button>
       </div>
       <div class="staff-hire-item" data-type="janitor">
         <span class="shop-item-icon" style="background:#888844"></span>
-        <span class="shop-item-name">Уборщик</span>
-        <span class="staff-salary">$100/день</span>
-        <button class="shop-buy-btn staff-hire-btn">Нанять</button>
+        <span class="shop-item-name" data-lang-key="staff.janitor"></span>
+        <span class="staff-salary">$100/<span data-lang-key="shop.perDay"></span></span>
+        <button class="shop-buy-btn staff-hire-btn" data-lang-key="shop.hire"></button>
       </div>
-      <div class="staff-section-header">Нанятые</div>
-      <div id="staff-hired-list"><div class="staff-empty-hint">Пока никого нет</div></div>
+      <div class="staff-section-header" data-lang-key="shop.staffSection.hired"></div>
+      <div id="staff-hired-list"><div class="staff-empty-hint" data-lang-key="shop.staffSection.empty"></div></div>
     </div>
     <button id="shop-close">✕</button>
   </div>
@@ -188,45 +188,45 @@
     <div id="diag-warning-hud"></div>
     <div id="nurse-warning-hud"></div>
   </div>
-  <div id="balance-hud">Баланс: <span id="balance-value">$350</span></div>
+  <div id="balance-hud"><span data-lang-key="hud.balance"></span> <span id="balance-value">$350</span></div>
   <div id="level-hud">
-    <span id="level-label">Ур. <span id="level-value">1</span></span>
+    <span id="level-label"><span data-lang-key="hud.level"></span> <span id="level-value">1</span></span>
     <div id="xp-track"><div id="xp-fill"></div></div>
     <span id="xp-text">0/100</span>
   </div>
   <div id="time-hud">
-    <span id="day-value">День 1</span>
+    <span id="day-value"></span>
     <span id="time-value">08:00</span>
   </div>
   <div id="task-container">
     <div id="task-mascot"></div>
     <div id="task-bubble">
-      <div id="task-text">Откройте смену!</div>
+      <div id="task-text" data-lang-key="shift.task.openShort"></div>
     </div>
   </div>
   <div id="day-end-popup">
-    <h2>Итоги дня <span id="day-end-number">1</span></h2>
+    <h2><span data-lang-key="dayEnd.title"></span> <span id="day-end-number">1</span></h2>
     <div class="day-stats">
-      <div class="stat-row"><span>Вылечено пациентов:</span><span id="stat-served">0</span></div>
-      <div class="stat-row"><span>Потеряно пациентов:</span><span id="stat-lost">0</span></div>
-      <div class="stat-row"><span>Заработано:</span><span id="stat-earned">$0</span></div>
-      <div class="stat-row"><span>Потрачено:</span><span id="stat-spent">$0</span></div>
-      <div class="stat-row"><span>Зарплата сотрудников:</span><span id="stat-salary">$0</span></div>
+      <div class="stat-row"><span data-lang-key="dayEnd.served"></span><span id="stat-served">0</span></div>
+      <div class="stat-row"><span data-lang-key="dayEnd.lost"></span><span id="stat-lost">0</span></div>
+      <div class="stat-row"><span data-lang-key="dayEnd.earned"></span><span id="stat-earned">$0</span></div>
+      <div class="stat-row"><span data-lang-key="dayEnd.spent"></span><span id="stat-spent">$0</span></div>
+      <div class="stat-row"><span data-lang-key="dayEnd.salary"></span><span id="stat-salary">$0</span></div>
     </div>
-    <button id="day-end-next">Перейти в следующий день</button>
+    <button id="day-end-next" data-lang-key="dayEnd.next"></button>
   </div>
   <div id="level-up-popup" style="display:none">
-    <h2 id="level-up-title">Уровень 2!</h2>
+    <h2 id="level-up-title"></h2>
     <div id="level-up-unlocks"></div>
-    <button id="level-up-close">Отлично!</button>
+    <button id="level-up-close" data-lang-key="levelUp.close"></button>
   </div>
   <div id="xp-animation-container"></div>
   <div id="cashier-popup">
     <button id="terminal-close">&#10005;</button>
     <div class="terminal-body">
       <div class="terminal-screen">
-        <div class="terminal-screen-row">К оплате: <span id="terminal-amount">$0</span></div>
-        <div class="terminal-screen-row terminal-screen-entered">Введено: <span id="terminal-entered">0</span></div>
+        <div class="terminal-screen-row"><span data-lang-key="cashier.due"></span> <span id="terminal-amount">$0</span></div>
+        <div class="terminal-screen-row terminal-screen-entered"><span data-lang-key="cashier.entered"></span> <span id="terminal-entered">0</span></div>
         <div class="terminal-screen-row terminal-screen-breakdown" id="terminal-breakdown"></div>
         <div class="terminal-screen-row terminal-screen-xp" id="terminal-xp"></div>
       </div>
@@ -247,55 +247,55 @@
     </div>
   </div>
   <div id="level-select-screen">
-    <h1>Частная Клиника</h1>
-    <p class="level-select-subtitle">Выберите начальный уровень</p>
+    <h1 data-lang-key="levelSelect.title"></h1>
+    <p class="level-select-subtitle" data-lang-key="levelSelect.subtitle"></p>
     <div id="level-select-cards">
       <div class="level-card" data-level="1">
-        <div class="level-card-header">Уровень 1</div>
+        <div class="level-card-header" data-lang-key="levelSelect.l1.header"></div>
         <ul class="level-card-features">
-          <li>Только лёгкие пациенты</li>
-          <li>Покупка препаратов и белья</li>
-          <li>Без диагностики</li>
-          <li>Пациенты приходят по одному</li>
+          <li data-lang-key="levelSelect.l1f1"></li>
+          <li data-lang-key="levelSelect.l1f2"></li>
+          <li data-lang-key="levelSelect.l1f3"></li>
+          <li data-lang-key="levelSelect.l1f4"></li>
         </ul>
-        <button class="level-card-btn" data-level="1">Начать</button>
+        <button class="level-card-btn" data-level="1" data-lang-key="levelSelect.start"></button>
       </div>
       <div class="level-card" data-level="2">
-        <div class="level-card-header">Уровень 2</div>
+        <div class="level-card-header" data-lang-key="levelSelect.l2.header"></div>
         <ul class="level-card-features">
-          <li>+ Пациенты средней тяжести</li>
-          <li>+ Покупка инструментов</li>
-          <li>Пациентам нужна диагностика</li>
-          <li>Пациенты приходят по одному</li>
+          <li data-lang-key="levelSelect.l2f1"></li>
+          <li data-lang-key="levelSelect.l2f2"></li>
+          <li data-lang-key="levelSelect.l2f3"></li>
+          <li data-lang-key="levelSelect.l2f4"></li>
         </ul>
-        <button class="level-card-btn" data-level="2">Начать</button>
+        <button class="level-card-btn" data-level="2" data-lang-key="levelSelect.start"></button>
       </div>
       <div class="level-card" data-level="3">
-        <div class="level-card-header">Уровень 3</div>
+        <div class="level-card-header" data-lang-key="levelSelect.l3.header"></div>
         <ul class="level-card-features">
-          <li>+ Тяжёлые пациенты</li>
-          <li>+ Покупка мебели и прокачка</li>
-          <li>Поток пациентов каждые 20с</li>
-          <li>Диагностика включена</li>
-          <li>+ Мусор на полу</li>
+          <li data-lang-key="levelSelect.l3f1"></li>
+          <li data-lang-key="levelSelect.l3f2"></li>
+          <li data-lang-key="levelSelect.l3f3"></li>
+          <li data-lang-key="levelSelect.l3f4"></li>
+          <li data-lang-key="levelSelect.l3f5"></li>
         </ul>
-        <button class="level-card-btn" data-level="3">Начать</button>
+        <button class="level-card-btn" data-level="3" data-lang-key="levelSelect.start"></button>
       </div>
       <div class="level-card" data-level="4">
-        <div class="level-card-header">Уровень 4</div>
+        <div class="level-card-header" data-lang-key="levelSelect.l4.header"></div>
         <ul class="level-card-features">
-          <li>+ Найм сотрудников</li>
-          <li>Всё разблокировано</li>
-          <li>Поток пациентов каждые 10с</li>
-          <li>Полный хаос!</li>
+          <li data-lang-key="levelSelect.l4f1"></li>
+          <li data-lang-key="levelSelect.l4f2"></li>
+          <li data-lang-key="levelSelect.l4f3"></li>
+          <li data-lang-key="levelSelect.l4f4"></li>
         </ul>
-        <button class="level-card-btn" data-level="4">Начать</button>
+        <button class="level-card-btn" data-level="4" data-lang-key="levelSelect.start"></button>
       </div>
     </div>
   </div>
   <div id="overlay" style="display:none">
-    <h1>Частная Клиника</h1>
-    <p>Нажмите, чтобы начать</p>
+    <h1 data-lang-key="overlay.title"></h1>
+    <p data-lang-key="overlay.start"></p>
     <div class="keys">
       <div class="key" style="visibility:hidden">.</div>
       <div class="key">W</div>
@@ -306,13 +306,18 @@
       <div class="key">S</div>
       <div class="key">D</div>
     </div>
-    <p style="margin-top:1rem;">WASD — движение &nbsp;|&nbsp; Мышь — камера &nbsp;|&nbsp; ESC — пауза</p>
-    <p style="margin-top:0.5rem; opacity:0.6; font-size:0.85rem;">Q — магазин &nbsp;|&nbsp; 1-6 — инвентарь &nbsp;|&nbsp; E — коробка &nbsp;|&nbsp; ЛКМ — взаимодействие</p>
+    <p style="margin-top:1rem;" data-lang-key="overlay.controls1"></p>
+    <p style="margin-top:0.5rem; opacity:0.6; font-size:0.85rem;" data-lang-key="overlay.controls2"></p>
     <div id="quality-selector" style="margin-top:1.2rem;">
-      <span style="opacity:0.7; font-size:0.85rem;">Графика: </span>
-      <button class="quality-btn" data-quality="low">Низкая</button>
-      <button class="quality-btn" data-quality="medium">Средняя</button>
-      <button class="quality-btn active" data-quality="high">Высокая</button>
+      <span style="opacity:0.7; font-size:0.85rem;" data-lang-key="overlay.graphics"></span>
+      <button class="quality-btn" data-quality="low" data-lang-key="quality.low"></button>
+      <button class="quality-btn" data-quality="medium" data-lang-key="quality.medium"></button>
+      <button class="quality-btn active" data-quality="high" data-lang-key="quality.high"></button>
+    </div>
+    <div id="language-selector" style="margin-top:0.8rem;">
+      <span style="opacity:0.7; font-size:0.85rem;" data-lang-key="overlay.language"></span>
+      <button class="lang-btn" data-lang="ru">Русский</button>
+      <button class="lang-btn" data-lang="en">English</button>
     </div>
   </div>
 
@@ -321,17 +326,17 @@
     <div id="tutorial-panel">
       <div id="tutorial-step-num"></div>
       <div id="tutorial-text"></div>
-      <button id="tutorial-next" style="display:none">Далее</button>
+      <button id="tutorial-next" style="display:none" data-lang-key="tutorial.next"></button>
     </div>
   </div>
 
   <!-- Ad offer popup -->
   <div id="ad-offer-popup" style="display:none">
-    <div class="ad-offer-title">Недостаточно средств!</div>
-    <div class="ad-offer-text">Посмотрите рекламу и получите <span class="ad-offer-money">$200</span></div>
+    <div class="ad-offer-title" data-lang-key="ad.offer.title"></div>
+    <div class="ad-offer-text"><span data-lang-key="ad.offer.text"></span> <span class="ad-offer-money">$200</span></div>
     <div class="ad-offer-buttons">
-      <button id="ad-watch-btn">Смотреть рекламу</button>
-      <button id="ad-decline-btn">Нет, спасибо</button>
+      <button id="ad-watch-btn" data-lang-key="ad.watch"></button>
+      <button id="ad-decline-btn" data-lang-key="ad.decline"></button>
     </div>
   </div>
 
@@ -362,13 +367,13 @@
     <div id="ad-progress-bar">
       <div id="ad-progress-fill"></div>
     </div>
-    <div id="ad-timer">20 сек</div>
+    <div id="ad-timer"></div>
     <!-- Close confirmation -->
     <div id="ad-confirm-dialog" style="display:none">
-      <div class="ad-confirm-text">Если вы закроете рекламу, награда не будет начислена. Закрыть?</div>
+      <div class="ad-confirm-text" data-lang-key="ad.confirm"></div>
       <div class="ad-confirm-buttons">
-        <button id="ad-confirm-yes">Да, закрыть</button>
-        <button id="ad-confirm-no">Продолжить просмотр</button>
+        <button id="ad-confirm-yes" data-lang-key="ad.confirmYes"></button>
+        <button id="ad-confirm-no" data-lang-key="ad.confirmNo"></button>
       </div>
     </div>
   </div>
@@ -376,7 +381,7 @@
   <!-- Ad reward animation -->
   <div id="ad-reward-animation" style="display:none">
     <div class="ad-reward-amount">+$200</div>
-    <div class="ad-reward-label">Зачислено на баланс!</div>
+    <div class="ad-reward-label" data-lang-key="ad.reward"></div>
   </div>
 
   <div id="diagnostics-overlay" style="display:none">
@@ -387,6 +392,7 @@
     <div id="diagnostics-status"></div>
   </div>
 
+  <script src="js/lang.js"></script>
   <script src="js/interaction.js"></script>
   <script src="js/helpers.js"></script>
   <script src="js/levels.js"></script>

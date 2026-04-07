@@ -2,81 +2,14 @@
   window.Game = window.Game || {};
 
   // --- Patient data pools ---
-  var NAMES = ['Иван','Алексей','Дмитрий','Сергей','Андрей','Михаил','Николай','Павел','Олег','Виктор',
-               'Мария','Анна','Елена','Ольга','Наталья','Татьяна','Светлана','Ирина','Екатерина','Юлия'];
-  var SURNAMES = ['Иванов','Петров','Сидоров','Козлов','Новиков','Морозов','Волков','Соколов','Лебедев','Попов',
-                  'Иванова','Петрова','Сидорова','Козлова','Новикова','Морозова','Волкова','Соколова','Лебедева','Попова'];
+  var NAMES = Game.Lang.t('patients.names.male').concat(Game.Lang.t('patients.names.female'));
+  var SURNAMES = Game.Lang.t('patients.surnames.male').concat(Game.Lang.t('patients.surnames.female'));
   // MEDICAL_DATA: complaints are designed to hint at the diagnostic instrument needed
-  // painkiller → рефлекс-молоток: боль, нервы, рефлексы, суставы, мышцы
-  // antihistamine → риноскоп: нос, пазухи, заложенность, отёки слизистой
-  // strepsils → фонендоскоп: горло, дыхание, хрипы, кашель, грудная клетка
+  // painkiller -> instrument_hammer, antihistamine -> instrument_rhinoscope, strepsils -> instrument_stethoscope
   var MEDICAL_DATA = {
-    painkiller: { cases: [
-      { diagnosis: 'Мигрень с аурой', complaint: 'Голова раскалывается, свет режет глаза, уже второй час не отпускает' },
-      { diagnosis: 'Люмбаго', complaint: 'Наклонился за сумкой — спину заклинило, не могу разогнуться' },
-      { diagnosis: 'Острый бурсит', complaint: 'Колено распухло после пробежки, согнуть ногу не получается' },
-      { diagnosis: 'Пульпит', complaint: 'Зуб разболелся среди ночи, боль отдаёт в ухо, терпеть невозможно' },
-      { diagnosis: 'Межрёберная невралгия', complaint: 'При повороте простреливает между лопатками, больно дышать' },
-      { diagnosis: 'Ишиас', complaint: 'Ногу тянет от поясницы до самой пятки, не могу ни сидеть ни стоять' },
-      { diagnosis: 'Шейный миозит', complaint: 'Продуло шею, голову повернуть вообще не могу' },
-      { diagnosis: 'Жёлчная колика', complaint: 'После жирной еды скрутило живот справа, тошнит' },
-      { diagnosis: 'Тендинит ахиллова сухожилия', complaint: 'Пятка болит при каждом шаге, утром вообще встать не могу' },
-      { diagnosis: 'Плантарный фасциит', complaint: 'Стопа горит огнём, особенно после сна — первые шаги невыносимы' },
-      { diagnosis: 'Защемление локтевого нерва', complaint: 'Пальцы на руке немеют и покалывают, локоть ноет' },
-      { diagnosis: 'Острый радикулит', complaint: 'Стреляет в пояснице при каждом движении, ногу тянет вниз' },
-      { diagnosis: 'Миофасциальный синдром', complaint: 'Мышцы на спине как каменные, при нажатии простреливает в руку' },
-      { diagnosis: 'Артрит лучезапястного сустава', complaint: 'Запястье опухло и болит, не могу взять даже кружку' },
-      { diagnosis: 'Посттравматическая невропатия', complaint: 'После удара рука плохо слушается, пальцы немеют' },
-      { diagnosis: 'Головная боль напряжения', complaint: 'Голову как тисками сдавило, обруч на лбу, ноет уже с утра' },
-      { diagnosis: 'Цервикобрахиалгия', complaint: 'Шея заболела и отдаёт в плечо, рука тяжёлая и немеет' },
-      { diagnosis: 'Эпикондилит', complaint: 'Локоть болит при каждом повороте ручки двери, не могу ничего поднять' },
-      { diagnosis: 'Коксартроз', complaint: 'Тазобедренный сустав ноет постоянно, хромаю уже неделю' },
-      { diagnosis: 'Фибромиалгия', complaint: 'Всё тело ломит, мышцы болят везде, особенно по утрам' }
-    ]},
-    antihistamine: { cases: [
-      { diagnosis: 'Сезонный аллергический ринит', complaint: 'Чихаю без остановки, нос заложен полностью, не продохнуть' },
-      { diagnosis: 'Вазомоторный ринит', complaint: 'Нос течёт ручьём без причины, постоянно заложен то с одной стороны, то с другой' },
-      { diagnosis: 'Аллергический синусит', complaint: 'Нос забит, давит над бровями и в переносице, голова тяжёлая' },
-      { diagnosis: 'Полипозный риносинусит', complaint: 'В носу как будто что-то мешает дышать, запахи не чувствую вообще' },
-      { diagnosis: 'Круглогодичный ринит', complaint: 'Нос не дышит уже месяц, капли не помогают, всё время слизь в горле' },
-      { diagnosis: 'Острый аллергический ринит', complaint: 'Погладил кошку — нос тут же заложило, глаза слезятся, чихаю' },
-      { diagnosis: 'Аллергический фронтит', complaint: 'Лоб давит, нос забит, наклонюсь — боль в пазухах усиливается' },
-      { diagnosis: 'Медикаментозный ринит', complaint: 'Подсел на капли для носа, без них вообще не дышу, а с ними всё хуже' },
-      { diagnosis: 'Аллергический этмоидит', complaint: 'Между глаз давит, нос заложен, из носа густая слизь' },
-      { diagnosis: 'Гипертрофический ринит', complaint: 'Одна ноздря не дышит совсем уже давно, вторая еле-еле' },
-      { diagnosis: 'Аллергический ринофарингит', complaint: 'Нос заложен, слизь стекает в горло, из-за этого подкашливаю' },
-      { diagnosis: 'Сфеноидит', complaint: 'Боль глубоко в носу, отдаёт в затылок, нос заложен постоянно' },
-      { diagnosis: 'Аллергический гайморит', complaint: 'Щёки болят, нос не дышит, высмаркиваюсь — но заложенность не проходит' },
-      { diagnosis: 'Атрофический ринит', complaint: 'В носу сухо и корки, дышать больно, иногда кровит' },
-      { diagnosis: 'Пылевая аллергия', complaint: 'Дома нос закладывает, чихаю от пыли, на улице легче' },
-      { diagnosis: 'Реактивная ринопатия', complaint: 'На холоде нос сразу течёт и закладывает, в тепле проходит' },
-      { diagnosis: 'Аллергия на плесень', complaint: 'В сыром помещении нос забивается, чихаю, глаза чешутся' },
-      { diagnosis: 'Озена', complaint: 'Из носа неприятный запах, корки, нос сухой и не дышит' },
-      { diagnosis: 'Аллергический пансинусит', complaint: 'Вся голова как в тисках, нос заложен, давит на лоб и щёки' },
-      { diagnosis: 'Профессиональный ринит', complaint: 'На работе нос закладывает от химикатов, дома нормально' }
-    ]},
-    strepsils: { cases: [
-      { diagnosis: 'Гнойная ангина', complaint: 'Горло огнём горит, глотать невозможно, в горле что-то хрипит' },
-      { diagnosis: 'Острый ларингит', complaint: 'Голос пропал полностью, в груди першит и сипит при дыхании' },
-      { diagnosis: 'Острый трахеит', complaint: 'Кашляю без остановки, за грудиной саднит, дыхание с хрипом' },
-      { diagnosis: 'Острый фарингит', complaint: 'Горло красное, больно даже воду пить, при дыхании чувствую хрип' },
-      { diagnosis: 'Паратонзиллярный инфильтрат', complaint: 'С одной стороны горла всё опухло, рот открыть не могу, дышу с трудом' },
-      { diagnosis: 'Ларингофарингеальный рефлюкс', complaint: 'Постоянно першит в горле, после еды ком и жжение за грудиной' },
-      { diagnosis: 'Инфекционный мононуклеоз', complaint: 'Горло болит уже неделю, шея опухла, дышать тяжело' },
-      { diagnosis: 'Гранулёзный фарингит', complaint: 'К вечеру голос садится, горло сухое, кашель сиплый' },
-      { diagnosis: 'Острый бронхит', complaint: 'Кашель глубокий, в груди булькает, мокрота не отходит' },
-      { diagnosis: 'Бронхоспазм', complaint: 'Дышать тяжело, на выдохе свист, грудь сдавило' },
-      { diagnosis: 'Пневмония (начальная)', complaint: 'Кашель с мокротой, в груди справа что-то хрипит, температура' },
-      { diagnosis: 'Плеврит', complaint: 'При глубоком вдохе колет в боку, дышу поверхностно, боюсь вдохнуть' },
-      { diagnosis: 'Ларинготрахеит', complaint: 'Голос сел, кашель лающий, в горле свербит, за грудиной жжёт' },
-      { diagnosis: 'Обструктивный бронхит', complaint: 'Дыхание со свистом, кашель не проходит, задыхаюсь при ходьбе' },
-      { diagnosis: 'Трахеобронхит', complaint: 'Кашель сухой надрывный, саднит от горла до середины груди' },
-      { diagnosis: 'Эпиглоттит', complaint: 'Горло болит так сильно что слюну сглотнуть не могу, голос гнусавый' },
-      { diagnosis: 'Бронхиальная астма (приступ)', complaint: 'Вдохнуть не могу, на выдохе свист, в груди всё сжалось' },
-      { diagnosis: 'Коклюш', complaint: 'Приступы кашля до рвоты, между ними свистящий вдох, не могу остановиться' },
-      { diagnosis: 'Катаральная ангина', complaint: 'Горло покраснело, глотать больно, дышу ртом — нос свободен' },
-      { diagnosis: 'Аденоидит', complaint: 'Дышу ртом, храплю ночью, голос гнусавый, в горле слизь' }
-    ]}
+    painkiller: { cases: Game.Lang.t('patients.medical.painkiller') },
+    antihistamine: { cases: Game.Lang.t('patients.medical.antihistamine') },
+    strepsils: { cases: Game.Lang.t('patients.medical.strepsils') }
   };
   var CONSUMABLE_KEYS = Object.keys(MEDICAL_DATA);
 
@@ -130,33 +63,7 @@
   };
 
   // --- Illness visual region mapping ---
-  var ILLNESS_REGION_MAP = {
-    painkiller: {
-      'Мигрень с аурой': 'head', 'Головная боль напряжения': 'head',
-      'Люмбаго': 'back', 'Острый радикулит': 'back', 'Миофасциальный синдром': 'back',
-      'Острый бурсит': 'leg', 'Коксартроз': 'leg',
-      'Ишиас': 'leg', 'Тендинит ахиллова сухожилия': 'leg', 'Плантарный фасциит': 'leg',
-      'Защемление локтевого нерва': 'arm', 'Артрит лучезапястного сустава': 'arm',
-      'Посттравматическая невропатия': 'arm', 'Эпикондилит': 'arm', 'Цервикобрахиалгия': 'arm',
-      'Шейный миозит': 'neck',
-      'Жёлчная колика': 'stomach',
-      'Пульпит': 'teeth',
-      'Межрёберная невралгия': 'chest',
-      'Фибромиалгия': 'fullBody'
-    },
-    strepsils: {
-      'Гнойная ангина': 'throat', 'Острый фарингит': 'throat',
-      'Паратонзиллярный инфильтрат': 'throat', 'Ларингофарингеальный рефлюкс': 'throat',
-      'Инфекционный мононуклеоз': 'throat', 'Гранулёзный фарингит': 'throat',
-      'Эпиглоттит': 'throat', 'Катаральная ангина': 'throat', 'Аденоидит': 'throat',
-      'Острый бронхит': 'chest', 'Бронхоспазм': 'chest',
-      'Пневмония (начальная)': 'chest', 'Плеврит': 'chest',
-      'Обструктивный бронхит': 'chest', 'Трахеобронхит': 'chest',
-      'Бронхиальная астма (приступ)': 'chest', 'Коклюш': 'chest',
-      'Острый ларингит': 'both', 'Острый трахеит': 'both', 'Ларинготрахеит': 'both'
-    }
-    // antihistamine: all patients get 'nose' region — no per-diagnosis map needed
-  };
+  var ILLNESS_REGION_MAP = Game.Lang.t('patients.illnessRegionMap');
 
   function getIllnessRegion(consumableType, diagnosis) {
     if (consumableType === 'antihistamine') return 'nose';
@@ -202,9 +109,9 @@
 
   // --- Health system constants ---
   var SEVERITIES = [
-    { key: 'severe', label: 'Тяжёлое', startHp: 30 },
-    { key: 'medium', label: 'Среднее', startHp: 50 },
-    { key: 'mild',   label: 'Лёгкое',  startHp: 80 }
+    { key: 'severe', label: Game.Lang.t('severity.severe'), startHp: 30 },
+    { key: 'medium', label: Game.Lang.t('severity.medium'), startHp: 50 },
+    { key: 'mild',   label: Game.Lang.t('severity.mild'),  startHp: 80 }
   ];
   var MAX_HP = 100;
   var HP_DECAY_INTERVAL = 3.0;
@@ -663,14 +570,14 @@
       hintEl.style.display = 'none';
     } else if (hoveredPatient.state === 'atBed') {
       if (hoveredPatient.treated) {
-        hintEl.textContent = 'Пациент лечится...';
+        hintEl.textContent = Game.Lang.t('patient.hint.treating');
       } else if (hoveredPatient.needsDiagnosis) {
         var neededInstr = Game.Consumables.INSTRUMENT_TYPES[hoveredPatient.requiredInstrument];
         var hasInstr = Game.Inventory.countType(hoveredPatient.requiredInstrument) > 0;
         if (hasInstr) {
-          hintEl.textContent = 'ЛКМ — Диагностика (' + neededInstr.name + ')';
+          hintEl.textContent = Game.Lang.t('patient.hint.diagnose', [neededInstr.name]);
         } else {
-          hintEl.textContent = 'Нужен инструмент (' + neededInstr.name + ')';
+          hintEl.textContent = Game.Lang.t('patient.hint.needInstrument', [neededInstr.name]);
         }
       } else {
         var pendingNames = [];
@@ -682,19 +589,19 @@
           }
         }
         if (hasAny) {
-          hintEl.textContent = 'ЛКМ — Лечить';
+          hintEl.textContent = Game.Lang.t('patient.hint.treat');
         } else {
           hintEl.textContent = pendingNames.length > 1
-            ? 'Нужны препараты: ' + pendingNames.join(', ')
-            : 'Нужен препарат (' + pendingNames[0] + ')';
+            ? Game.Lang.t('patient.hint.needMedicines', [pendingNames.join(', ')])
+            : Game.Lang.t('patient.hint.needMedicine', [pendingNames[0]]);
         }
       }
       hintEl.style.display = 'block';
     } else if (hoveredPatient.state === 'waiting') {
-      hintEl.textContent = 'ЛКМ — Перевести на кровать';
+      hintEl.textContent = Game.Lang.t('patient.hint.toBed');
       hintEl.style.display = 'block';
     } else {
-      hintEl.textContent = 'Нажмите ЛКМ для взаимодействия';
+      hintEl.textContent = Game.Lang.t('patient.hint.interact');
       hintEl.style.display = 'block';
     }
   }
@@ -707,7 +614,7 @@
 
     // Header
     popupName.textContent = patient.name + ' ' + patient.surname;
-    popupAge.textContent = patient.age + ' лет';
+    popupAge.textContent = Game.Lang.t('patient.age', [patient.age]);
 
     // Severity
     var sevColors = { severe: '#ff4444', medium: '#ffcc00', mild: '#44cc44' };
@@ -719,7 +626,7 @@
     var v = patient.vitals;
     popupTemp.textContent = v.temp.toFixed(1) + '\u00B0C';
     popupTemp.className = 'vital-value' + (v.temp >= 39.0 ? ' vital-critical' : v.temp >= 37.5 ? ' vital-warning' : '');
-    popupPulse.textContent = v.pulse + ' уд/м';
+    popupPulse.textContent = Game.Lang.t('patient.pulse', [v.pulse]);
     popupPulse.className = 'vital-value' + (v.pulse >= 110 ? ' vital-critical' : v.pulse >= 90 ? ' vital-warning' : '');
     popupBp.textContent = v.bpSys + '/' + v.bpDia;
     popupBp.className = 'vital-value' + (v.bpSys >= 160 ? ' vital-critical' : v.bpSys >= 140 ? ' vital-warning' : '');
@@ -747,7 +654,7 @@
       // Show required instrument
       if (popupInstrumentHint) {
         var instrInfo = Game.Consumables.INSTRUMENT_TYPES[patient.requiredInstrument];
-        popupInstrumentHint.textContent = 'Необходим: ' + instrInfo.name;
+        popupInstrumentHint.textContent = Game.Lang.t('patient.needInstrument', [instrInfo.name]);
         popupInstrumentHint.style.display = 'block';
         popupInstrumentHint.style.color = '#ffaa44';
       }
@@ -809,7 +716,7 @@
     // Outdoor furniture warning
     var outdoorWarning = document.getElementById('outdoor-warning');
     if (outdoorBedCount > 0 || outdoorChairCount > 0) {
-      outdoorWarning.textContent = 'Пока кровать/стул на улице — их нельзя использовать';
+      outdoorWarning.textContent = Game.Lang.t('patient.outdoorWarning');
       outdoorWarning.style.display = 'block';
     } else {
       outdoorWarning.style.display = 'none';
@@ -819,7 +726,7 @@
     var dirtyWarning = document.getElementById('dirty-linen-warning');
     var dirtyBedCount = Game.Furniture.getDirtyBedCount();
     if (dirtyBedCount > 0) {
-      dirtyWarning.textContent = 'Грязное бельё на ' + dirtyBedCount + ' кроват' + (dirtyBedCount === 1 ? 'и' : 'ях') + ' — замените бельё';
+      dirtyWarning.textContent = Game.Lang.t(dirtyBedCount === 1 ? 'patient.dirtyWarning1' : 'patient.dirtyWarningN', [dirtyBedCount]);
       dirtyWarning.style.display = 'block';
     } else {
       dirtyWarning.style.display = 'none';
@@ -1432,7 +1339,7 @@
     if (patient.pendingConsumables.length === 0) {
       // All items applied — fully treated
       patient.treated = true;
-      Game.Inventory.showNotification('Лечение начато!', 'rgba(34, 139, 34, 0.85)');
+      Game.Inventory.showNotification(Game.Lang.t('notify.treatmentStarted'), 'rgba(34, 139, 34, 0.85)');
       for (var j = 0; j < patient.mesh.userData.bodyParts.length; j++) {
         var part = patient.mesh.userData.bodyParts[j];
         part.material.emissive = new THREE.Color(0x00ff44);
@@ -1441,7 +1348,7 @@
       animations.push({ patient: patient, type: 'heal', timer: 0.5, maxTime: 0.5 });
     } else {
       // Partial treatment — brief feedback
-      Game.Inventory.showNotification('Препарат применён! Осталось: ' + patient.pendingConsumables.length, 'rgba(70, 130, 180, 0.85)');
+      Game.Inventory.showNotification(Game.Lang.t('notify.medicineApplied', [patient.pendingConsumables.length]), 'rgba(70, 130, 180, 0.85)');
       for (var j = 0; j < patient.mesh.userData.bodyParts.length; j++) {
         var part = patient.mesh.userData.bodyParts[j];
         part.material.emissive = new THREE.Color(0x4488ff);
@@ -1460,7 +1367,7 @@
 
   function wrongTreatment(patient) {
     patient.animating = true;
-    Game.Inventory.showNotification('Неправильный препарат!');
+    Game.Inventory.showNotification(Game.Lang.t('notify.wrongMedicine'));
 
     for (var j = 0; j < patient.mesh.userData.bodyParts.length; j++) {
       var part = patient.mesh.userData.bodyParts[j];
@@ -1597,7 +1504,7 @@
         if (p.hp >= MAX_HP) {
           p.hp = MAX_HP;
           updateHealthBarTexture(p);
-          Game.Inventory.showNotification('Пациент выписан! Направлен на оплату.', 'rgba(34, 139, 34, 0.85)');
+          Game.Inventory.showNotification(Game.Lang.t('notify.patientDischarged'), 'rgba(34, 139, 34, 0.85)');
           dischargePatient(p);
           continue;
         }
@@ -1621,7 +1528,7 @@
           if (p.hp <= 0) {
             p.hp = 0;
             updateHealthBarTexture(p);
-            Game.Inventory.showNotification('Пациент ушел, не дождавшись помощи');
+            Game.Inventory.showNotification(Game.Lang.t('notify.patientLeft'));
             if (Game.Shift) Game.Shift.trackPatientLost();
             removePatient(p);
             break;
@@ -1735,7 +1642,7 @@
     if (patient.state === 'atBed') {
       createBedIndicators(patient);
     }
-    Game.Inventory.showNotification('Диагноз установлен!', 'rgba(34, 139, 34, 0.85)');
+    Game.Inventory.showNotification(Game.Lang.t('notify.diagnosisSet'), 'rgba(34, 139, 34, 0.85)');
   }
 
   // Animated reveal: open popup showing ???? then animate to real data
@@ -1818,7 +1725,7 @@
       btnDismiss.style.display = 'none';
 
       var okBtn = document.createElement('button');
-      okBtn.textContent = 'Понятно';
+      okBtn.textContent = Game.Lang.t('popup.btn.ok');
       okBtn.style.cssText = 'flex:1; padding:10px 0; border:none; border-radius:6px; font-size:0.88rem; font-weight:600; cursor:pointer; background:#1a6b42; color:#fff;';
       buttonsDiv.appendChild(okBtn);
 
@@ -1923,7 +1830,7 @@
 
         // Block interaction if admin is processing this patient
         if (hoveredPatient.staffProcessing) {
-          Game.Inventory.showNotification('Администратор оформляет пациента');
+          Game.Inventory.showNotification(Game.Lang.t('notify.adminProcessing'));
           return;
         }
 
@@ -1934,14 +1841,14 @@
           if (hoveredPatient.needsDiagnosis) {
             // Check if staff diagnostician is already working
             if (hoveredPatient.staffDiagnosing) {
-              Game.Inventory.showNotification('Диагност уже проводит обследование');
+              Game.Inventory.showNotification(Game.Lang.t('notify.diagAlreadyWorking'));
               return;
             }
             // Auto-find required instrument in inventory
             if (!Game.Inventory.findAndActivate(hoveredPatient.requiredInstrument)) {
               var instrInfo = Game.Consumables.INSTRUMENT_TYPES[hoveredPatient.requiredInstrument];
-              var instrName = instrInfo ? instrInfo.name : 'инструмент';
-              Game.Inventory.showNotification('Нужен: ' + instrName);
+              var instrName = instrInfo ? instrInfo.name : Game.Lang.t('item.default');
+              Game.Inventory.showNotification(Game.Lang.t('notify.needInstrument', [instrName]));
               return;
             }
             // Start mini-game (instrument NOT consumed)
@@ -1951,14 +1858,14 @@
 
           // Check if staff nurse is already treating
           if (hoveredPatient.staffTreating) {
-            Game.Inventory.showNotification('Медсестра уже лечит этого пациента');
+            Game.Inventory.showNotification(Game.Lang.t('notify.nurseAlreadyTreating'));
             return;
           }
           // Auto-find matching consumable in inventory
           if (!hoveredPatient.pendingConsumables || hoveredPatient.pendingConsumables.length === 0) return;
           var foundType = Game.Inventory.findAndActivateOneOf(hoveredPatient.pendingConsumables);
           if (!foundType) {
-            Game.Inventory.showNotification('Нет нужных препаратов в инвентаре');
+            Game.Inventory.showNotification(Game.Lang.t('notify.noMedicineInInventory'));
             return;
           }
           treatPatient(hoveredPatient);
@@ -2084,7 +1991,7 @@
             var maxQueue = Math.min(2 + Game.Furniture.getAllBeds().length + Game.Furniture.getAllChairs().length - 5, 10);
             if (maxQueue < 2) maxQueue = 2;
             if (queue.length >= maxQueue) {
-              Game.Inventory.showNotification('Пациент не смог зайти из-за того, что очередь переполнена');
+              Game.Inventory.showNotification(Game.Lang.t('notify.queueOverflow'));
             } else {
               spawnPatient();
             }

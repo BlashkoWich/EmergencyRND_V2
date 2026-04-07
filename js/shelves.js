@@ -370,11 +370,11 @@
       var hints = [];
       if (shelfMode === 'take' && hoveredSlot) {
         var itemInfo = getItemInfo(hoveredSlot.item);
-        hints.push('Взять ' + itemInfo.name + ' на ЛКМ');
+        hints.push(Game.Lang.t('shelf.hint.take', [itemInfo.name]));
       }
       var activeItem = Game.Inventory.getActive();
       if (activeItem && hasAvailableSlot(hoveredShelf, activeItem)) {
-        hints.push('Положить на E');
+        hints.push(Game.Lang.t('shelf.hint.place'));
       }
       if (hints.length > 0) {
         hintEl.textContent = hints.join('  |  ');
@@ -489,7 +489,7 @@
           takeItemFromShelf(hoveredSlot);
           if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('item_taken_from_shelf', type);
         } else {
-          Game.Inventory.showNotification('Инвентарь полон');
+          Game.Inventory.showNotification(Game.Lang.t('notify.inventoryFull'));
         }
       });
 
@@ -506,7 +506,7 @@
         var type = Game.Inventory.getActive();
         if (!type) return;
         if (Game.Consumables.isInstrument(type)) {
-          Game.Inventory.showNotification('Инструменты вешайте на панель', 'rgba(200, 150, 50, 0.85)');
+          Game.Inventory.showNotification(Game.Lang.t('notify.instrumentsToPanel'), 'rgba(200, 150, 50, 0.85)');
           return;
         }
         var slot = findSlotForType(hoveredShelf, type);

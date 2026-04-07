@@ -10,9 +10,9 @@
   var INSTRUMENT_PANEL_SCALE = 2.5;
 
   var SLOT_DEFS = [
-    { type: 'instrument_stethoscope', label: 'Фонендоскоп',     yOffset: 0.25 },
-    { type: 'instrument_hammer',      label: 'Рефлекс-молоток', yOffset: 0.60 },
-    { type: 'instrument_rhinoscope',  label: 'Риноскоп',        yOffset: 0.95 }
+    { type: 'instrument_stethoscope', label: Game.Lang.t('item.instrument_stethoscope'), yOffset: 0.25 },
+    { type: 'instrument_hammer',      label: Game.Lang.t('item.instrument_hammer'),      yOffset: 0.60 },
+    { type: 'instrument_rhinoscope',  label: Game.Lang.t('item.instrument_rhinoscope'),  yOffset: 0.95 }
   ];
 
   var THREE, scene, camera, controls;
@@ -137,7 +137,7 @@
     collidables.push(panelCollisionBox);
 
     // Wall sign
-    Game.Helpers.createSign(THREE, scene, 'ИНСТРУМЕНТЫ', PANEL_X, PANEL_Y_BOTTOM + PANEL_HEIGHT + 0.25, -11.78, 0);
+    Game.Helpers.createSign(THREE, scene, Game.Lang.t('sign.instruments'), PANEL_X, PANEL_Y_BOTTOM + PANEL_HEIGHT + 0.25, -11.78, 0);
   }
 
   function highlightSlotItem(slot) {
@@ -277,10 +277,10 @@
       var hints = [];
       if (panelMode === 'take') {
         var info = Game.Consumables.INSTRUMENT_TYPES[hoveredSlot.type];
-        hints.push('Взять ' + info.name + ' на ЛКМ');
+        hints.push(Game.Lang.t('panel.hint.take', [info.name]));
       }
       if (panelMode === 'place') {
-        hints.push('Повесить на E');
+        hints.push(Game.Lang.t('panel.hint.hang'));
       }
       if (hints.length > 0) {
         hintEl.textContent = hints.join('  |  ');
@@ -378,7 +378,7 @@
           hoveredSlot = null;
           panelMode = null;
         } else {
-          Game.Inventory.showNotification('Инвентарь полон');
+          Game.Inventory.showNotification(Game.Lang.t('notify.inventoryFull'));
         }
       });
 

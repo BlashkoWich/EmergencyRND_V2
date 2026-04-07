@@ -12,14 +12,14 @@
   var hoveredFurniture = null;
 
   var FURNITURE_TYPES = {
-    bed:            { name: 'Кровать',              price: 360, slotOffset: { x: 1, z: 0 }, boxSize: { x: 2.1, y: 1.0, z: 1.0 } },
-    chair:          { name: 'Стул',                 price: 140, slotOffset: { x: -1, z: 0 }, boxSize: { x: 0.6, y: 1.0, z: 0.6 } },
-    washingMachine: { name: 'Стиральная машина',    boxSize: { x: 1.0, y: 1.1, z: 0.8 } },
-    basketClean:    { name: 'Корзина (чистое)',     boxSize: { x: 0.8, y: 0.6, z: 0.6 } },
-    basketDirty:    { name: 'Корзина (грязное)',    boxSize: { x: 0.8, y: 0.6, z: 0.6 } },
-    shelf:          { name: 'Стеллаж',              boxSize: { x: 1.3, y: 1.5, z: 0.5 } },
-    toolPanel:      { name: 'Панель инструментов',  boxSize: { x: 1.1, y: 1.3, z: 0.3 } },
-    cashierDesk:    { name: 'Кассовый стол',        boxSize: { x: 0.9, y: 0.8, z: 0.7 } }
+    bed:            { name: Game.Lang.t('furniture.bed'),              price: 360, slotOffset: { x: 1, z: 0 }, boxSize: { x: 2.1, y: 1.0, z: 1.0 } },
+    chair:          { name: Game.Lang.t('furniture.chair'),            price: 140, slotOffset: { x: -1, z: 0 }, boxSize: { x: 0.6, y: 1.0, z: 0.6 } },
+    washingMachine: { name: Game.Lang.t('furniture.washingMachine'),   boxSize: { x: 1.0, y: 1.1, z: 0.8 } },
+    basketClean:    { name: Game.Lang.t('furniture.basketClean'),      boxSize: { x: 0.8, y: 0.6, z: 0.6 } },
+    basketDirty:    { name: Game.Lang.t('furniture.basketDirty'),      boxSize: { x: 0.8, y: 0.6, z: 0.6 } },
+    shelf:          { name: Game.Lang.t('furniture.shelf'),            boxSize: { x: 1.3, y: 1.5, z: 0.5 } },
+    toolPanel:      { name: Game.Lang.t('furniture.toolPanel'),        boxSize: { x: 1.1, y: 1.3, z: 0.3 } },
+    cashierDesk:    { name: Game.Lang.t('furniture.cashierDesk'),      boxSize: { x: 0.9, y: 0.8, z: 0.7 } }
   };
 
   var INDOOR_BOUNDS = { xMin: -7.8, xMax: 7.8, zMin: -11.8, zMax: -0.2 };
@@ -366,12 +366,12 @@
 
     if (hoveredFurniture) {
       if (hoveredFurniture.isDirty && Game.Inventory.countType('linen_clean') > 0) {
-        hintEl.textContent = 'ЛКМ — Заменить бельё';
+        hintEl.textContent = Game.Lang.t('furniture.hint.replaceLinen');
       } else if (hoveredFurniture.isDirty) {
-        hintEl.textContent = 'Нужно чистое бельё для замены';
+        hintEl.textContent = Game.Lang.t('furniture.hint.needCleanLinen');
       } else {
         var typeName = FURNITURE_TYPES[hoveredFurniture.type] ? FURNITURE_TYPES[hoveredFurniture.type].name : '';
-        hintEl.textContent = 'Зажми E — Переместить ' + typeName.toLowerCase();
+        hintEl.textContent = Game.Lang.t('furniture.hint.move', [typeName.toLowerCase()]);
       }
       hintEl.style.display = 'block';
     }
@@ -382,12 +382,12 @@
   function pickUpFurniture(item) {
     // Check canPickUp callback
     if (item.canPickUp && !item.canPickUp()) {
-      Game.Inventory.showNotification('Сейчас нельзя переместить');
+      Game.Inventory.showNotification(Game.Lang.t('notify.cannotMove'));
       return;
     }
     // Check slot occupied (only for types with patient slots)
     if (item.slot && item.slot.occupied) {
-      Game.Inventory.showNotification('Нельзя переместить — предмет занят');
+      Game.Inventory.showNotification(Game.Lang.t('notify.cannotMoveOccupied'));
       return;
     }
     carriedFurniture = item;
@@ -405,7 +405,7 @@
 
   function placeFurniture() {
     if (!canPlaceCurrent) {
-      Game.Inventory.showNotification('Нельзя разместить здесь');
+      Game.Inventory.showNotification(Game.Lang.t('notify.cannotPlaceHere'));
       return;
     }
 
@@ -431,7 +431,7 @@
 
     if (!item.isIndoors && FURNITURE_TYPES[item.type] && FURNITURE_TYPES[item.type].slotOffset) {
       var name = FURNITURE_TYPES[item.type].name;
-      Game.Inventory.showNotification('Пока ' + name.toLowerCase() + ' на улице — её нельзя использовать', 'rgba(200, 150, 50, 0.85)');
+      Game.Inventory.showNotification(Game.Lang.t('notify.furnitureOutdoor', [name.toLowerCase()]), 'rgba(200, 150, 50, 0.85)');
     }
 
     carriedFurniture = null;
@@ -456,7 +456,7 @@
     if (!Game.Inventory.addItem('linen_dirty')) {
       Game.Consumables.dropFromPlayer('linen_dirty');
     }
-    Game.Inventory.showNotification('Бельё заменено!', 'rgba(34, 139, 34, 0.85)');
+    Game.Inventory.showNotification(Game.Lang.t('notify.linenReplaced'), 'rgba(34, 139, 34, 0.85)');
     if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('linen_replaced');
     return true;
   }
@@ -657,7 +657,7 @@
       // Show carry hint
       if (carriedFurniture && controls.isLocked) {
         var typeName = FURNITURE_TYPES[carriedFurniture.type] ? FURNITURE_TYPES[carriedFurniture.type].name : '';
-        hintEl.textContent = 'E — Поставить ' + typeName.toLowerCase() + '  |  Колёсико — Поворот';
+        hintEl.textContent = Game.Lang.t('furniture.hint.place', [typeName.toLowerCase()]);
         hintEl.style.display = 'block';
       }
     },

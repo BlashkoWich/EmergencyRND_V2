@@ -304,12 +304,12 @@
 
     hintShopEl = document.createElement('span');
     hintShopEl.className = 'inv-hint';
-    hintShopEl.textContent = 'Q — Магазин';
+    hintShopEl.textContent = Game.Lang.t('inv.shop');
     hintsEl.appendChild(hintShopEl);
 
     hintDropEl = document.createElement('span');
     hintDropEl.className = 'inv-hint';
-    hintDropEl.textContent = 'G — Бросить';
+    hintDropEl.textContent = Game.Lang.t('inv.drop');
     hintDropEl.style.display = 'none';
     hintsEl.appendChild(hintDropEl);
 
@@ -346,7 +346,7 @@
           itemEl.style.backgroundColor = '#' + info.color.toString(16).padStart(6, '0');
         }
         itemEl.style.display = 'block';
-        itemEl.title = info.name;
+        itemEl.title = Game.Lang.t('item.' + slotType);
 
         // Show count badge for stackable items (consumables only, count > 1)
         if (countEl) {
@@ -370,7 +370,7 @@
       var activeData = slots[activeSlot];
       if (activeData) {
         var activeInfo = types[activeData.type] || instrTypes[activeData.type];
-        activeNameEl.textContent = activeInfo.name;
+        activeNameEl.textContent = Game.Lang.t('item.' + activeData.type);
         activeNameEl.style.display = 'block';
       } else {
         activeNameEl.textContent = '';

@@ -2,17 +2,17 @@
   window.Game = window.Game || {};
 
   var CONSUMABLE_TYPES = {
-    strepsils:     { name: 'Стрепсилс',        color: 0xcc3333, size: { x: 0.15, y: 0.08, z: 0.10 } },
-    painkiller:    { name: 'Обезболивающее',    color: 0x3366cc, size: { x: 0.18, y: 0.06, z: 0.12 } },
-    antihistamine: { name: 'Антигистаминное',   color: 0x33aa55, size: { x: 0.14, y: 0.07, z: 0.10 } },
-    linen_clean:   { name: 'Постельное бельё',  color: 0xeeeeff, size: { x: 0.20, y: 0.10, z: 0.15 } },
-    linen_dirty:   { name: 'Грязное бельё',     color: 0x887766, size: { x: 0.20, y: 0.10, z: 0.15 } }
+    strepsils:     { name: Game.Lang.t('item.strepsils'),        color: 0xcc3333, size: { x: 0.15, y: 0.08, z: 0.10 } },
+    painkiller:    { name: Game.Lang.t('item.painkiller'),    color: 0x3366cc, size: { x: 0.18, y: 0.06, z: 0.12 } },
+    antihistamine: { name: Game.Lang.t('item.antihistamine'),   color: 0x33aa55, size: { x: 0.14, y: 0.07, z: 0.10 } },
+    linen_clean:   { name: Game.Lang.t('item.linen_clean'),  color: 0xeeeeff, size: { x: 0.20, y: 0.10, z: 0.15 } },
+    linen_dirty:   { name: Game.Lang.t('item.linen_dirty'),     color: 0x887766, size: { x: 0.20, y: 0.10, z: 0.15 } }
   };
 
   var INSTRUMENT_TYPES = {
-    instrument_stethoscope: { name: 'Фонендоскоп', color: 0x8866cc, size: { x: 0.72, y: 0.40, z: 0.40 } },
-    instrument_hammer:   { name: 'Рефлекс-молоток', color: 0xcc8844, size: { x: 0.64, y: 0.56, z: 0.24 } },
-    instrument_rhinoscope:  { name: 'Риноскоп',    color: 0x44aacc, size: { x: 0.64, y: 0.32, z: 0.32 } }
+    instrument_stethoscope: { name: Game.Lang.t('item.instrument_stethoscope'), color: 0x8866cc, size: { x: 0.72, y: 0.40, z: 0.40 } },
+    instrument_hammer:   { name: Game.Lang.t('item.instrument_hammer'), color: 0xcc8844, size: { x: 0.64, y: 0.56, z: 0.24 } },
+    instrument_rhinoscope:  { name: Game.Lang.t('item.instrument_rhinoscope'),    color: 0x44aacc, size: { x: 0.64, y: 0.32, z: 0.32 } }
   };
 
   function isInstrument(type) {
@@ -60,7 +60,7 @@
     ctx.font = 'bold 28px Segoe UI, Arial, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('ДОСТАВКА', 128, 85);
+    ctx.fillText(Game.Lang.t('sign.delivery'), 128, 85);
 
     var tex = new THREE.CanvasTexture(canvas);
     var geo = new THREE.PlaneGeometry(3, 2);
@@ -131,7 +131,7 @@
     ctx.font = 'bold 22px Segoe UI, Arial, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('\u041C\u0423\u0421\u041E\u0420', 64, 64);
+    ctx.fillText(Game.Lang.t('sign.trash'), 64, 64);
 
     var tex = new THREE.CanvasTexture(canvas);
     var zoneMesh = new THREE.Mesh(
@@ -488,7 +488,7 @@
     // Subtitle
     ctx.fillStyle = '#777';
     ctx.font = '32px Segoe UI, Arial, sans-serif';
-    ctx.fillText(isLinen(type) ? 'расходники' : 'препараты', 256, 410);
+    ctx.fillText(isLinen(type) ? Game.Lang.t('box.label.consumables') : Game.Lang.t('box.label.medications'), 256, 410);
 
     var tex = new THREE.CanvasTexture(canvas);
 
@@ -777,10 +777,10 @@
 
   function updateHeldBoxHints() {
     if (heldBox && controls.isLocked) {
-      var heldItemName = (CONSUMABLE_TYPES[heldBox.type] || INSTRUMENT_TYPES[heldBox.type] || {}).name || 'предмет';
+      var heldItemName = (CONSUMABLE_TYPES[heldBox.type] || INSTRUMENT_TYPES[heldBox.type] || {}).name || Game.Lang.t('item.default');
       heldBoxHintEl.innerHTML = heldBox.empty
-        ? 'G — Выбросить в мусорку'
-        : 'ЛКМ — Взять: ' + heldItemName + ' (осталось: ' + heldBox.remaining + ')<br>G — Бросить коробку';
+        ? Game.Lang.t('box.held.trash')
+        : Game.Lang.t('box.held.take', [heldItemName, heldBox.remaining]);
       heldBoxHintEl.style.display = 'block';
     } else {
       heldBoxHintEl.style.display = 'none';
@@ -813,10 +813,10 @@
     }
 
     if (hoveredBox) {
-      var boxItemName = (CONSUMABLE_TYPES[hoveredBox.type] || INSTRUMENT_TYPES[hoveredBox.type] || {}).name || 'предмет';
+      var boxItemName = (CONSUMABLE_TYPES[hoveredBox.type] || INSTRUMENT_TYPES[hoveredBox.type] || {}).name || Game.Lang.t('item.default');
       hintEl.textContent = hoveredBox.empty
-        ? 'E — Поднять пустую коробку'
-        : 'ЛКМ — Взять: ' + boxItemName + ' (' + hoveredBox.remaining + ' шт.)  |  E — Поднять коробку';
+        ? Game.Lang.t('box.hover.empty')
+        : Game.Lang.t('box.hover.full', [boxItemName, hoveredBox.remaining]);
       hintEl.style.display = 'block';
       return true;
     }
@@ -845,7 +845,7 @@
     }
 
     if (hoveredItem) {
-      hintEl.textContent = 'Поднять на ЛКМ';
+      hintEl.textContent = Game.Lang.t('box.ground.pickup');
       hintEl.style.display = 'block';
       return true;
     }
@@ -996,7 +996,7 @@
             }
             if (tutorialActive) Game.Tutorial.onEvent('item_picked_up', heldBox.type);
           } else {
-            Game.Inventory.showNotification('Инвентарь полон');
+            Game.Inventory.showNotification(Game.Lang.t('notify.inventoryFull'));
           }
           return;
         }
@@ -1014,7 +1014,7 @@
             }
             if (tutorialActive) Game.Tutorial.onEvent('item_picked_up', hoveredBox.type);
           } else {
-            Game.Inventory.showNotification('Инвентарь полон');
+            Game.Inventory.showNotification(Game.Lang.t('notify.inventoryFull'));
           }
           return;
         }
@@ -1031,7 +1031,7 @@
           hintEl.style.display = 'none';
           if (tutorialActive) Game.Tutorial.onEvent('item_picked_up', pickedType);
         } else {
-          Game.Inventory.showNotification('Инвентарь полон');
+          Game.Inventory.showNotification(Game.Lang.t('notify.inventoryFull'));
         }
       });
 

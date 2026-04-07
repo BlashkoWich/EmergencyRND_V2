@@ -7,11 +7,11 @@
 
   // ====== STAFF TYPES ======
   var STAFF_TYPES = {
-    administrator: { name: 'Администратор', salary: 100, color: 0x2266aa, hatColor: 0x1a4a88 },
-    cashier:       { name: 'Кассир',        salary: 100, color: 0x22aa66, hatColor: 0x188844 },
-    diagnostician: { name: 'Диагност',      salary: 100, color: 0x8844cc, hatColor: 0x6633aa },
-    nurse:         { name: 'Медсестра',      salary: 100, color: 0xcc4488, hatColor: 0xaa3366 },
-    janitor:       { name: 'Уборщик',       salary: 100, color: 0x888844, hatColor: 0x666633 }
+    administrator: { name: Game.Lang.t('staff.administrator'), salary: 100, color: 0x2266aa, hatColor: 0x1a4a88 },
+    cashier:       { name: Game.Lang.t('staff.cashier'),       salary: 100, color: 0x22aa66, hatColor: 0x188844 },
+    diagnostician: { name: Game.Lang.t('staff.diagnostician'), salary: 100, color: 0x8844cc, hatColor: 0x6633aa },
+    nurse:         { name: Game.Lang.t('staff.nurse'),         salary: 100, color: 0xcc4488, hatColor: 0xaa3366 },
+    janitor:       { name: Game.Lang.t('staff.janitor'),       salary: 100, color: 0x888844, hatColor: 0x666633 }
   };
 
   var STAFF_SPEED = 3.5;
@@ -141,17 +141,17 @@
 
   // ====== PROGRESS BAR ======
   var ACTION_LABELS = {
-    processing: 'Оформление',
-    pickInstrument: 'Берёт инструмент',
-    diagnosing: 'Диагностика',
-    returnInstrument: 'Возвращает',
-    pickMedicine: 'Берёт лекарство',
-    treating: 'Лечение',
-    changingLinen: 'Смена белья',
-    cleaningTrash: 'Уборка мусора',
-    depositDirty: 'Складывает',
-    loadingMachine: 'Загрузка',
-    collectClean: 'Собирает бельё'
+    processing: Game.Lang.t('staff.status.processing'),
+    pickInstrument: Game.Lang.t('staff.status.pickInstrument'),
+    diagnosing: Game.Lang.t('staff.status.diagnosing'),
+    returnInstrument: Game.Lang.t('staff.status.returnInstrument'),
+    pickMedicine: Game.Lang.t('staff.status.pickMedicine'),
+    treating: Game.Lang.t('staff.status.treating'),
+    changingLinen: Game.Lang.t('staff.status.changingLinen'),
+    cleaningTrash: Game.Lang.t('staff.status.cleaningTrash'),
+    depositDirty: Game.Lang.t('staff.status.depositDirty'),
+    loadingMachine: Game.Lang.t('staff.status.loadingMachine'),
+    collectClean: Game.Lang.t('staff.status.collectClean')
   };
 
   function createProgressBar(staff) {
@@ -532,9 +532,9 @@
   var missingInstruments = {}; // type -> true
 
   var INSTRUMENT_NAMES = {
-    instrument_stethoscope: 'Фонендоскоп',
-    instrument_hammer: 'Рефлекс-молоток',
-    instrument_rhinoscope: 'Риноскоп'
+    instrument_stethoscope: Game.Lang.t('item.instrument_stethoscope'),
+    instrument_hammer: Game.Lang.t('item.instrument_hammer'),
+    instrument_rhinoscope: Game.Lang.t('item.instrument_rhinoscope')
   };
   var INSTRUMENT_COLORS = {
     instrument_stethoscope: '#8866cc',
@@ -558,7 +558,7 @@
       return;
     }
 
-    var html = '<div class="diag-warn-title">Диагносту не хватает инструментов:</div>';
+    var html = '<div class="diag-warn-title">' + Game.Lang.t('staff.diagWarning') + '</div>';
     for (var type in missingInstruments) {
       var name = INSTRUMENT_NAMES[type] || type;
       var color = INSTRUMENT_COLORS[type] || '#888';
@@ -784,7 +784,7 @@
       return;
     }
 
-    var html = '<div class="nurse-warn-title">Медсестре не хватает на стеллаже:</div>';
+    var html = '<div class="nurse-warn-title">' + Game.Lang.t('staff.nurseWarning') + '</div>';
     for (var type in missingMeds) {
       var info = Game.Consumables.TYPES[type];
       if (!info) continue;
@@ -1380,21 +1380,21 @@
 
     // Show hint
     if (hoveredBasket && basketMode) {
-      var name = hoveredBasket === baskets.clean ? 'Чистое бельё' : 'Грязное бельё';
+      var name = hoveredBasket === baskets.clean ? Game.Lang.t('basket.cleanLinen') : Game.Lang.t('basket.dirtyLinen');
       var hints = [];
       if (basketMode === 'take') {
-        hints.push('ЛКМ — Взять (' + hoveredBasket.items.length + ')');
+        hints.push(Game.Lang.t('basket.take', [hoveredBasket.items.length]));
       }
       var activeItem = Game.Inventory.getActive();
       if (activeItem === hoveredBasket.type) {
-        hints.push('E — Положить');
+        hints.push(Game.Lang.t('basket.put'));
       }
       if (hints.length > 0) {
         hintEl.textContent = name + ': ' + hints.join('  |  ');
         hintEl.style.display = 'block';
       }
     } else if (hoveredBasket) {
-      var name = hoveredBasket === baskets.clean ? 'Чистое бельё' : 'Грязное бельё';
+      var name = hoveredBasket === baskets.clean ? Game.Lang.t('basket.cleanLinen') : Game.Lang.t('basket.dirtyLinen');
       hintEl.textContent = name + ' (' + hoveredBasket.items.length + ')';
       hintEl.style.display = 'block';
     }
@@ -1464,12 +1464,12 @@
 
       // Create laundry baskets
       baskets.clean.pos = new THREE.Vector3(4.2, 0, -10.5);
-      var cleanData = createBasket(4.2, -10.5, 'clean', 'ЧИСТОЕ');
+      var cleanData = createBasket(4.2, -10.5, 'clean', Game.Lang.t('sign.clean'));
       baskets.clean.mesh = cleanData.mesh;
       baskets.clean.collisionBox = cleanData.collisionBox;
 
       baskets.dirty.pos = new THREE.Vector3(6.8, 0, -10.5);
-      var dirtyData = createBasket(6.8, -10.5, 'dirty', 'ГРЯЗНОЕ');
+      var dirtyData = createBasket(6.8, -10.5, 'dirty', Game.Lang.t('sign.dirty'));
       baskets.dirty.mesh = dirtyData.mesh;
       baskets.dirty.collisionBox = dirtyData.collisionBox;
 
@@ -1526,7 +1526,7 @@
           Game.Inventory.removeActive();
           hoveredBasket.items.push(activeItem);
           updateBasketSprite(hoveredBasket);
-          Game.Inventory.showNotification('Положено в корзину', 'rgba(34, 139, 34, 0.85)');
+          Game.Inventory.showNotification(Game.Lang.t('notify.putInBasket'), 'rgba(34, 139, 34, 0.85)');
         }
       });
 
@@ -1549,13 +1549,13 @@
       // Check if already hired
       for (var i = 0; i < hiredStaff.length; i++) {
         if (hiredStaff[i].type === type) {
-          Game.Inventory.showNotification(STAFF_TYPES[type].name + ' уже нанят(а)!');
+          Game.Inventory.showNotification(Game.Lang.t('notify.alreadyHired', [STAFF_TYPES[type].name]));
           return null;
         }
       }
       var member = createStaffMember(type);
       hiredStaff.push(member);
-      Game.Inventory.showNotification(STAFF_TYPES[type].name + ' нанят(а)!', 'rgba(34, 139, 34, 0.85)');
+      Game.Inventory.showNotification(Game.Lang.t('notify.hired', [STAFF_TYPES[type].name]), 'rgba(34, 139, 34, 0.85)');
       return member;
     },
 
@@ -1610,7 +1610,7 @@
             missingInstruments = {};
             updateDiagWarningHUD();
           }
-          Game.Inventory.showNotification(STAFF_TYPES[s.type].name + ' уволен(а). Выплачено $' + salary, 'rgba(200, 150, 50, 0.85)');
+          Game.Inventory.showNotification(Game.Lang.t('notify.fired', [STAFF_TYPES[s.type].name, salary]), 'rgba(200, 150, 50, 0.85)');
           return true;
         }
       }

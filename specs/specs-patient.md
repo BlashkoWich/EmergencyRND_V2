@@ -2,11 +2,12 @@
 
 ## Patient Data Pools
 ```
-NAMES:    20 русских имён (10 муж + 10 жен)
-SURNAMES: 20 русских фамилий (10 муж + 10 жен)
-MEDICAL_DATA: структурированный объект по типам препаратов, каждый содержит массив cases[]:
+NAMES:    20 имён (10 муж + 10 жен) — из Game.Lang.t('patients.names.male/female')
+SURNAMES: 20 фамилий (10 муж + 10 жен) — из Game.Lang.t('patients.surnames.male/female')
+MEDICAL_DATA: структурированный объект по типам препаратов — из Game.Lang.t('patients.medical.*')
+  Каждый тип содержит массив cases[]:
   Каждый case = { diagnosis, complaint } — связный медицинский кейс (поле symptom удалено)
-  Жалобы тематически связаны с ��нструментом диагностики для данного типа:
+  Жалобы (локализованные) тематически связаны с инструментом диагностики для данного типа:
   painkiller:     20 кейсов (боли, нервы, суставы, мышцы — диагностика рефлекс-молотком)
   antihistamine:  20 кейсов (нос, пазухи, зал��женность, аллергический ринит — диагностика риноскопом)
   strepsils:      20 кейсов (горло, кашель, хрипы, дыхание — диагностика фонендоскопом)
@@ -45,7 +46,7 @@ CONSUMABLE_KEYS: ['painkiller', 'antihistamine', 'strepsils']
   animating: boolean,      // флаг блокиро��ки взаимодействия во время анимации
   hp: number,              // текущее здоровье
   maxHp: number,           // максимальное здоровье (100)
-  severity: object,        // { key, label, startHp } — тяжесть заболевания
+  severity: object,        // { key, label, startHp } — label из Game.Lang.t('severity.*') — тяжесть заболевания
   treated: boolean,        // true после применения ВСЕХ требуемых препаратов (pendingConsumables пуст)
   hpDecayTimer: number,    // таймер деградации HP (сбрасывается каждые 3 сек)
   healthBar: THREE.Sprite|null, // 3D хелсбар над головой

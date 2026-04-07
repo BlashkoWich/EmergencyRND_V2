@@ -8,18 +8,18 @@
 
   var UNLOCK_DESCRIPTIONS = {
     2: [
-      'Покупка инструментов для диагностики',
-      'У пациентов появилась необходимость диагностики',
-      'Инструменты уже висят на панели — берите и используйте!'
+      Game.Lang.t('levels.unlock2.0'),
+      Game.Lang.t('levels.unlock2.1'),
+      Game.Lang.t('levels.unlock2.2')
     ],
     3: [
-      'Покупка мебели',
-      'Прокачка инвентаря (слоты)',
-      'Пациенты теперь идут потоком!',
-      'На полу появляется мусор — убирайте!'
+      Game.Lang.t('levels.unlock3.0'),
+      Game.Lang.t('levels.unlock3.1'),
+      Game.Lang.t('levels.unlock3.2'),
+      Game.Lang.t('levels.unlock3.3')
     ],
     4: [
-      'Найм сотрудников'
+      Game.Lang.t('levels.unlock4.0')
     ]
   };
 
@@ -62,10 +62,10 @@
 
     var parts = [];
     if (breakdown.treatment > 0) {
-      parts.push('+' + breakdown.treatment + ' XP лечение');
+      parts.push('+' + breakdown.treatment + ' ' + Game.Lang.t('levels.xp.treatment'));
     }
     if (breakdown.diagnosis > 0) {
-      parts.push('+' + breakdown.diagnosis + ' XP диагностика');
+      parts.push('+' + breakdown.diagnosis + ' ' + Game.Lang.t('levels.xp.diagnostics'));
     }
     el.textContent = parts.join(' + ');
 
@@ -85,7 +85,7 @@
     if (!popupEl) return;
     isLevelUpPopupOpen = true;
 
-    popupTitleEl.textContent = 'Уровень ' + newLevel + '!';
+    popupTitleEl.textContent = Game.Lang.t('levelUp.title', [newLevel]);
 
     var descs = UNLOCK_DESCRIPTIONS[newLevel] || [];
     popupUnlocksEl.innerHTML = '';

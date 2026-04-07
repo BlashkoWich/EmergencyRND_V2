@@ -23,9 +23,9 @@ INSTRUMENT_MAP = {
 ## Instrument Types
 ```js
 INSTRUMENT_TYPES = {
-  instrument_stethoscope: { name: 'Фонендоскоп',      color: 0x8866cc, size: {x:0.72, y:0.40, z:0.40} },
-  instrument_hammer:      { name: 'Рефлекс-молоток',   color: 0xcc8844, size: {x:0.64, y:0.56, z:0.24} },
-  instrument_rhinoscope:  { name: 'Риноскоп',          color: 0x44aacc, size: {x:0.64, y:0.32, z:0.32} }
+  instrument_stethoscope: { name: Game.Lang.t('item.instrument_stethoscope'), color: 0x8866cc, size: {x:0.72, y:0.40, z:0.40} },
+  instrument_hammer:      { name: Game.Lang.t('item.instrument_hammer'),     color: 0xcc8844, size: {x:0.64, y:0.56, z:0.24} },
+  instrument_rhinoscope:  { name: Game.Lang.t('item.instrument_rhinoscope'), color: 0x44aacc, size: {x:0.64, y:0.32, z:0.32} }
 }
 ```
 - 3D модели инструментов масштабированы x4 (`group.scale.set(4,4,4)`)
@@ -75,6 +75,7 @@ INSTRUMENT_TYPES = {
 ## Mini-Games
 
 ### Фонендоскоп (strepsils)
+- Заголовок и статусные тексты мини-игр берутся из `Game.Lang.t('diag.*')` ключей
 - Canvas overlay с силуэтом торса пациента
 - Вверху отображается жалоба пациента — игрок сам сопоставляет с анатомической областью
 - 5 точек аускультации: Сердце, Левое лёгкое, Правое лёгкое, Живот, Горло
