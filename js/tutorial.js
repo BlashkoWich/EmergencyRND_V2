@@ -291,7 +291,7 @@
       pauseTime: true,
       position: 'top-right',
       needsPointerLock: true,
-      arrow3D: { x: 5.5, y: 1.2, z: -10.5 }
+      arrow3D: { x: 4.2, y: 0.5, z: -10.5 }
     },
     // 24: Done!
     {

@@ -1503,11 +1503,13 @@
         if (!hoveredBasket || basketMode !== 'take') return;
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
         if (Game.Cashier && Game.Cashier.isPopupOpen()) return;
+        if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('pickup_item')) return;
 
         if (hoveredBasket.items.length > 0 && !Game.Inventory.isFull()) {
           var itemType = hoveredBasket.items.pop();
           Game.Inventory.addItem(itemType);
           updateBasketSprite(hoveredBasket);
+          if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('item_picked_up', itemType);
         }
       });
 

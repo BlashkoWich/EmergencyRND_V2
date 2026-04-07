@@ -181,6 +181,7 @@ CSS-класс `.tutorial-locked`:
 | `washing-machine.js` | `wash_started` | После запуска стирки |
 | `washing-machine.js` | `wash_finished` | После завершения стирки |
 | `consumables.js` | `item_picked_up` | При подборе предмета (из коробки или с земли) |
+| `staff.js` | `item_picked_up` | При взятии предмета из корзины (ЛКМ) |
 
 ### Блокировки в модулях:
 | Модуль | Что блокируется |
@@ -191,6 +192,7 @@ CSS-класс `.tutorial-locked`:
 | `cashier.js` | Клик по терминалу, кнопка закрытия скрыта во время туториала |
 | `shelves.js` | Взятие и размещение предметов |
 | `consumables.js` | Подбор, бросок, E-подъём коробок |
+| `staff.js` | Взятие из корзины (pickup_item) |
 | `furniture.js` | Перемещение мебели, замена белья |
 | `washing-machine.js` | Загрузка и запуск (LMB и E) |
 | `trash.js` | Уборка мусора |
