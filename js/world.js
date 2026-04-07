@@ -68,7 +68,7 @@
       }
 
       // --- Entrance sign ---
-      H.createSign(THREE, scene, '\u0427\u0410\u0421\u0422\u041D\u0410\u042F \u041A\u041B\u0418\u041D\u0418\u041A\u0410', 0, 2.3, BZ2 + 0.15, 0);
+      H.createSign(THREE, scene, Game.Lang.t('sign.clinic'), 0, 2.3, BZ2 + 0.15, 0);
 
       // === FURNITURE ===
 
@@ -119,7 +119,7 @@
       createChair(6.5, -3.2, -Math.PI / 2);
       createChair(6.5, -4.4, -Math.PI / 2);
 
-      H.createSign(THREE, scene, '\u0417\u041E\u041D\u0410 \u041E\u0416\u0418\u0414\u0410\u041D\u0418\u042F', 7.88, 2.5, -3.2, -Math.PI / 2);
+      H.createSign(THREE, scene, Game.Lang.t('sign.waitingArea'), 7.88, 2.5, -3.2, -Math.PI / 2);
 
       // --- 2 Medical beds ---
       var bedFrameMat = new THREE.MeshLambertMaterial({ color: 0xcccccc });
@@ -148,7 +148,7 @@
       createBed(-5.5, -9, 0);
       createBed(-5.5, -7, 0);
 
-      H.createSign(THREE, scene, '\u0421\u041C\u041E\u0422\u0420\u041E\u0412\u0410\u042F', -7.88, 2.5, -8, Math.PI / 2);
+      H.createSign(THREE, scene, Game.Lang.t('sign.examination'), -7.88, 2.5, -8, Math.PI / 2);
 
       // === OUTDOOR ENVIRONMENT ===
 
@@ -263,8 +263,8 @@
       var cashierTableBox = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.8, 0.7), new THREE.MeshBasicMaterial({ visible: false }));
       cashierTableBox.position.set(3.5, 0.4, -9.5); scene.add(cashierTableBox); collidables.push(cashierTableBox);
 
-      H.createSign(THREE, scene, '\u041A\u0410\u0421\u0421\u0410', 3.5, 2.5, -11.78, 0);
-      H.createSign(THREE, scene, '\u0420\u0415\u0421\u0415\u041F\u0428\u0415\u041D', 0, 2.5, -11.78, 0);
+      H.createSign(THREE, scene, Game.Lang.t('sign.cashier'), 3.5, 2.5, -11.78, 0);
+      H.createSign(THREE, scene, Game.Lang.t('sign.reception'), 0, 2.5, -11.78, 0);
 
       // Return destination slots for patient system
       return {

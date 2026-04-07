@@ -101,7 +101,7 @@
     collidables.push(machineCollision);
 
     // Sign on wall
-    Game.Helpers.createSign(THREE, scene, '\u0421\u0422\u0418\u0420\u041A\u0410', MACHINE_X, 2.5, -11.78, 0);
+    Game.Helpers.createSign(THREE, scene, Game.Lang.t('sign.laundry'), MACHINE_X, 2.5, -11.78, 0);
   }
 
   function highlightMachine() {

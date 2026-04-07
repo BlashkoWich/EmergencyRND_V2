@@ -30,7 +30,7 @@ PRICES = { mild: 35, medium: 50, severe: 70 }
   - Корпус: BoxGeometry(0.22, 0.04, 0.28), тёмный (0x2a2a2a), y=0.84
   - Экран: BoxGeometry(0.16, 0.005, 0.10), зелёный (0x1a3a1a), y=0.865
   - Клавиатура: BoxGeometry(0.16, 0.005, 0.12), серая (0x3a3a3a), y=0.865
-- Табличка "КАССА" на задней стене (3.5, 2.5, -11.78)
+- Табличка `sign.cashier` на задней стене (3.5, 2.5, -11.78)
 - Collision box для стола
 
 ## Patient Position at Cashier

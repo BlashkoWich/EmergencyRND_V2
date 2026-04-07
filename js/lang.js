@@ -185,6 +185,12 @@
       'sign.instruments': 'ИНСТРУМЕНТЫ',
       'sign.clean': 'ЧИСТОЕ',
       'sign.dirty': 'ГРЯЗНОЕ',
+      'sign.clinic': 'ЧАСТНАЯ КЛИНИКА',
+      'sign.waitingArea': 'ЗОНА ОЖИДАНИЯ',
+      'sign.examination': 'СМОТРОВАЯ',
+      'sign.cashier': 'КАССА',
+      'sign.reception': 'РЕСЕПШЕН',
+      'sign.laundry': 'СТИРКА',
 
       // Inventory
       'inv.shop': 'Q — Магазин',
@@ -651,6 +657,12 @@
       'sign.instruments': 'INSTRUMENTS',
       'sign.clean': 'CLEAN',
       'sign.dirty': 'DIRTY',
+      'sign.clinic': 'PRIVATE CLINIC',
+      'sign.waitingArea': 'WAITING AREA',
+      'sign.examination': 'EXAMINATION',
+      'sign.cashier': 'CASHIER',
+      'sign.reception': 'RECEPTION',
+      'sign.laundry': 'LAUNDRY',
 
       // Inventory
       'inv.shop': 'Q — Shop',
