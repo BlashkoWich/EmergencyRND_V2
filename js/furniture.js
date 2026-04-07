@@ -303,6 +303,69 @@
     return target;
   }
 
+  // --- Wall-mount placement position (snaps to nearest wall) ---
+
+  function getWallPlacementPosition() {
+    var basePos = getPlacementPosition();
+    var info = FURNITURE_TYPES[carriedFurniture.type];
+    var halfWidth = info ? info.boxSize.x / 2 : 0.5;
+    var halfDepth = info ? info.boxSize.z / 2 : 0.15;
+    var wallOffset = halfDepth + WALL_HALF_THICKNESS + 0.01;
+
+    var bestWall = null;
+    var bestDist = Infinity;
+
+    for (var i = 0; i < WALL_SEGMENTS.length; i++) {
+      var w = WALL_SEGMENTS[i];
+      var dist, along;
+      if (w.type === 'h') {
+        dist = Math.abs(basePos.z - w.val);
+        along = basePos.x;
+      } else {
+        dist = Math.abs(basePos.x - w.val);
+        along = basePos.z;
+      }
+      if (along >= w.min + halfWidth && along <= w.max - halfWidth && dist < bestDist) {
+        bestDist = dist;
+        bestWall = w;
+      }
+    }
+
+    if (!bestWall) return { pos: basePos, rotY: 0, onWall: false };
+
+    var result = basePos.clone();
+    var rotY = 0;
+
+    if (bestWall.type === 'h') {
+      // Horizontal wall (constant z)
+      if (basePos.z > bestWall.val) {
+        // South side of wall — front (+z) faces into room
+        result.z = bestWall.val + wallOffset;
+        rotY = 0;
+      } else {
+        // North side of wall — front must face -z (into room)
+        result.z = bestWall.val - wallOffset;
+        rotY = Math.PI;
+      }
+      result.x = Math.max(bestWall.min + halfWidth, Math.min(bestWall.max - halfWidth, result.x));
+    } else {
+      // Vertical wall (constant x)
+      if (basePos.x > bestWall.val) {
+        // East side of wall — panel faces east (+x)
+        result.x = bestWall.val + wallOffset;
+        rotY = -Math.PI / 2;
+      } else {
+        // West side of wall — panel faces west (-x)
+        result.x = bestWall.val - wallOffset;
+        rotY = Math.PI / 2;
+      }
+      result.z = Math.max(bestWall.min + halfWidth, Math.min(bestWall.max - halfWidth, result.z));
+    }
+
+    result.y = 0;
+    return { pos: result, rotY: rotY, onWall: true };
+  }
+
   // --- Carried furniture update ---
 
   var canPlaceCurrent = false;
@@ -310,13 +373,21 @@
   function updateCarriedFurniture() {
     if (!carriedFurniture) return;
 
-    var pos = getPlacementPosition();
+    if (carriedFurniture.wallMount) {
+      var wallResult = getWallPlacementPosition();
+      var pos = wallResult.pos;
+      carriedFurniture.group.position.set(pos.x, carriedOriginY, pos.z);
+      carriedFurniture.group.rotation.y = wallResult.rotY;
+      carriedFurniture.collisionBox.position.set(pos.x, carriedBoxY, pos.z);
+      carriedFurniture.collisionBox.rotation.y = wallResult.rotY;
+      canPlaceCurrent = wallResult.onWall && canPlaceAt(pos, carriedFurniture.type);
+    } else {
+      var pos = getPlacementPosition();
+      carriedFurniture.group.position.set(pos.x, carriedOriginY, pos.z);
+      carriedFurniture.collisionBox.position.set(pos.x, carriedBoxY, pos.z);
+      canPlaceCurrent = canPlaceAt(pos, carriedFurniture.type);
+    }
 
-    carriedFurniture.group.position.set(pos.x, carriedOriginY, pos.z);
-    carriedFurniture.collisionBox.position.set(pos.x, carriedBoxY, pos.z);
-
-    // Check placement validity and update outline color
-    canPlaceCurrent = canPlaceAt(pos, carriedFurniture.type);
     setCarryOutline(carriedFurniture.group, canPlaceCurrent ? 'green' : 'red');
   }
 
@@ -335,7 +406,19 @@
       if (hoveredFurniture) { unhighlightGroup(hoveredFurniture.group); hoveredFurniture = null; }
       return;
     }
-    if (!Game.Interaction.isActive('furniture')) {
+    var isFurnitureActive = Game.Interaction.isActive('furniture');
+
+    // When shelf/panel module is active but has no meaningful interaction,
+    // fall through to regular furniture handling so shelves/panels can be dragged
+    var activeModName = Game.Interaction.getActive();
+    var shelfPanelFallback = !isFurnitureActive && (
+      ((activeModName === 'shelvesPlace' || activeModName === 'shelvesItems') &&
+       !(Game.Shelves && Game.Shelves.hasInteraction())) ||
+      ((activeModName === 'toolPanelPlace' || activeModName === 'toolPanelItems') &&
+       !(Game.ToolPanel && Game.ToolPanel.hasInteraction()))
+    );
+
+    if (!isFurnitureActive && !shelfPanelFallback) {
       // When cashier module is active, allow E-hold on the cashier desk
       if (Game.Interaction.isActive('cashier') && Game.Cashier && Game.Cashier.isDeskHovered()) {
         var cashierDeskItem = null;
@@ -409,9 +492,16 @@
       return;
     }
 
-    var targetPos = getPlacementPosition();
-
     var item = carriedFurniture;
+    var targetPos;
+    if (item.wallMount) {
+      var wallResult = getWallPlacementPosition();
+      targetPos = wallResult.pos;
+      item.group.rotation.y = wallResult.rotY;
+    } else {
+      targetPos = getPlacementPosition();
+    }
+
     clearCarryOutline(item.group);
     item.group.position.set(targetPos.x, carriedOriginY, targetPos.z);
     item.collisionBox.position.set(targetPos.x, carriedBoxY, targetPos.z);
@@ -519,6 +609,7 @@
   function onWheel(e) {
     if (!carriedFurniture) return;
     if (!controls.isLocked) return;
+    if (carriedFurniture.wallMount) return; // rotation determined by wall
     e.preventDefault();
     var rotStep = Math.PI / 12; // 15 degrees per tick
     carriedFurniture.group.rotation.y += e.deltaY > 0 ? rotStep : -rotStep;
@@ -600,7 +691,8 @@
         slot: opts.slot || { pos: new THREE.Vector3(), occupied: false },
         isIndoors: checkIndoors(opts.group.position),
         onMoved: opts.onMoved || null,
-        canPickUp: opts.canPickUp || null
+        canPickUp: opts.canPickUp || null,
+        wallMount: opts.wallMount || false
       };
       furnitureItems.push(item);
       return item;

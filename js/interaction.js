@@ -104,7 +104,7 @@
       activeModule = newActive;
 
       // Central hint reset — hide hint when no module is active
-      if (!activeModule) {
+      if (!activeModule && !(Game.Furniture && Game.Furniture.isCarrying())) {
         var hintEl = document.getElementById('interact-hint');
         if (hintEl) hintEl.style.display = 'none';
       }

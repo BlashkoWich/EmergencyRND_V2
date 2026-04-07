@@ -521,6 +521,8 @@
       }, false, 5);
 
       Game.Interaction.register('shelvesPlace', function() {
+        var activeItem = Game.Inventory.getActive();
+        if (!activeItem || Game.Consumables.isInstrument(activeItem)) return [];
         return allShelfParts;
       }, false, 5);
     },

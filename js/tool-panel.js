@@ -344,6 +344,7 @@
         type: 'toolPanel',
         group: panelGroup,
         collisionBox: panelCollisionBox,
+        wallMount: true,
         onMoved: function(pos, rotY) {
           PANEL_X = pos.x;
           PANEL_Z = pos.z;
@@ -404,6 +405,8 @@
       }, false, 5);
 
       Game.Interaction.register('toolPanelPlace', function() {
+        var activeItem = Game.Inventory.getActive();
+        if (!activeItem || !Game.Consumables.isInstrument(activeItem)) return [];
         return allPanelParts;
       }, false, 5);
     },
