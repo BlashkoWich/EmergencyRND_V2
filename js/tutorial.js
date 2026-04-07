@@ -276,7 +276,7 @@
     },
     // 22: Wait for wash to finish
     {
-      text: 'Стирка запущена! Подождите, пока машинка закончит...\n\nЭто займёт 20 секунд.',
+      text: 'Стирка запущена! Подождите, пока машинка закончит...\n\nЭто займёт 5 секунд.',
       trigger: 'wash_finished',
       allowed: ['movement', 'camera'],
       pauseTime: false, // time must pass for wash cycle

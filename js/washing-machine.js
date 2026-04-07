@@ -13,6 +13,11 @@
   var isWashing = false;
   var washTimer = 0;
   var WASH_DURATION = 20;
+  var WASH_DURATION_TUTORIAL = 5;
+
+  function getWashDuration() {
+    return (Game.Tutorial && Game.Tutorial.isActive()) ? WASH_DURATION_TUTORIAL : WASH_DURATION;
+  }
   var MAX_LOAD = 5;
 
   // Machine position
@@ -148,7 +153,7 @@
       var hasDirtyInInventory = Game.Inventory.countType('linen_dirty') > 0;
 
       if (isWashing) {
-        var remaining = Math.ceil(WASH_DURATION - washTimer);
+        var remaining = Math.ceil(getWashDuration() - washTimer);
         hintEl.textContent = 'Стирка... ' + remaining + ' сек.';
       } else if (dirtyLinenCount === 0 && !hasDirtyInInventory) {
         hintEl.textContent = 'Загрузите грязное бельё (ЛКМ)';
@@ -199,11 +204,12 @@
     drumMesh.rotation.z += delta * 4;
 
     // Update progress bar
-    var progress = Math.min(1, washTimer / WASH_DURATION);
+    var dur = getWashDuration();
+    var progress = Math.min(1, washTimer / dur);
     progressFill.scale.x = Math.max(0.01, progress);
     progressFill.position.x = -(0.34 * (1 - progress));
 
-    if (washTimer >= WASH_DURATION) {
+    if (washTimer >= dur) {
       finishWash();
     }
   }

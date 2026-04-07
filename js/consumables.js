@@ -979,19 +979,22 @@
         if (Game.Patients.hasInteraction()) return;
         if (Game.WashingMachine && Game.WashingMachine.hasInteraction()) return;
         if (Game.Furniture && Game.Furniture.tryLinenReplace()) return;
-        if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('pickup_item')) return;
+        var tutorialActive = Game.Tutorial && Game.Tutorial.isActive();
+        var pickupAllowed = !tutorialActive || Game.Tutorial.isAllowed('pickup_item');
 
-        // If holding a box, LMB takes item from box
+        // If holding a box, LMB takes item from box (always allowed during tutorial)
         if (heldBox) {
           if (Game.Cashier && Game.Cashier.isPopupOpen()) return;
           if (heldBox.remaining <= 0) return;
           if (Game.Inventory.addItem(heldBox.type)) {
-            heldBox.remaining--;
-            updateBoxLabel(heldBox);
-            if (heldBox.remaining <= 0) {
-              markBoxEmpty(heldBox);
+            if (!tutorialActive) {
+              heldBox.remaining--;
+              updateBoxLabel(heldBox);
+              if (heldBox.remaining <= 0) {
+                markBoxEmpty(heldBox);
+              }
             }
-            if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('item_picked_up', heldBox.type);
+            if (tutorialActive) Game.Tutorial.onEvent('item_picked_up', heldBox.type);
           } else {
             Game.Inventory.showNotification('Инвентарь полон');
           }
@@ -1002,19 +1005,22 @@
         if (hoveredBox) {
           if (hoveredBox.remaining <= 0) return;
           if (Game.Inventory.addItem(hoveredBox.type)) {
-            hoveredBox.remaining--;
-            updateBoxLabel(hoveredBox);
-            if (hoveredBox.remaining <= 0) {
-              markBoxEmpty(hoveredBox);
+            if (!tutorialActive) {
+              hoveredBox.remaining--;
+              updateBoxLabel(hoveredBox);
+              if (hoveredBox.remaining <= 0) {
+                markBoxEmpty(hoveredBox);
+              }
             }
-            if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('item_picked_up', hoveredBox.type);
+            if (tutorialActive) Game.Tutorial.onEvent('item_picked_up', hoveredBox.type);
           } else {
             Game.Inventory.showNotification('Инвентарь полон');
           }
           return;
         }
 
-        // Normal item pickup
+        // Normal item pickup (still restricted by tutorial step)
+        if (!pickupAllowed) return;
         if (!hoveredItem) return;
         if (Game.Inventory.addItem(hoveredItem.type)) {
           var pickedType = hoveredItem.type;
@@ -1023,7 +1029,7 @@
           unhighlightGroup(hoveredItem.mesh);
           hoveredItem = null;
           hintEl.style.display = 'none';
-          if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('item_picked_up', pickedType);
+          if (tutorialActive) Game.Tutorial.onEvent('item_picked_up', pickedType);
         } else {
           Game.Inventory.showNotification('Инвентарь полон');
         }
