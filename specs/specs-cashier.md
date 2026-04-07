@@ -58,11 +58,15 @@ PRICES = { mild: 35, medium: 50, severe: 70 }
 
 ## Terminal Interaction
 
-### Raycasting
+### Raycasting (единая зона: стойка + терминал)
 - Raycaster far=3 (ближняя дистанция)
-- Проверяет пересечение с мешами терминала **и** мешом пациента в состоянии `atCashier`
-- Подсказка "ЛКМ — Оплата" (только когда пациент `atCashier`)
-- При наведении: зелёная обводка (Game.Outline) на терминале **и** пациенте одновременно
+- Модуль `cashier` регистрирует **все** меши `cashierDeskGroup` (стол, терминал, экран, клавиатуру) + меш пациента в состоянии `atCashier`
+- При наведении на **любую** часть кассовой стойки (терминал, стол, пациент):
+  - Зелёная обводка (Game.Outline) на **всей стойке целиком** + пациенте
+  - Если пациент `atCashier`: подсказка `"ЛКМ — Оплата  |  Зажми E — Переместить"`
+  - Если пациента нет: подсказка `"Зажми E — Переместить кассовый стол"`
+- **Оба действия** доступны одновременно: ЛКМ открывает терминал оплаты, зажатие E поднимает стойку
+- Модуль `furniture` распознаёт активный модуль `cashier` и устанавливает `hoveredFurniture = cashierDesk`, позволяя E-hold для перемещения
 - При уходе прицела: обводка убирается через `Game.Outline.clearHover()`
 
 ### Terminal Popup (`#cashier-popup`)
@@ -92,7 +96,8 @@ PRICES = { mild: 35, medium: 50, severe: 70 }
 Game.Cashier.setup(THREE, scene, camera, controls, cashierDesk)
 Game.Cashier.update(delta)
 Game.Cashier.isPopupOpen()     // → boolean
-Game.Cashier.hasInteraction()  // → boolean (hover на терминал/пациента)
+Game.Cashier.hasInteraction()  // → boolean (hover на терминал/пациента, есть пациент atCashier)
+Game.Cashier.isDeskHovered()   // → boolean (hover на любую часть стойки, даже без пациента)
 Game.Cashier.getBalance()      // → number
 Game.Cashier.spend(amount)     // списание средств с баланса (+ trackSpending)
 Game.Cashier.addPatientToQueue(patient)  // добавить пациента в очередь на оплату

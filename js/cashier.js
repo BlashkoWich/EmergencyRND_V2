@@ -200,24 +200,33 @@
       if (!hitTerminal) hitPatient = true;
     }
 
-    var hintEl = document.getElementById('interact-hint');
+    // Detect if we hit any part of the cashier desk (terminal, desk body, or patient)
+    var hitAnyCashierPart = hitTerminal || hitPatient || (cachedHits && !hitTerminal && !hitPatient);
+    var hasPatientReady = currentPatient && currentPatient.state === 'atCashier';
+    var nowHovered = hitAnyCashierPart && hasPatientReady;
+    // Also highlight desk when no patient (for move hint)
+    var nowHoveredDesk = hitAnyCashierPart && !hasPatientReady;
 
-    var nowHovered = (hitTerminal || hitPatient) && currentPatient && currentPatient.state === 'atCashier';
-
-    if (nowHovered && !prevHovered) {
-      var outlineObjects = terminalMeshes.slice();
+    if ((nowHovered || nowHoveredDesk) && !prevHovered) {
+      var outlineObjects = [];
+      cashierDeskGroup.traverse(function(child) {
+        if (child.isMesh) outlineObjects.push(child);
+      });
       if (currentPatient) outlineObjects.push(currentPatient.mesh);
       Game.Outline.setHover(outlineObjects);
-    } else if (!nowHovered && prevHovered) {
+    } else if (!nowHovered && !nowHoveredDesk && prevHovered) {
       clearCashierHighlight();
     }
 
     hoveredTerminal = nowHovered;
-    prevHovered = nowHovered;
+    prevHovered = nowHovered || nowHoveredDesk;
 
+    var hintEl = document.getElementById('interact-hint');
     if (hoveredTerminal) {
-      var hintEl = document.getElementById('interact-hint');
-      hintEl.textContent = '\u041B\u041A\u041C \u2014 \u041E\u043F\u043B\u0430\u0442\u0430';
+      hintEl.textContent = '\u041B\u041A\u041C \u2014 \u041E\u043F\u043B\u0430\u0442\u0430  |  \u0417\u0430\u0436\u043C\u0438 E \u2014 \u041F\u0435\u0440\u0435\u043C\u0435\u0441\u0442\u0438\u0442\u044C';
+      hintEl.style.display = 'block';
+    } else if (nowHoveredDesk) {
+      hintEl.textContent = '\u0417\u0430\u0436\u043C\u0438 E \u2014 \u041F\u0435\u0440\u0435\u043C\u0435\u0441\u0442\u0438\u0442\u044C \u043A\u0430\u0441\u0441\u043E\u0432\u044B\u0439 \u0441\u0442\u043E\u043B';
       hintEl.style.display = 'block';
     }
   }
@@ -232,6 +241,7 @@
     },
 
     hasInteraction: function() { return hoveredTerminal; },
+    isDeskHovered: function() { return prevHovered; },
     hasPatients: function() { return !!currentPatient || cashierQueue.length > 0; },
 
     // Staff APIs
@@ -406,8 +416,12 @@
       }
 
       // Register with central interaction system
+      // Include desk group meshes so cashier module activates when aiming at any part of the desk
       Game.Interaction.register('cashier', function() {
         var meshes = terminalMeshes.slice();
+        cashierDeskGroup.traverse(function(child) {
+          if (child.isMesh) meshes.push(child);
+        });
         if (currentPatient && currentPatient.state === 'atCashier') {
           currentPatient.mesh.traverse(function(child) {
             if (child.isMesh) meshes.push(child);

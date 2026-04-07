@@ -336,6 +336,21 @@
       return;
     }
     if (!Game.Interaction.isActive('furniture')) {
+      // When cashier module is active, allow E-hold on the cashier desk
+      if (Game.Interaction.isActive('cashier') && Game.Cashier && Game.Cashier.isDeskHovered()) {
+        var cashierDeskItem = null;
+        for (var fi = 0; fi < furnitureItems.length; fi++) {
+          if (furnitureItems[fi].type === 'cashierDesk') { cashierDeskItem = furnitureItems[fi]; break; }
+        }
+        if (cashierDeskItem && cashierDeskItem !== hoveredFurniture) {
+          if (hoveredFurniture) unhighlightGroup(hoveredFurniture.group);
+          hoveredFurniture = cashierDeskItem;
+        } else if (!cashierDeskItem && hoveredFurniture) {
+          unhighlightGroup(hoveredFurniture.group); hoveredFurniture = null;
+        }
+        // Don't show furniture hint — cashier.js already shows the combined hint
+        return;
+      }
       if (hoveredFurniture) { unhighlightGroup(hoveredFurniture.group); hoveredFurniture = null; }
       return;
     }
