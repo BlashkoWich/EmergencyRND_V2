@@ -337,10 +337,7 @@
 
       createPanel(collidables);
 
-      // Place all instruments on panel at start
-      for (var i = 0; i < slots.length; i++) {
-        placeItemOnSlot(slots[i]);
-      }
+      // Panel starts empty — instruments are purchased from the shop
 
       // Register as draggable fixture
       Game.Furniture.registerFixture({

@@ -116,6 +116,23 @@
     }
   }
 
+  function refreshInstrumentFreeLabels() {
+    var instrumentItems = document.querySelectorAll('#shop-tab-instruments .shop-item');
+    for (var i = 0; i < instrumentItems.length; i++) {
+      var itemEl = instrumentItems[i];
+      var type = itemEl.dataset.type;
+      var btn = itemEl.querySelector('.shop-buy-btn');
+      if (!btn) continue;
+      if (!firstOrderUsed[type]) {
+        btn.textContent = 'Заказать — Бесплатно!';
+        btn.style.background = '#2a8a5a';
+      } else {
+        btn.textContent = 'Купить — $220';
+        btn.style.background = '';
+      }
+    }
+  }
+
   function refreshUpgradeButtons() {
     for (var i = 0; i < upgradeButtons.length; i++) {
       var entry = upgradeButtons[i];
@@ -226,15 +243,24 @@
         itemEl.insertBefore(countSpan, itemEl.querySelector('.shop-buy-btn'));
         countEls[type] = countSpan;
 
-        // Buy button handler
+        // Buy button handler (first order of each instrument is free)
         (function(btn, t) {
           btn.addEventListener('click', function() {
-            var balance = Game.Cashier.getBalance();
-            if (balance < 220) {
-              Game.Inventory.showNotification('Недостаточно средств!');
-              return;
+            var isFree = !firstOrderUsed[t];
+            var price = isFree ? 0 : 220;
+            if (!isFree) {
+              var balance = Game.Cashier.getBalance();
+              if (balance < price) {
+                Game.Inventory.showNotification('Недостаточно средств!');
+                return;
+              }
             }
-            Game.Cashier.spend(220);
+            if (price > 0) Game.Cashier.spend(price);
+            if (isFree) {
+              firstOrderUsed[t] = true;
+              Game.Inventory.showNotification('Первый заказ бесплатно!', 'rgba(34, 139, 34, 0.85)');
+              refreshInstrumentFreeLabels();
+            }
             Game.Consumables.spawnInstrumentInDeliveryZone(t);
             updateCounts();
           });
@@ -314,6 +340,7 @@
 
       refreshTabLocks();
       refreshFreeLabels();
+      refreshInstrumentFreeLabels();
 
       // KeyQ to toggle shop
       document.addEventListener('keydown', function(e) {
@@ -339,6 +366,7 @@
           refreshStaffList();
           refreshTabLocks();
           refreshFreeLabels();
+          refreshInstrumentFreeLabels();
           if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('shop_opened');
         }
       });
