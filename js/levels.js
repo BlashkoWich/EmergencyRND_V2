@@ -146,10 +146,11 @@
             level = chosenLevel;
             xp = 0;
             updateHUD();
-            // Hide level select, show overlay
+            // Hide level select, start game
             if (levelSelectScreen) levelSelectScreen.style.display = 'none';
-            var overlay = document.getElementById('overlay');
-            if (overlay) overlay.style.display = 'flex';
+            if (Game.Controls && Game.Controls._controls) {
+              Game.Controls._controls.lock();
+            }
             // Refresh shop locks
             if (Game.Shop && Game.Shop.refreshTabLocks) {
               Game.Shop.refreshTabLocks();

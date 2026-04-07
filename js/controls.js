@@ -78,7 +78,11 @@
       var overlay = document.getElementById('overlay');
       var crosshairEl = document.getElementById('crosshair');
 
-      overlay.addEventListener('click', function() { controls.lock(); });
+      overlay.addEventListener('click', function() {
+        overlay.style.display = 'none';
+        var levelSelect = document.getElementById('level-select-screen');
+        if (levelSelect) levelSelect.style.display = 'flex';
+      });
       controls.addEventListener('lock', function() {
         self._savedQuat = camera.quaternion.clone();
         overlay.style.display = 'none';

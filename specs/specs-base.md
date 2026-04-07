@@ -165,7 +165,8 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 | ID | Тип | Назначение |
 |----|-----|------------|
 | `fps-counter` | div | Счётчик FPS (top-right, зелёный monospace) |
-| `overlay` | div | Стартовый экран / пауза (+ кнопки качества графики) |
+| `overlay` | div | Первый экран при загрузке / пауза (настройки графики + язык). Клик → показывает level-select-screen |
+| `level-select-screen` | div | Экран выбора уровня (скрыт по умолчанию). Клик "Начать" → controls.lock() |
 | `crosshair` | div | Прицел (CSS-крестик) |
 | `interact-hint` | div | Динамическая подсказка под прицелом |
 | `held-box-hint` | div | Подсказка при удержании коробки (ЛКМ/G) |
@@ -231,7 +232,7 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 | z-index | Элемент |
 |---------|---------|
 | 5 | `#crosshair`, `#interact-hint`, `#inventory-container` |
-| 10 | `#overlay` |
+| 10 | `#overlay`, `#level-select-screen` |
 | 15 | `#notification` |
 | 20 | `#patient-popup`, `#shop-popup`, `#cashier-popup`, `#day-end-popup` |
 | 22 | `#ad-offer-popup` |
@@ -324,6 +325,7 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 - **Камера**: PointerLockControls обрабатывает мышь напрямую (без сглаживания). Фильтр больших delta (>150px) для защиты от бага Pointer Lock API
 - **Перемещение**: velocity-based с экспоненциальным затуханием (`_moveDamping=12.0`). Плавные разгон и торможение вместо мгновенной установки позиции. При столкновении velocity обнуляется
 - Внутренние: `_canMove(direction)`, `_keys`, `_moveSpeed=4.0`, `_sprintSpeed=7.0`, `_collisionDistance=0.4`, `_velocityX/Z` (текущая скорость), `_moveDamping=12.0`, `_collisionOrigin` (Vector3 для рейкаста от y=0.5), `_savedQuat` (сохранённый quaternion при re-lock)
+- **Старт**: клик по `#overlay` → скрывает overlay, показывает `#level-select-screen`. Выбор уровня в `levels.js` → `controls.lock()` (старт игры)
 - Unlock handler не показывает overlay если активна реклама (`Game.Ads.isActive()`), открыт магазин (`Game.Shop.isOpen()`), попап пациента (`Game.Patients.isPopupOpen()`), диагностика (`Game.Diagnostics.isActive()`) или попап итогов дня (`Game.Shift.isPopupOpen()`)
 
 ### `Game.Consumables` (`js/consumables.js`)
