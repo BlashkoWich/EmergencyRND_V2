@@ -139,9 +139,10 @@ CONSUMABLE_TYPES = {
 ### Box 3D Model (коробка препаратов)
 - BoxGeometry(0.8, 0.6, 0.6), цвет коробки = цвет препарата (roughness 0.6)
 - Тёмная окантовка сверху (цвет × 0.7)
-- Canvas-текстура 512×512 на передней И задней гранях: белая этикетка, цветной мед. крест, название (52px bold), "×10" (72px bold), "препараты"/"расходники" (32px)
+- Canvas-текстура 512×512 на передней И задней гранях: белая этикетка, цветной мед. крест, название (52px bold), "×N" (72px bold, N = remaining), "препараты"/"расходники" (32px)
 - Надписи: `PlaneGeometry(0.68, 0.51)`, offset +0.005 от грани, `polygonOffset: true`, `userData.isLabel = true` (пропускаются при highlight)
-- `group.userData.isBox = true`, `group.userData.boxType = type`
+- `group.userData`: `isBox`, `boxType`, `labelCanvas`, `labelCtx`, `labelTexture`, `labelColorHex` — для динамического обновления счётчика
+- При взятии предмета из коробки (`remaining--`) canvas перерисовывается: очищается область счётчика и рисуется новое значение `×N`, `texture.needsUpdate = true`
 
 ### Cashier Desk 3D Model
 - **Стол**: BoxGeometry(0.8, 0.8, 0.6), деревянный цвет (0x8B6F47), позиция (3.5, 0.4, -9.5)
