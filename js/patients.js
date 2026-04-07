@@ -152,6 +152,23 @@
   var firstPatientPaid = false; // tracks if the very first patient has been paid
   var animations = [];
 
+  // Cluster spawn state
+  var clusterTimer = 0;
+  var clusterRemaining = 0;
+  var clusterPauseTimer = 0;
+  var clusterPauseDuration = 0;
+  var inClusterPause = false;
+  var CLUSTER_SPAWN_DELAY = 2.5;
+  var CLUSTER_PAUSE_MIN = 90;
+  var CLUSTER_PAUSE_MAX = 120;
+
+  function getClusterSize() {
+    var lvl = Game.Levels ? Game.Levels.getLevel() : 2;
+    if (lvl >= 4) return 4 + Math.floor(Math.random() * 3); // 4-6
+    if (lvl >= 3) return 3 + Math.floor(Math.random() * 3); // 3-5
+    return 3 + Math.floor(Math.random() * 2);                // 3-4 (level 2)
+  }
+
   // --- UI elements ---
   var hintEl, popupEl, popupName, popupDiagnosis, popupSupply, popupSupplyIcon, popupSeverity;
   var popupAge, popupComplaint, popupTemp, popupPulse, popupBp;
@@ -1520,11 +1537,12 @@
           if (dx * dx + dz * dz > 0.01) continue;
         }
         if (Game.Diagnostics && Game.Diagnostics.isActive() && Game.Diagnostics.getPatient() === p) continue;
-        // Decay: -1 HP every 3 sec
+        // Decay: -1 HP every 3 sec (halved for queued/waiting patients)
         p.hpDecayTimer += delta;
         while (p.hpDecayTimer >= HP_DECAY_INTERVAL) {
           p.hpDecayTimer -= HP_DECAY_INTERVAL;
-          p.hp -= 1;
+          var decayAmount = (p.state === 'queued' || p.state === 'waiting') ? 0.5 : 1;
+          p.hp -= decayAmount;
           if (p.hp <= 0) {
             p.hp = 0;
             updateHealthBarTexture(p);
@@ -1861,11 +1879,16 @@
             Game.Inventory.showNotification(Game.Lang.t('notify.nurseAlreadyTreating'));
             return;
           }
-          // Auto-find matching consumable in inventory
+          // Check player has manually selected a matching consumable
           if (!hoveredPatient.pendingConsumables || hoveredPatient.pendingConsumables.length === 0) return;
-          var foundType = Game.Inventory.findAndActivateOneOf(hoveredPatient.pendingConsumables);
-          if (!foundType) {
+          var activeType = Game.Inventory.getActive();
+          if (!activeType) {
             Game.Inventory.showNotification(Game.Lang.t('notify.noMedicineInInventory'));
+            return;
+          }
+          if (hoveredPatient.pendingConsumables.indexOf(activeType) === -1) {
+            wrongTreatment(hoveredPatient);
+            Game.Inventory.showNotification(Game.Lang.t('notify.wrongItem', [hoveredPatient.pendingConsumables[0]]));
             return;
           }
           treatPatient(hoveredPatient);
@@ -1942,6 +1965,11 @@
         Game.Tutorial.setTutorialPatient(p);
       }
     },
+    startFirstCluster: function() {
+      clusterRemaining = getClusterSize();
+      clusterTimer = 0;
+      inClusterPause = false;
+    },
     onPatientPaid: function() {
       onPatientPaid();
     },
@@ -1969,6 +1997,12 @@
       sequentialSpawnTimer = 0;
       sequentialSpawnActive = false;
       firstPatientPaid = false;
+      // Reset cluster state
+      clusterTimer = 0;
+      clusterRemaining = 0;
+      clusterPauseTimer = 0;
+      clusterPauseDuration = 0;
+      inClusterPause = false;
       // Remove heal particles
       for (var j = healParticles.length - 1; j >= 0; j--) {
         scene.remove(healParticles[j].mesh);
@@ -1980,21 +2014,37 @@
       // Spawn patients only when shift is open (and not during tutorial)
       if (Game.Shift && Game.Shift.isOpen() && !(Game.Tutorial && Game.Tutorial.isActive())) {
         var currentLevel = Game.Levels ? Game.Levels.getLevel() : 1;
-        var spawnMode = (currentLevel >= 3) ? 'continuous' : 'sequential';
+        var spawnMode = Game.Levels ? Game.Levels.getSpawnMode() : 'sequential';
 
-        if (spawnMode === 'continuous') {
-          // Level 3+: timed spawn every N seconds
-          var interval = Game.Levels ? Game.Levels.getSpawnInterval() : 10;
-          spawnTimer += delta;
-          if (spawnTimer >= interval) {
-            spawnTimer = 0;
-            var maxQueue = Math.min(2 + Game.Furniture.getAllBeds().length + Game.Furniture.getAllChairs().length - 5, 10);
-            if (maxQueue < 2) maxQueue = 2;
-            if (queue.length >= maxQueue) {
-              Game.Inventory.showNotification(Game.Lang.t('notify.queueOverflow'));
-            } else {
-              spawnPatient();
+        if (spawnMode === 'cluster') {
+          // Level 2+: cluster spawn — patients arrive in quick succession
+          var totalSlots = Game.Furniture.getAllBeds().length + Game.Furniture.getAllChairs().length;
+          var maxQueue = Math.min(totalSlots + 2, 12);
+          if (maxQueue < 4) maxQueue = 4;
+
+          if (inClusterPause) {
+            clusterPauseTimer += delta;
+            if (clusterPauseTimer >= clusterPauseDuration && queue.length === 0) {
+              inClusterPause = false;
+              clusterRemaining = getClusterSize();
+              clusterTimer = 0;
             }
+          } else if (clusterRemaining > 0) {
+            clusterTimer += delta;
+            if (clusterTimer >= CLUSTER_SPAWN_DELAY) {
+              clusterTimer = 0;
+              if (queue.length >= maxQueue) {
+                Game.Inventory.showNotification(Game.Lang.t('notify.queueOverflow'));
+                clusterRemaining = 0;
+              } else {
+                spawnPatient();
+                clusterRemaining--;
+              }
+            }
+          } else {
+            inClusterPause = true;
+            clusterPauseTimer = 0;
+            clusterPauseDuration = CLUSTER_PAUSE_MIN + Math.random() * (CLUSTER_PAUSE_MAX - CLUSTER_PAUSE_MIN);
           }
         } else {
           // Level 1-2: sequential mode

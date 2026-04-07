@@ -3,7 +3,7 @@
 
   var level = 1;
   var xp = 0;
-  var XP_THRESHOLDS = [50, 150, 400]; // L1->L2, L2->L3, L3->L4
+  var XP_THRESHOLDS = [10, 150, 400]; // L1->L2 (after tutorial), L2->L3, L3->L4
   var MAX_LEVEL = 4;
 
   var UNLOCK_DESCRIPTIONS = {
@@ -219,7 +219,7 @@
     },
 
     getSpawnMode: function() {
-      return level >= 3 ? 'continuous' : 'sequential';
+      return level >= 2 ? 'cluster' : 'sequential';
     },
 
     getSpawnInterval: function() {

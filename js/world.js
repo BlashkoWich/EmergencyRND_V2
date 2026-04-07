@@ -121,7 +121,7 @@
 
       H.createSign(THREE, scene, Game.Lang.t('sign.waitingArea'), 7.88, 2.5, -3.2, -Math.PI / 2);
 
-      // --- 2 Medical beds ---
+      // --- 4 Medical beds ---
       var bedFrameMat = new THREE.MeshLambertMaterial({ color: 0xcccccc });
       var mattressMat = new THREE.MeshLambertMaterial({ color: 0x88bbaa });
       var pillowMat = new THREE.MeshLambertMaterial({ color: 0xddeedd });
@@ -147,6 +147,8 @@
 
       createBed(-5.5, -9, 0);
       createBed(-5.5, -7, 0);
+      createBed(-5.5, -5, 0);
+      createBed(-5.5, -3, 0);
 
       H.createSign(THREE, scene, Game.Lang.t('sign.examination'), -7.88, 2.5, -8, Math.PI / 2);
 
@@ -270,7 +272,9 @@
       return {
         beds: [
           { pos: new THREE.Vector3(-4.5, 0, -9), occupied: false },
-          { pos: new THREE.Vector3(-4.5, 0, -7), occupied: false }
+          { pos: new THREE.Vector3(-4.5, 0, -7), occupied: false },
+          { pos: new THREE.Vector3(-4.5, 0, -5), occupied: false },
+          { pos: new THREE.Vector3(-4.5, 0, -3), occupied: false }
         ],
         waitingChairs: [
           { pos: new THREE.Vector3(5.5, 0, -2), occupied: false },

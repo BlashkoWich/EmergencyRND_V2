@@ -207,9 +207,16 @@
     updateSignTexture();
     updateTaskText();
     Game.Inventory.showNotification(Game.Lang.t('shift.started', [dayNumber]), 'rgba(34, 139, 34, 0.85)');
-    // Spawn first patient
-    if (Game.Patients && Game.Patients.spawnFirstPatient) {
-      Game.Patients.spawnFirstPatient();
+    // Spawn first patient (or start cluster)
+    var spawnMode = Game.Levels ? Game.Levels.getSpawnMode() : 'sequential';
+    if (spawnMode === 'cluster') {
+      if (Game.Patients && Game.Patients.startFirstCluster) {
+        Game.Patients.startFirstCluster();
+      }
+    } else {
+      if (Game.Patients && Game.Patients.spawnFirstPatient) {
+        Game.Patients.spawnFirstPatient();
+      }
     }
     if (Game.Tutorial) Game.Tutorial.onEvent('shift_opened');
   }
