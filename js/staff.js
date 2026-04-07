@@ -1356,9 +1356,13 @@
           if (current === basket.mesh) {
             newHovered = basket;
             var activeItem = Game.Inventory.getActive();
-            if (activeItem && activeItem === basket.type) {
+            var canPlace = activeItem && activeItem === basket.type;
+            var canTake = basket.items.length > 0 && !Game.Inventory.isFull();
+            if (canPlace && canTake) {
+              newMode = 'both';
+            } else if (canPlace) {
               newMode = 'place';
-            } else if (basket.items.length > 0 && !Game.Inventory.isFull()) {
+            } else if (canTake) {
               newMode = 'take';
             }
             break;
@@ -1382,7 +1386,7 @@
     if (hoveredBasket && basketMode) {
       var name = hoveredBasket === baskets.clean ? Game.Lang.t('basket.cleanLinen') : Game.Lang.t('basket.dirtyLinen');
       var hints = [];
-      if (basketMode === 'take') {
+      if (basketMode === 'take' || basketMode === 'both') {
         hints.push(Game.Lang.t('basket.take', [hoveredBasket.items.length]));
       }
       var activeItem = Game.Inventory.getActive();
@@ -1500,11 +1504,9 @@
       document.addEventListener('mousedown', function(e) {
         if (e.button !== 0 || !controls.isLocked) return;
         if (Game.Furniture.isCarrying()) return;
-        if (!hoveredBasket || basketMode !== 'take') return;
+        if (!hoveredBasket || (basketMode !== 'take' && basketMode !== 'both')) return;
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
         if (Game.Cashier && Game.Cashier.isPopupOpen()) return;
-        if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('pickup_item')) return;
-
         if (hoveredBasket.items.length > 0 && !Game.Inventory.isFull()) {
           var itemType = hoveredBasket.items.pop();
           Game.Inventory.addItem(itemType);
