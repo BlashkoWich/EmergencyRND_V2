@@ -97,6 +97,7 @@
           }
           return;
         }
+        if (Game.Ads && Game.Ads.isActive()) return;
         if (Game.Shop && Game.Shop.isOpen()) return;
         if (Game.Patients && Game.Patients.isPopupOpen()) return;
         if (Game.Diagnostics && Game.Diagnostics.isActive()) return;

@@ -32,9 +32,10 @@
 - `Game.Trash` — система мусора (спавн внутри больницы с уровня 3, модели, партиклы вони, мухи, уборка)
 - `Game.Shift` — система смен и дней (время, табличка Open/Closed, задачи, итоги дня)
 - `Game.Cashier` — касса и система оплаты
+- `Game.Ads` — система рекламы за деньги (попап предложения, фиктивный ролик, награда $200)
 - `Game.Tutorial` — пошаговый туториал (state machine, 3D-стрелки, spotlight, блокировка действий)
 
-Порядок загрузки: helpers → world → patients → controls → consumables → inventory → shop → furniture → washing-machine → shelves → tool-panel → diagnostics → staff → trash → shift → cashier → tutorial → inline module (оркестратор).
+Порядок загрузки: helpers → world → patients → controls → consumables → inventory → shop → ads → furniture → washing-machine → shelves → tool-panel → diagnostics → staff → trash → shift → cashier → tutorial → inline module (оркестратор).
 
 ## File Structure
 ```
@@ -48,6 +49,7 @@ js/
   consumables.js        — расходники (типы, 3D модели, физика гравитации, подбор)
   inventory.js          — инвентарь (6 слотов, UI-бар, выбор слота, уведомления)
   shop.js               — магазин расходников (попап с табами: препараты + инструменты + мебель)
+  ads.js                — реклама за деньги (попап предложения, фиктивный ролик 20с, награда $200)
   furniture.js          — система мебели (покупка, перемещение, indoor/outdoor, динамические слоты, грязное бельё)
   washing-machine.js    — стиральная машина (загрузка, стирка, выдача)
   shelves.js            — стеллажи (создание, размещение расходников; инструменты отклоняются)
@@ -93,6 +95,8 @@ specs/
 - **FPS Lock**: 60 FPS. Пропускает кадры через timestamp-based лимитер: `if (now - lastFrameTime < 1000/60) return`
 - **Delta clamped**: `Math.min(clock.getDelta(), 0.05)` — ограничение 50ms предотвращает телепортацию через стены при фризах/переключении вкладок
 
+Заморозка: если `Game.Ads.isFrozen()` — рендерится сцена, но все `update()` модулей пропускаются (полная заморозка игры во время рекламы).
+
 Каждый кадр (60fps):
 1. `Game.Controls.update(delta)` — движение игрока (если pointer locked)
 2. `Game.Interaction.update()` — централизованный рейкаст по всем модулям, определяет ближайший объект, кеширует hit-результаты
@@ -115,7 +119,7 @@ specs/
 Рендер: `composer.render()` или `renderer.render(scene, camera)` (зависит от `useComposer`)
 
 ## Оркестратор (`index.html` inline module)
-Создаёт renderer, scene, camera, collidables[], composer (EffectComposer с RenderPass + OutlinePass + OutputPass). Вызывает `Game.World.setup()` (возвращает `sunLight`), `Game.Controls.setup()`, `Game.Furniture.setup()` + `registerExisting()`, `Game.WashingMachine.setup()`, `Game.Patients.setup()`, `Game.Consumables.setup()`, `Game.Inventory.setup()`, `Game.Shop.setup()`, `Game.Shelves.setup()`, `Game.ToolPanel.setup()`, `Game.Diagnostics.setup()`, `Game.Cashier.setup()`, `Game.Shift.setup()`, `Game.Tutorial.setup()`. Экспортирует `Game.Outline`, `Game.FPS`. Настраивает Quality Settings и FPS counter. Запускает animation loop с 60fps лимитом.
+Создаёт renderer, scene, camera, collidables[], composer (EffectComposer с RenderPass + OutlinePass + OutputPass). Вызывает `Game.World.setup()` (возвращает `sunLight`), `Game.Controls.setup()`, `Game.Furniture.setup()` + `registerExisting()`, `Game.WashingMachine.setup()`, `Game.Patients.setup()`, `Game.Consumables.setup()`, `Game.Inventory.setup()`, `Game.Shop.setup()`, `Game.Ads.setup()`, `Game.Shelves.setup()`, `Game.ToolPanel.setup()`, `Game.Diagnostics.setup()`, `Game.Cashier.setup()`, `Game.Shift.setup()`, `Game.Tutorial.setup()`. Экспортирует `Game.Outline`, `Game.FPS`. Настраивает Quality Settings и FPS counter. Запускает animation loop с 60fps лимитом.
 
 ## Global State
 
@@ -156,6 +160,19 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 | `shop-tab-instruments` | div | Секция инструментов |
 | `shop-tab-furniture` | div | Секция мебели (кровать, стул) |
 | `shop-close` | button | Кнопка закрытия магазина |
+| `ad-offer-popup` | div | Попап предложения посмотреть рекламу |
+| `ad-watch-btn` | button | "Смотреть рекламу" |
+| `ad-decline-btn` | button | "Нет, спасибо" |
+| `ad-overlay` | div | Fullscreen рекламный оверлей |
+| `ad-close-btn` | button | Кнопка закрытия рекламы |
+| `ad-content` | div | Контейнер слайдов рекламы |
+| `ad-progress-bar` | div | Прогресс-бар рекламы |
+| `ad-progress-fill` | div | Заполнение прогресс-бара |
+| `ad-timer` | div | Таймер обратного отсчёта |
+| `ad-confirm-dialog` | div | Диалог подтверждения закрытия рекламы |
+| `ad-confirm-yes` | button | "Да, закрыть" |
+| `ad-confirm-no` | button | "Продолжить просмотр" |
+| `ad-reward-animation` | div | Overlay анимации зачисления награды |
 | `inventory-container` | div | Контейнер инвентаря + подсказки (создаётся динамически) |
 | `inventory-active-name` | div | Название активного предмета над баром |
 | `inventory-bar` | div | Панель слотов инвентаря (внутри контейнера) |
@@ -189,7 +206,9 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 | 10 | `#overlay` |
 | 15 | `#notification` |
 | 20 | `#patient-popup`, `#shop-popup`, `#cashier-popup`, `#day-end-popup` |
+| 22 | `#ad-offer-popup` |
 | 25 | `#diagnostics-overlay` |
+| 50 | `#ad-overlay`, `#ad-reward-animation` |
 
 ## Centralized Interaction System (`Game.Interaction`, `js/interaction.js`)
 
@@ -277,7 +296,7 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 - **Камера**: PointerLockControls обрабатывает мышь напрямую (без сглаживания). Фильтр больших delta (>150px) для защиты от бага Pointer Lock API
 - **Перемещение**: velocity-based с экспоненциальным затуханием (`_moveDamping=12.0`). Плавные разгон и торможение вместо мгновенной установки позиции. При столкновении velocity обнуляется
 - Внутренние: `_canMove(direction)`, `_keys`, `_moveSpeed=4.0`, `_sprintSpeed=7.0`, `_collisionDistance=0.4`, `_velocityX/Z` (текущая скорость), `_moveDamping=12.0`, `_collisionOrigin` (Vector3 для рейкаста от y=0.5), `_savedQuat` (сохранённый quaternion при re-lock)
-- Unlock handler не показывает overlay если открыт магазин (`Game.Shop.isOpen()`), попап пациента (`Game.Patients.isPopupOpen()`), диагностика (`Game.Diagnostics.isActive()`) или попап итогов дня (`Game.Shift.isPopupOpen()`)
+- Unlock handler не показывает overlay если активна реклама (`Game.Ads.isActive()`), открыт магазин (`Game.Shop.isOpen()`), попап пациента (`Game.Patients.isPopupOpen()`), диагностика (`Game.Diagnostics.isActive()`) или попап итогов дня (`Game.Shift.isPopupOpen()`)
 
 ### `Game.Consumables` (`js/consumables.js`)
 - `setup(THREE, scene, camera, controls, collidables)` — инициализация, создание зоны доставки
@@ -313,6 +332,14 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 ### `Game.Shop` (`js/shop.js`)
 - `setup(controls)` — привязка UI, клавиша Q
 - `isOpen()` → boolean
+- При недостаточном балансе вызывает `Game.Ads.show()` вместо уведомления
+
+### `Game.Ads` (`js/ads.js`)
+Система рекламы за деньги: попап предложения, фиктивный 20-секундный ролик, награда $200.
+- `setup()` — кеширование DOM-ссылок, привязка обработчиков
+- `show()` — открыть попап предложения рекламы
+- `isActive()` → boolean — показан ли любой UI рекламы (offer/overlay/reward)
+- `isFrozen()` → boolean — заморожена ли игра (для animation loop)
 
 ### `Game.Furniture` (`js/furniture.js`)
 Система мебели: покупка, перемещение, размещение, indoor/outdoor статус, динамические слоты пациентов.
@@ -414,6 +441,7 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 - `hasPatients()` → boolean — есть ли пациенты на кассе/в очереди
 - `getBalance()` → number
 - `spend(amount)` — списание
+- `earn(amount)` — зачисление (используется рекламой для начисления награды)
 - `addPatientToQueue(patient)` — добавить в очередь
 - `clearQueue()` — очистка очереди (при переходе между днями)
 

@@ -325,6 +325,60 @@
     </div>
   </div>
 
+  <!-- Ad offer popup -->
+  <div id="ad-offer-popup" style="display:none">
+    <div class="ad-offer-title">Недостаточно средств!</div>
+    <div class="ad-offer-text">Посмотрите рекламу и получите <span class="ad-offer-money">$200</span></div>
+    <div class="ad-offer-buttons">
+      <button id="ad-watch-btn">Смотреть рекламу</button>
+      <button id="ad-decline-btn">Нет, спасибо</button>
+    </div>
+  </div>
+
+  <!-- Ad fullscreen overlay -->
+  <div id="ad-overlay" style="display:none">
+    <button id="ad-close-btn">&#10005;</button>
+    <div id="ad-content">
+      <div class="ad-slide ad-slide-1">
+        <div class="ad-logo">MEGAMART</div>
+        <div class="ad-headline">MEGA SALE!</div>
+        <div class="ad-subtext">Everything must go!</div>
+      </div>
+      <div class="ad-slide ad-slide-2">
+        <div class="ad-product-icon">&#127874;</div>
+        <div class="ad-headline">Premium Quality</div>
+        <div class="ad-subtext">Trusted by millions worldwide</div>
+      </div>
+      <div class="ad-slide ad-slide-3">
+        <div class="ad-big-text">-50%</div>
+        <div class="ad-headline">Limited Time Offer!</div>
+      </div>
+      <div class="ad-slide ad-slide-4">
+        <div class="ad-cta">BUY NOW!</div>
+        <div class="ad-subtext">Don't miss out!</div>
+        <div class="ad-fine-print">*Terms and conditions apply</div>
+      </div>
+    </div>
+    <div id="ad-progress-bar">
+      <div id="ad-progress-fill"></div>
+    </div>
+    <div id="ad-timer">20 сек</div>
+    <!-- Close confirmation -->
+    <div id="ad-confirm-dialog" style="display:none">
+      <div class="ad-confirm-text">Если вы закроете рекламу, награда не будет начислена. Закрыть?</div>
+      <div class="ad-confirm-buttons">
+        <button id="ad-confirm-yes">Да, закрыть</button>
+        <button id="ad-confirm-no">Продолжить просмотр</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ad reward animation -->
+  <div id="ad-reward-animation" style="display:none">
+    <div class="ad-reward-amount">+$200</div>
+    <div class="ad-reward-label">Зачислено на баланс!</div>
+  </div>
+
   <div id="diagnostics-overlay" style="display:none">
     <button id="diagnostics-close">&#10005;</button>
     <div id="diagnostics-title"></div>
@@ -342,6 +396,7 @@
   <script src="js/consumables.js"></script>
   <script src="js/inventory.js"></script>
   <script src="js/shop.js"></script>
+  <script src="js/ads.js"></script>
   <script src="js/furniture.js"></script>
   <script src="js/washing-machine.js"></script>
   <script src="js/shelves.js"></script>
@@ -448,6 +503,7 @@
     Game.Inventory.setup();
     Game.Levels.setup(controls);
     Game.Shop.setup(controls);
+    Game.Ads.setup();
     Game.WashingMachine.setup(THREE, scene, camera, controls, collidables);
     Game.Shelves.setup(THREE, scene, camera, controls, collidables);
     Game.ToolPanel.setup(THREE, scene, camera, controls, collidables);
@@ -528,6 +584,12 @@
       const delta = Math.min(clock.getDelta(), 0.05);
       frameCount++;
       Game.FPS.frames++;
+
+      // Freeze game during ad playback
+      if (Game.Ads && Game.Ads.isFrozen()) {
+        if (useComposer) composer.render(); else renderer.render(scene, camera);
+        return;
+      }
 
       if (controls.isLocked) {
         Game.Controls.update(delta);

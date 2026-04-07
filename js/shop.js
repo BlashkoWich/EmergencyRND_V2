@@ -214,7 +214,7 @@
             if (!isFree) {
               var balance = Game.Cashier.getBalance();
               if (balance < price) {
-                Game.Inventory.showNotification('Недостаточно средств!');
+                Game.Ads.show();
                 return;
               }
             }
@@ -251,7 +251,7 @@
             if (!isFree) {
               var balance = Game.Cashier.getBalance();
               if (balance < price) {
-                Game.Inventory.showNotification('Недостаточно средств!');
+                Game.Ads.show();
                 return;
               }
             }

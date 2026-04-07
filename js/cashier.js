@@ -239,6 +239,10 @@
       if (Game.Shift) Game.Shift.trackSpending(amount);
       updateBalanceHUD();
     },
+    earn: function(amount) {
+      balance += amount;
+      updateBalanceHUD();
+    },
 
     hasInteraction: function() { return hoveredTerminal; },
     isDeskHovered: function() { return prevHovered; },
