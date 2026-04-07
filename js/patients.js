@@ -665,29 +665,25 @@
       if (hoveredPatient.treated) {
         hintEl.textContent = 'Пациент лечится...';
       } else if (hoveredPatient.needsDiagnosis) {
-        var activeType = Game.Inventory.getActive();
-        if (activeType && activeType === hoveredPatient.requiredInstrument) {
-          var instrName = Game.Consumables.INSTRUMENT_TYPES[activeType].name;
-          hintEl.textContent = 'ЛКМ — Диагностика (' + instrName + ')';
-        } else if (activeType && Game.Consumables.isInstrument(activeType)) {
-          var neededInstr = Game.Consumables.INSTRUMENT_TYPES[hoveredPatient.requiredInstrument];
-          hintEl.textContent = 'Нужен инструмент (' + neededInstr.name + ')';
+        var neededInstr = Game.Consumables.INSTRUMENT_TYPES[hoveredPatient.requiredInstrument];
+        var hasInstr = Game.Inventory.countType(hoveredPatient.requiredInstrument) > 0;
+        if (hasInstr) {
+          hintEl.textContent = 'ЛКМ — Диагностика (' + neededInstr.name + ')';
         } else {
-          var neededInstr = Game.Consumables.INSTRUMENT_TYPES[hoveredPatient.requiredInstrument];
           hintEl.textContent = 'Нужен инструмент (' + neededInstr.name + ')';
         }
       } else {
-        var activeType = Game.Inventory.getActive();
-        if (activeType && !Game.Consumables.isInstrument(activeType)) {
-          var typeName = Game.Consumables.TYPES[activeType].name;
-          hintEl.textContent = 'ЛКМ — Применить ' + typeName;
-        } else {
-          var pendingNames = [];
-          if (hoveredPatient.pendingConsumables) {
-            for (var pi = 0; pi < hoveredPatient.pendingConsumables.length; pi++) {
-              pendingNames.push(Game.Consumables.TYPES[hoveredPatient.pendingConsumables[pi]].name);
-            }
+        var pendingNames = [];
+        var hasAny = false;
+        if (hoveredPatient.pendingConsumables) {
+          for (var pi = 0; pi < hoveredPatient.pendingConsumables.length; pi++) {
+            pendingNames.push(Game.Consumables.TYPES[hoveredPatient.pendingConsumables[pi]].name);
+            if (Game.Inventory.countType(hoveredPatient.pendingConsumables[pi]) > 0) hasAny = true;
           }
+        }
+        if (hasAny) {
+          hintEl.textContent = 'ЛКМ — Лечить';
+        } else {
           hintEl.textContent = pendingNames.length > 1
             ? 'Нужны препараты: ' + pendingNames.join(', ')
             : 'Нужен препарат (' + pendingNames[0] + ')';
@@ -1941,17 +1937,15 @@
               Game.Inventory.showNotification('Диагност уже проводит обследование');
               return;
             }
-            var activeType = Game.Inventory.getActive();
-            if (!activeType || !Game.Consumables.isInstrument(activeType)) {
-              Game.Inventory.showNotification('Нужен диагностический инструмент');
-              return;
-            }
-            if (activeType !== hoveredPatient.requiredInstrument) {
-              Game.Inventory.showNotification('Нужен другой инструмент');
+            // Auto-find required instrument in inventory
+            if (!Game.Inventory.findAndActivate(hoveredPatient.requiredInstrument)) {
+              var instrInfo = Game.Consumables.INSTRUMENT_TYPES[hoveredPatient.requiredInstrument];
+              var instrName = instrInfo ? instrInfo.name : 'инструмент';
+              Game.Inventory.showNotification('Нужен: ' + instrName);
               return;
             }
             // Start mini-game (instrument NOT consumed)
-            Game.Diagnostics.startMinigame(hoveredPatient, activeType);
+            Game.Diagnostics.startMinigame(hoveredPatient, hoveredPatient.requiredInstrument);
             return;
           }
 
@@ -1960,16 +1954,14 @@
             Game.Inventory.showNotification('Медсестра уже лечит этого пациента');
             return;
           }
-          var activeType = Game.Inventory.getActive();
-          if (!activeType || Game.Consumables.isInstrument(activeType)) {
-            Game.Inventory.showNotification('Выберите препарат в инвентаре');
+          // Auto-find matching consumable in inventory
+          if (!hoveredPatient.pendingConsumables || hoveredPatient.pendingConsumables.length === 0) return;
+          var foundType = Game.Inventory.findAndActivateOneOf(hoveredPatient.pendingConsumables);
+          if (!foundType) {
+            Game.Inventory.showNotification('Нет нужных препаратов в инвентаре');
             return;
           }
-          if (hoveredPatient.pendingConsumables && hoveredPatient.pendingConsumables.indexOf(activeType) !== -1) {
-            treatPatient(hoveredPatient);
-          } else {
-            wrongTreatment(hoveredPatient);
-          }
+          treatPatient(hoveredPatient);
           return;
         }
 

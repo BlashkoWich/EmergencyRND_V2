@@ -479,6 +479,30 @@
       return maxStack;
     },
 
+    findAndActivate: function(type) {
+      for (var i = 0; i < 6; i++) {
+        if (slots[i] && slots[i].type === type) {
+          activeSlot = i;
+          refreshUI();
+          return true;
+        }
+      }
+      return false;
+    },
+
+    findAndActivateOneOf: function(types) {
+      for (var i = 0; i < types.length; i++) {
+        for (var j = 0; j < 6; j++) {
+          if (slots[j] && slots[j].type === types[i]) {
+            activeSlot = j;
+            refreshUI();
+            return types[i];
+          }
+        }
+      }
+      return null;
+    },
+
     showNotification: function(text, color) {
       notificationEl.textContent = text;
       notificationEl.style.background = color || 'rgba(200, 50, 50, 0.85)';

@@ -350,7 +350,7 @@
     }
 
     if (hoveredFurniture) {
-      if (hoveredFurniture.isDirty && Game.Inventory.getActive() === 'linen_clean') {
+      if (hoveredFurniture.isDirty && Game.Inventory.countType('linen_clean') > 0) {
         hintEl.textContent = 'ЛКМ — Заменить бельё';
       } else if (hoveredFurniture.isDirty) {
         hintEl.textContent = 'Нужно чистое бельё для замены';
@@ -426,7 +426,7 @@
 
   function tryLinenReplace() {
     if (!hoveredFurniture || !hoveredFurniture.isDirty) return false;
-    if (Game.Inventory.getActive() !== 'linen_clean') return false;
+    if (!Game.Inventory.findAndActivate('linen_clean')) return false;
     if (!controls.isLocked) return false;
     if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return false;
     if (Game.Cashier && Game.Cashier.isPopupOpen()) return false;
