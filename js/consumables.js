@@ -161,6 +161,28 @@
     });
   }
 
+  function updateBoxLabel(box) {
+    var mesh = box.mesh;
+    var canvas = mesh.userData.labelCanvas;
+    var ctx = mesh.userData.labelCtx;
+    var tex = mesh.userData.labelTexture;
+    if (!canvas || !ctx || !tex) return;
+
+    // Clear the count area (between divider and subtitle)
+    ctx.clearRect(0, 240, 512, 140);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 240, 512, 140);
+
+    // Redraw count text
+    ctx.fillStyle = '#333';
+    ctx.font = 'bold 72px Segoe UI, Arial, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('×' + box.remaining, 256, 320);
+
+    tex.needsUpdate = true;
+  }
+
   // --- Medical 3D Models ---
 
   function createConsumableMesh(type) {
@@ -461,7 +483,7 @@
     // "x10" text (large)
     ctx.fillStyle = '#333';
     ctx.font = 'bold 72px Segoe UI, Arial, sans-serif';
-    ctx.fillText('×10', 256, 320);
+    ctx.fillText('×' + BOX_ITEMS_COUNT, 256, 320);
 
     // Subtitle
     ctx.fillStyle = '#777';
@@ -469,6 +491,12 @@
     ctx.fillText(isLinen(type) ? 'расходники' : 'препараты', 256, 410);
 
     var tex = new THREE.CanvasTexture(canvas);
+
+    // Store refs for dynamic count updates
+    group.userData.labelCanvas = canvas;
+    group.userData.labelCtx = ctx;
+    group.userData.labelTexture = tex;
+    group.userData.labelColorHex = colorHex;
     var labelGeo = new THREE.PlaneGeometry(BOX_SIZE.x * 0.85, BOX_SIZE.y * 0.85);
     var labelMatFront = new THREE.MeshBasicMaterial({
       map: tex, transparent: true,
@@ -959,6 +987,7 @@
           if (heldBox.remaining <= 0) return;
           if (Game.Inventory.addItem(heldBox.type)) {
             heldBox.remaining--;
+            updateBoxLabel(heldBox);
             if (heldBox.remaining <= 0) {
               markBoxEmpty(heldBox);
             }
@@ -974,6 +1003,7 @@
           if (hoveredBox.remaining <= 0) return;
           if (Game.Inventory.addItem(hoveredBox.type)) {
             hoveredBox.remaining--;
+            updateBoxLabel(hoveredBox);
             if (hoveredBox.remaining <= 0) {
               markBoxEmpty(hoveredBox);
             }
