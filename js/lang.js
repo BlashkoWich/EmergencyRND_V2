@@ -5,6 +5,8 @@
     ru: {
       // HTML static text
       'title': 'Частная Клиника',
+      'pause.title': 'Пауза',
+      'pause.subtitle': 'Нажмите, чтобы продолжить',
       'overlay.title': 'Частная Клиника',
       'overlay.start': 'Нажмите, чтобы начать',
       'overlay.controls1': 'WASD — движение  |  Мышь — камера  |  ESC — пауза',
@@ -477,6 +479,8 @@
     en: {
       // HTML static text
       'title': 'Private Clinic',
+      'pause.title': 'Paused',
+      'pause.subtitle': 'Click to continue',
       'overlay.title': 'Private Clinic',
       'overlay.start': 'Click to start',
       'overlay.controls1': 'WASD — movement  |  Mouse — camera  |  ESC — pause',

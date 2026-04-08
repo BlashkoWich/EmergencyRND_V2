@@ -121,6 +121,7 @@ CSS-класс `.lang-btn` — идентичен `.quality-btn` (полупро
 |---------|---------|--------|
 | `title` | Заголовок страницы | `title` |
 | `overlay.*` | Стартовый экран | `overlay.start` |
+| `pause.*` | Экран паузы | `pause.title`, `pause.subtitle` |
 | `quality.*` | Настройки графики | `quality.low` |
 | `hint.*` | Подсказки взаимодействия | `hint.interact` |
 | `popup.*` | Попап пациента | `popup.age`, `popup.btn.bed` |

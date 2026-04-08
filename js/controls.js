@@ -8,6 +8,7 @@
     _THREE: null,
     _raycaster: null,
     _keys: { forward: false, backward: false, left: false, right: false, sprint: false, jump: false },
+    _gameEntered: false,
     _moveSpeed: 4.0,
     _sprintSpeed: 7.0,
     _collisionDistance: 0.4,
@@ -83,9 +84,25 @@
         var levelSelect = document.getElementById('level-select-screen');
         if (levelSelect) levelSelect.style.display = 'flex';
       });
+
+      var pauseScreen = document.getElementById('pause-screen');
+      pauseScreen.addEventListener('click', function() {
+        controls.lock();
+        var retryCount = 0;
+        var retryInterval = setInterval(function() {
+          if (controls.isLocked || retryCount >= 10) {
+            clearInterval(retryInterval);
+            return;
+          }
+          controls.lock();
+          retryCount++;
+        }, 500);
+      });
       controls.addEventListener('lock', function() {
         self._savedQuat = camera.quaternion.clone();
+        self._gameEntered = true;
         overlay.style.display = 'none';
+        document.getElementById('pause-screen').style.display = 'none';
         crosshairEl.style.display = 'block';
       });
       controls.addEventListener('unlock', function() {
@@ -110,6 +127,14 @@
         if (Game.Cashier && Game.Cashier.isPopupOpen()) return;
         var levelSelect = document.getElementById('level-select-screen');
         if (levelSelect && levelSelect.style.display !== 'none') return;
+
+        if (self._gameEntered) {
+          document.getElementById('pause-screen').style.display = 'flex';
+          crosshairEl.style.display = 'none';
+          document.getElementById('interact-hint').style.display = 'none';
+          return;
+        }
+
         overlay.style.display = 'flex';
         crosshairEl.style.display = 'none';
         document.getElementById('interact-hint').style.display = 'none';

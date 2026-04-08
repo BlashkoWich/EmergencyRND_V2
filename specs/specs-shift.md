@@ -23,7 +23,7 @@ displayMinute = floor((gameHours % 1) * 60)
 ```js
 shiftOpen = false       // смена активна (пациенты приходят)
 shiftEnding = false     // 20:00 достигнуто, ждём дообслуживания
-gameTime = 0            // 0..SHIFT_DURATION реальных секунд
+gameTime = 0            // 0..SHIFT_DURATION реальных секунд (не идёт во время паузы #pause-screen)
 dayNumber = 1           // текущий день
 dayStats = {
   patientsServed: 0,    // вылечено пациентов (discharge → cashier)
