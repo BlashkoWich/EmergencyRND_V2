@@ -27,7 +27,7 @@ gameTime = 0            // 0..SHIFT_DURATION реальных секунд
 dayNumber = 1           // текущий день
 dayStats = {
   patientsServed: 0,    // вылечено пациентов (discharge → cashier)
-  patientsLost: 0,      // потеряно (HP ≤ 0)
+  patientsLost: 0,      // потеряно (HP ≤ 0 или таймер волны)
   moneyEarned: 0,       // заработано (оплата на кассе)
   moneySpent: 0         // потрачено (покупки в магазине)
 }
@@ -43,7 +43,7 @@ dayEndPopupOpen = false // попап итогов дня показан
 
 ### 2. Открытие смены (клик по табличке)
 - `shiftOpen = true`, `gameTime = 0`, `dayStats` сброшен
-- Level 1: Спавн первого пациента через `Game.Patients.spawnFirstPatient()` (заходит пешком)
+- Level 1: Спавн первого пациента через `Game.Patients.spawnFirstPatient()`
 - Level 2+: Запуск волновой системы через `Game.Patients.startWaveSystem()`
 - Уведомление "Смена началась! День N"
 - Табличка меняется на "ОТКРЫТО" (зелёная)
@@ -51,108 +51,79 @@ dayEndPopupOpen = false // попап итогов дня показан
 ### 3. Смена активна
 - `gameTime += delta` каждый кадр
 - Пациенты спавнятся волнами по расписанию `WAVE_CONFIG` (через `Game.Patients.update`)
+- При спавне волны — HUD-баннер с таймером 60 сек и лорным текстом
 - Задача: "Обслуживайте пациентов!"
 
 ### 4. 20:00 — Приём окончен
 - `gameTime >= SHIFT_DURATION` → автоматически `endShiftTime()`
 - `shiftOpen = false`, `shiftEnding = true`
-- Новые пациенты НЕ приходят (spawn guard в patients.js проверяет `Game.Shift.isOpen()`)
-- Табличка меняется на "ЗАКРЫТО" (красная)
-- Уведомление "20:00 — Приём окончен! Дообслужите оставшихся пациентов."
+- Новые пациенты НЕ приходят
+- Табличка → "ЗАКРЫТО" (красная)
 - Задача: "Дообслужите оставшихся пациентов! (N)"
 
 ### 5. Завершение дня
-- Каждый кадр проверяется `getRemainingPatients() === 0`
-- Считаются только "активные" пациенты (state !== 'leaving')
-- Когда все оплатили → попап итогов дня
-- `controls.unlock()`, показ попапа
+- `getRemainingPatients() === 0` (state !== 'leaving')
+- Попап итогов дня
 
 ### 6. Следующий день
-- Кнопка "Перейти в следующий день" → `dayNumber++`
-- Все оставшиеся пациенты (leaving) удаляются: `Game.Patients.clearAll()`, `Game.Cashier.clearQueue()`
-- Баланс НЕ сбрасывается (переносится)
-- Возврат к шагу 1
+- `dayNumber++`, `Game.Patients.clearAll()`, `Game.Cashier.clearQueue()`
+- Баланс НЕ сбрасывается
 
 ## 3D Табличка Open/Closed
 
 ### Расположение
-- На внутренней стороне южной стены, справа от двери
+- Внутренняя сторона южной стены, справа от двери
 - Позиция: `(2.5, 1.8, -0.08)`, `rotY = Math.PI` (лицом внутрь)
 - Крепится к стене (НЕ висит в воздухе)
 
 ### Модель
-- Доска: `BoxGeometry(0.8, 0.5, 0.06)` — MeshStandardMaterial, roughness 0.4
-- Лицевая панель: `PlaneGeometry(0.72, 0.42)` с CanvasTexture (256×160), z-offset +0.031
-- Рамка: 4 полоски BoxGeometry по периметру, белые (0xdddddd)
-- 2 кронштейна: `BoxGeometry(0.05, 0.15, 0.12)`, серые металлические (0x888888)
+- Доска: `BoxGeometry(0.8, 0.5, 0.06)`
+- Лицевая панель: `PlaneGeometry(0.72, 0.42)` с CanvasTexture (256x160)
+- Рамка: 4 полоски, белые. 2 кронштейна: серые металлические
 
 ### Цвета
-- **Открыто**: доска зелёная (0x22aa44), текст `Game.Lang.t('shift.sign.open')` белый
-- **Закрыто**: доска красная (0xcc3333), текст `Game.Lang.t('shift.sign.closed')` белый
+- **Открыто**: зелёная (0x22aa44), белый текст
+- **Закрыто**: красная (0xcc3333), белый текст
 
 ### Взаимодействие
-- Raycaster far=5, от screen center
-- Hover: зелёная обводка (Game.Outline) на всех мешах таблички
-- Клик (ЛКМ): открывает смену (только если `!shiftOpen && !shiftEnding`)
-- Подсказки: `Game.Lang.t('shift.hint.open')` / `Game.Lang.t('shift.hint.ongoing')` / `Game.Lang.t('shift.hint.ending')`
-- Приоритет: ниже всех остальных систем взаимодействия
+- Raycaster far=5, hover → обводка, клик → открытие смены
 
 ## HUD — Время и день
 
 ### Элемент: `#time-hud`
 - Позиция: top center, z-index 5
-- Содержит:
-  - `#day-value`: `Game.Lang.t('hud.day', [dayNumber])` (цвет #7abfff)
-  - `#time-value`: "HH:MM" (моноширинный шрифт)
+- Содержит: `#day-value` (голубой) + `#time-value` (моноширинный)
 - Стиль: полупрозрачный тёмный фон, backdrop-filter blur
+
+### Элемент: `#wave-banner`
+- Позиция: top center, ниже time-hud (top: 55px), z-index 6
+- Тёмно-красный фон, оранжевая рамка
+- Содержит:
+  - `#wave-text`: лорный текст (Game.Lang.t('wave.arrived'))
+  - `#wave-timer-bar` + `#wave-timer-fill`: красно-оранжевая полоска обратного отсчёта
+  - `#wave-timer-text`: секунды (оранжевый моноширинный)
+- Класс `.urgent` при <25% времени — красное свечение
+- Показывается при спавне волны, скрывается когда все пациенты распределены или ушли
 
 ## Система активных задач
 
 ### Элемент: `#task-container`
-- Позиция: bottom-left (left: 16px, bottom: 120px), z-index 5
-- Содержит:
-  - `#task-mascot`: портрет медсестры (70×110px, canvas background-image)
-  - `#task-bubble`: speech bubble с текстом задачи
-
-### Маскот — медсестра
-- Рисуется на canvas 160×240 при setup(), кэшируется как dataURL
-- Русые/светлые волосы (#c8a060), зелёные глаза
-- Белая форма с красным крестом, шапочка медсестры
-- Портрет по пояс, стилизованный/мультяшный
-- Румяна, улыбка, пропорциональная фигура
+- Позиция: bottom-left, z-index 5
+- Маскот-медсестра (canvas portrait) + speech bubble с задачей
 
 ### Тексты задач
-| Состояние | Текст задачи |
-|-----------|-------------|
-| Смена не открыта | `Game.Lang.t('shift.task.open')` |
-| Смена активна | `Game.Lang.t('shift.task.serve')` |
-| shiftEnding, пациенты есть | `Game.Lang.t('shift.task.finish', [remaining])` |
-| shiftEnding, пациентов нет | `Game.Lang.t('shift.task.allDone')` |
-| Попап итогов дня | (пусто) |
+| Состояние | Текст |
+|-----------|-------|
+| Смена не открыта | `shift.task.open` |
+| Смена активна | `shift.task.serve` |
+| shiftEnding, пациенты есть | `shift.task.finish` (N) |
+| shiftEnding, пациентов нет | `shift.task.allDone` |
 
 ## Попап итогов дня
-
-### Элемент: `#day-end-popup`
-- z-index: 20
-- Стиль: тёмно-синий фон (#0f1e2e), скруглённые углы, тень
-
-### Содержимое
-- Заголовок: `Game.Lang.t('dayEnd.title')` + номер дня
-- Статистика:
-  - Вылечено пациентов: `dayStats.patientsServed`
-  - Потеряно пациентов: `dayStats.patientsLost`
-  - Заработано: `$dayStats.moneyEarned`
-  - Потрачено: `$dayStats.moneySpent`
-  - Зарплата сотрудников: `$salary` (`#stat-salary`) — вычитается через `Game.Cashier.spend()`
-- Кнопка "Перейти в следующий день" → `closeDayEndPopup()`
-
-### Зарплата сотрудников
-- При показе попапа: `var salary = Game.Staff.getDailySalary(); Game.Cashier.spend(salary);`
-- Баланс может уйти в минус — зарплата платится всегда
-
-### Управление
-- При показе: `controls.unlock()`
-- При закрытии: `controls.lock()`, `dayNumber++`, очистка пациентов
+- z-index 20, тёмно-синий фон
+- Статистика: вылечено, потеряно, заработано, потрачено, зарплата
+- Зарплата платится всегда (баланс может уйти в минус)
+- Кнопка "Следующий день"
 
 ## Module: Game.Shift
 
@@ -160,62 +131,54 @@ dayEndPopupOpen = false // попап итогов дня показан
 ```js
 Game.Shift.setup(THREE, scene, camera, controls, collidables)
 Game.Shift.update(delta)
-Game.Shift.isOpen()             // → boolean (смена активна, пациенты приходят)
-Game.Shift.isPopupOpen()        // → boolean (попап итогов дня)
-Game.Shift.hasInteraction()     // → boolean (hover на табличке)
-Game.Shift.trackEarning(amount) // добавить к moneyEarned
-Game.Shift.trackSpending(amount)// добавить к moneySpent
-Game.Shift.trackPatientServed() // +1 к patientsServed
-Game.Shift.trackPatientLost()   // +1 к patientsLost
-```
-
-### Internal State
-```js
-shiftOpen, shiftEnding, gameTime, dayNumber, dayStats
-signGroup, signMeshes[], signCanvas, signTexture, signBoardMat
-hoveredSign, prevHovered, dayEndPopupOpen
-interactRay (Raycaster, far=5), screenCenter (Vector2(0,0))
+Game.Shift.isOpen()             // → boolean
+Game.Shift.isPopupOpen()        // → boolean
+Game.Shift.hasInteraction()     // → boolean
+Game.Shift.getDayNumber()       // → number
+Game.Shift.getGameTime()        // → number (0..SHIFT_DURATION секунд)
+Game.Shift.trackEarning(amount)
+Game.Shift.trackSpending(amount)
+Game.Shift.trackPatientServed()
+Game.Shift.trackPatientLost()
 ```
 
 ## Integration Points
 
 ### patients.js
-- Spawn guard: `if (Game.Shift && Game.Shift.isOpen())` перед спавном
-- `spawnFirstPatient()` — спавн пешком (без instant teleport)
-- `clearAll()` — удаление всех пациентов со сцены
-- `getPatientCount()` → number — общее количество пациентов
-- `getActivePatientCount()` → number — пациенты кроме state='leaving'
-- `dischargePatient()` → вызывает `Game.Shift.trackPatientServed()`
-- `removePatient()` при HP≤0 → вызывает `Game.Shift.trackPatientLost()`
+- Spawn guard: `Game.Shift.isOpen()` перед спавном
+- `startWaveSystem()` — запуск волновой системы при открытии смены (Level 2+)
+- `spawnFirstPatient()` — для Level 1 (sequential)
+- `clearAll()` — очистка, сброс волн и таймеров
+- `getGameTime()` — используется волновой системой для определения времени триггера волн
 
 ### cashier.js
-- `processPayment()` → вызывает `Game.Shift.trackEarning(required)`
-- `spend(amount)` → вызывает `Game.Shift.trackSpending(amount)`
-- `clearQueue()` — удаление пациентов из очереди кассы
-- `hasPatients()` → boolean — есть ли пациенты на кассе
-
-### controls.js
-- Unlock handler проверяет `Game.Shift.isPopupOpen()`
-
-### index.html
-- Script загрузка: после diagnostics.js, перед cashier.js
-- Setup: после `Game.Cashier.setup()`
-- Update: в animation loop (после `Game.Cashier.update(delta)`)
+- `processPayment()` → `trackEarning()`
+- `spend(amount)` → `trackSpending()`
 
 ## DOM Elements
 | ID | Тип | Назначение |
 |----|-----|------------|
 | `time-hud` | div | Контейнер времени и дня |
-| `day-value` | span | `Game.Lang.t('hud.day', [dayNumber])` |
-| `time-value` | span | "HH:MM" |
-| `task-container` | div | Контейнер задачи с маскотом |
-| `task-mascot` | div | Портрет медсестры (background-image) |
+| `day-value` | span | Номер дня |
+| `time-value` | span | HH:MM |
+| `wave-banner` | div | Баннер волны с таймером |
+| `wave-text` | div | Лорный текст волны |
+| `wave-timer-bar` | div | Контейнер полоски таймера |
+| `wave-timer-fill` | div | Заливка полоски таймера |
+| `wave-timer-text` | div | Секунды обратного отсчёта |
+| `task-container` | div | Задача с маскотом |
+| `task-mascot` | div | Портрет медсестры |
 | `task-bubble` | div | Speech bubble задачи |
-| `task-text` | div | текст из `Game.Lang.t()` |
+| `task-text` | div | Текст задачи |
 | `day-end-popup` | div | Попап итогов дня |
 | `day-end-number` | span | Номер дня в заголовке |
-| `stat-served` | span | Вылечено пациентов |
-| `stat-lost` | span | Потеряно пациентов |
+| `stat-served` | span | Вылечено |
+| `stat-lost` | span | Потеряно |
 | `stat-earned` | span | Заработано |
 | `stat-spent` | span | Потрачено |
-| `day-end-next` | button | Кнопка "Перейти в следующий день", `data-lang-key="dayEnd.next"` |
+| `day-end-next` | button | Кнопка следующего дня |
+
+## No Session Persistence
+- Никаких данных не сохраняется между сессиями
+- Каждый запуск — абсолютно новая игра
+- Сервер (`serve.mjs`) отдаёт все файлы с `Cache-Control: no-cache, no-store, must-revalidate`
