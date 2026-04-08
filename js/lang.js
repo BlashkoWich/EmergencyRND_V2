@@ -243,9 +243,9 @@
       'levels.xp.diagnostics': 'XP диагностика',
 
       // Diagnostics
-      'diag.steth.title': 'Фонендоскоп — Найдите точку аускультации',
-      'diag.steth.status': 'Наведите на точку и удерживайте 3 секунды',
-      'diag.steth.wrong': 'Здесь ничего не слышно. Попробуйте другую точку.',
+      'diag.steth.title': 'Фонендоскоп — Прослушайте точки аускультации',
+      'diag.steth.status': 'Наведите на подсвеченную точку',
+      'diag.steth.timeout': 'Время вышло! Попробуйте снова.',
       'diag.hammer.title': 'Рефлекс-молоток — Проверьте рефлексы',
       'diag.hammer.status': 'Кликните по точке на колене когда шкала в зелёной зоне ({0}/{1})',
       'diag.hammer.tooWeak': 'Слишком слабо!',
@@ -265,15 +265,6 @@
       'diag.bodyPart.rightLung': 'Правое лёгкое',
       'diag.bodyPart.abdomen': 'Живот',
       'diag.bodyPart.throat': 'Горло',
-
-      // Stethoscope keyword matching
-      'diag.steth.keywords': {
-        throat: ['горл', 'голос', 'глотать', 'глота', 'перш', 'сипит', 'гнусав', 'ангин', 'миндал', 'лающий', 'слюну', 'рот'],
-        leftLung: ['слева', 'в боку', 'справа', 'плевр'],
-        rightLung: ['свист', 'хрип', 'булькает', 'мокрот', 'задых', 'обструкт'],
-        heart: ['за грудин', 'грудь', 'сжалось', 'груди'],
-        abdomen: ['до рвоты', 'живот']
-      },
 
       // Consumables/Box hints
       'box.held.trash': 'G — Выбросить в мусорку',
@@ -719,9 +710,9 @@
       'levels.xp.diagnostics': 'XP diagnostics',
 
       // Diagnostics
-      'diag.steth.title': 'Stethoscope — Find the auscultation point',
-      'diag.steth.status': 'Hover over the point and hold for 3 seconds',
-      'diag.steth.wrong': 'Nothing heard here. Try another point.',
+      'diag.steth.title': 'Stethoscope — Listen to auscultation points',
+      'diag.steth.status': 'Hover over the highlighted point',
+      'diag.steth.timeout': 'Time is up! Try again.',
       'diag.hammer.title': 'Reflex hammer — Check reflexes',
       'diag.hammer.status': 'Click the knee point when the bar is in the green zone ({0}/{1})',
       'diag.hammer.tooWeak': 'Too weak!',
@@ -741,15 +732,6 @@
       'diag.bodyPart.rightLung': 'Right lung',
       'diag.bodyPart.abdomen': 'Abdomen',
       'diag.bodyPart.throat': 'Throat',
-
-      // Stethoscope keyword matching
-      'diag.steth.keywords': {
-        throat: ['throat', 'voice', 'swallow', 'tickle', 'wheez', 'hoarse', 'nasal', 'tonsil', 'bark', 'saliva', 'mouth'],
-        leftLung: ['left', 'side', 'right side', 'pleur'],
-        rightLung: ['whistl', 'wheez', 'gurgl', 'phlegm', 'short of breath', 'obstruct'],
-        heart: ['sternum', 'chest', 'constrict', 'compress'],
-        abdomen: ['vomit', 'abdomen', 'stomach']
-      },
 
       // Consumables/Box hints
       'box.held.trash': 'G — Throw in trash',

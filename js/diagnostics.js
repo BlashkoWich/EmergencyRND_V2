@@ -13,11 +13,14 @@
   // ===== STETHOSCOPE MINI-GAME =====
   var steth = {
     points: [],
-    correctIndex: 0,
+    sequence: [],
+    currentStep: 0,
     hoveredIndex: -1,
     holdTimer: 0,
-    holdTarget: 3.0,
-    dimmed: [],
+    holdTarget: 0.5,
+    globalTimer: 0,
+    globalTimeLimit: 6.0,
+    timerStarted: false,
     mouseX: 0,
     mouseY: 0,
     complaint: ''
@@ -31,24 +34,23 @@
     { x: 300, y: 100, label: Game.Lang.t('diag.bodyPart.throat') }
   ];
 
-  // Determine correct auscultation point from complaint text
-  function getStethCorrectPoint(complaint) {
-    var c = complaint.toLowerCase();
-    var kw = Game.Lang.t('diag.steth.keywords');
-    if (kw.throat && kw.throat.some(function(w) { return c.indexOf(w) !== -1; })) return 4;
-    if (kw.leftLung && kw.leftLung.some(function(w) { return c.indexOf(w) !== -1; })) return 1;
-    if (kw.rightLung && kw.rightLung.some(function(w) { return c.indexOf(w) !== -1; })) return 2;
-    if (kw.heart && kw.heart.some(function(w) { return c.indexOf(w) !== -1; })) return 0;
-    if (kw.abdomen && kw.abdomen.some(function(w) { return c.indexOf(w) !== -1; })) return 3;
-    return 4;
+  function generateStethSequence() {
+    var indices = [0, 1, 2, 3, 4];
+    for (var i = indices.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = indices[i]; indices[i] = indices[j]; indices[j] = tmp;
+    }
+    return indices.slice(0, 3);
   }
 
   function startStethoscope(patient) {
     steth.points = STETH_POINT_POSITIONS;
-    steth.correctIndex = getStethCorrectPoint(patient.complaint || '');
+    steth.sequence = generateStethSequence();
+    steth.currentStep = 0;
     steth.hoveredIndex = -1;
     steth.holdTimer = 0;
-    steth.dimmed = [];
+    steth.globalTimer = 0;
+    steth.timerStarted = false;
     steth.mouseX = canvasW / 2;
     steth.mouseY = canvasH / 2;
     steth.complaint = patient.complaint || '';
@@ -59,6 +61,21 @@
   }
 
   function updateStethoscope(delta) {
+    // Global timer (starts after first point completed)
+    if (steth.timerStarted) {
+      steth.globalTimer += delta;
+      if (steth.globalTimer >= steth.globalTimeLimit) {
+        steth.sequence = generateStethSequence();
+        steth.currentStep = 0;
+        steth.holdTimer = 0;
+        steth.globalTimer = 0;
+        steth.timerStarted = false;
+        statusEl.textContent = Game.Lang.t('diag.steth.timeout');
+        drawStethoscope();
+        return;
+      }
+    }
+
     var mx = steth.mouseX;
     var my = steth.mouseY;
     var newHovered = -1;
@@ -79,17 +96,18 @@
       steth.holdTimer = 0;
     }
 
-    if (steth.hoveredIndex >= 0 && steth.dimmed.indexOf(steth.hoveredIndex) === -1) {
+    var targetIndex = steth.sequence[steth.currentStep];
+    if (steth.hoveredIndex === targetIndex) {
       steth.holdTimer += delta;
       if (steth.holdTimer >= steth.holdTarget) {
-        if (steth.hoveredIndex === steth.correctIndex) {
+        if (steth.currentStep === 0) steth.timerStarted = true;
+        steth.currentStep++;
+        steth.holdTimer = 0;
+        if (steth.currentStep >= 3) {
           onSuccess();
           return;
-        } else {
-          steth.dimmed.push(steth.hoveredIndex);
-          statusEl.textContent = Game.Lang.t('diag.steth.wrong');
-          steth.holdTimer = 0;
         }
+        statusEl.textContent = Game.Lang.t('diag.steth.status');
       }
     }
 
@@ -113,6 +131,29 @@
       ctx.fillText('\u00AB' + steth.complaint + '\u00BB', canvasW / 2, 33);
     }
 
+    // Global timer bar (under complaint)
+    if (steth.timerStarted) {
+      var timerFrac = 1 - steth.globalTimer / steth.globalTimeLimit;
+      if (timerFrac < 0) timerFrac = 0;
+      var barX = 60, barY = 52, barW = canvasW - 120, barH = 6;
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.beginPath();
+      ctx.roundRect(barX, barY, barW, barH, 3);
+      ctx.fill();
+      var r = timerFrac > 0.4 ? 80 : 255;
+      var g = timerFrac > 0.4 ? 200 : Math.floor(100 + timerFrac * 300);
+      ctx.fillStyle = 'rgb(' + r + ',' + g + ',80)';
+      ctx.beginPath();
+      ctx.roundRect(barX, barY, barW * timerFrac, barH, 3);
+      ctx.fill();
+    }
+
+    // Progress indicator
+    ctx.fillStyle = 'rgba(200,220,240,0.7)';
+    ctx.font = '13px Segoe UI, Arial, sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(steth.currentStep + ' / 3', canvasW - 30, 33);
+
     // Body silhouette
     ctx.fillStyle = '#2a4a5a';
     ctx.beginPath();
@@ -133,29 +174,49 @@
     ctx.fillRect(185, 103, 18, 115);
     ctx.fillRect(397, 103, 18, 115);
 
+    // Determine point states
+    var targetIndex = steth.sequence[steth.currentStep];
+    var completedSet = {};
+    for (var s = 0; s < steth.currentStep; s++) {
+      completedSet[steth.sequence[s]] = true;
+    }
+
     // Points
     for (var i = 0; i < steth.points.length; i++) {
       var p = steth.points[i];
-      var isDimmed = steth.dimmed.indexOf(i) !== -1;
+      var isTarget = (i === targetIndex);
+      var isCompleted = !!completedSet[i];
       var isHovered = steth.hoveredIndex === i;
 
       ctx.beginPath();
       ctx.arc(p.x, p.y, 18, 0, Math.PI * 2);
 
-      if (isDimmed) {
-        ctx.fillStyle = 'rgba(100, 100, 100, 0.3)';
+      if (isCompleted) {
+        // Green completed point
+        ctx.fillStyle = 'rgba(68, 255, 136, 0.25)';
         ctx.fill();
-        ctx.strokeStyle = 'rgba(150, 150, 150, 0.3)';
+        ctx.strokeStyle = 'rgba(68, 255, 136, 0.6)';
         ctx.lineWidth = 2;
         ctx.stroke();
-      } else if (isHovered) {
-        ctx.fillStyle = 'rgba(100, 200, 255, 0.3)';
+        // Checkmark
+        ctx.strokeStyle = '#44ff88';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(p.x - 6, p.y);
+        ctx.lineTo(p.x - 1, p.y + 5);
+        ctx.lineTo(p.x + 7, p.y - 5);
+        ctx.stroke();
+      } else if (isTarget) {
+        // Bright pulsating target point
+        var pulse = 0.6 + 0.4 * Math.sin(Date.now() * 0.005);
+        ctx.fillStyle = 'rgba(100, 200, 255, ' + (0.2 + 0.15 * pulse) + ')';
         ctx.fill();
-        ctx.strokeStyle = '#66ccff';
+        ctx.strokeStyle = 'rgba(100, 220, 255, ' + (0.6 + 0.4 * pulse) + ')';
         ctx.lineWidth = 3;
         ctx.stroke();
 
-        if (steth.holdTimer > 0) {
+        // Progress ring when hovering
+        if (isHovered && steth.holdTimer > 0) {
           var progress = steth.holdTimer / steth.holdTarget;
           ctx.beginPath();
           ctx.arc(p.x, p.y, 22, -Math.PI / 2, -Math.PI / 2 + progress * Math.PI * 2);
@@ -166,14 +227,17 @@
           ctx.lineCap = 'butt';
         }
       } else {
-        ctx.fillStyle = 'rgba(100, 180, 255, 0.15)';
+        // Dim non-target point
+        ctx.fillStyle = 'rgba(100, 180, 255, 0.08)';
         ctx.fill();
-        ctx.strokeStyle = 'rgba(100, 180, 255, 0.5)';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'rgba(100, 180, 255, 0.25)';
+        ctx.lineWidth = 1.5;
         ctx.stroke();
       }
 
-      ctx.fillStyle = isDimmed ? 'rgba(150,150,150,0.3)' : (isHovered ? '#fff' : 'rgba(200,220,240,0.6)');
+      // Labels
+      var labelAlpha = isCompleted ? 0.5 : (isTarget ? 1 : 0.35);
+      ctx.fillStyle = isCompleted ? 'rgba(68,255,136,' + labelAlpha + ')' : (isTarget ? '#fff' : 'rgba(200,220,240,' + labelAlpha + ')');
       ctx.font = '11px Segoe UI, Arial, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(p.label, p.x, p.y + 32);
