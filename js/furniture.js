@@ -24,7 +24,7 @@
 
   var INDOOR_BOUNDS = { xMin: -7.8, xMax: 7.8, zMin: -11.8, zMax: -0.2 };
 
-  var DELIVERY_ZONE = { cx: 0, cz: 5, hw: 1.5, hd: 1.0 };
+  var DELIVERY_ZONE = { cx: -10.5, cz: -10.3, hw: 1.5, hd: 1.0 };
 
   // Hold-E state
   var HOLD_DURATION = 600; // ms
@@ -193,7 +193,7 @@
   // type: 'h' = horizontal (constant z, x range), 'v' = vertical (constant x, z range)
   var WALL_SEGMENTS = [
     { type: 'h', val: -12, min: -8.1, max: 8.1 },   // North wall
-    { type: 'v', val: -8,  min: -12,  max: 0 },      // West wall
+    { type: 'v', val: -8,  min: -9.6,  max: 0 },      // West wall (south of side door)
     { type: 'v', val:  8,  min: -12,  max: 0 },      // East wall
     { type: 'h', val:  0,  min: -8.1, max: -1.2 },   // South wall left
     { type: 'h', val:  0,  min:  1.2, max:  8.1 }    // South wall right

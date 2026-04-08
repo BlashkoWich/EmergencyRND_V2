@@ -193,6 +193,7 @@
       'sign.cashier': 'КАССА',
       'sign.reception': 'РЕСЕПШЕН',
       'sign.laundry': 'СТИРКА',
+      'sign.deliveryZone': 'ЗОНА ДОСТАВКИ',
 
       // Inventory
       'inv.shop': 'Q — Магазин',
@@ -667,6 +668,7 @@
       'sign.cashier': 'CASHIER',
       'sign.reception': 'RECEPTION',
       'sign.laundry': 'LAUNDRY',
+      'sign.deliveryZone': 'DELIVERY ZONE',
 
       // Inventory
       'inv.shop': 'Q — Shop',

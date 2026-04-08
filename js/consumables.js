@@ -25,8 +25,8 @@
 
   var GRAVITY = -9.8;
   var GROUND_Y = 0;
-  var DELIVERY_ZONE = { cx: 0, cz: 5, hw: 1.5, hd: 1.0 };
-  var TRASH_ZONE = { cx: 3, cz: 1.5, radius: 0.8 };
+  var DELIVERY_ZONE = { cx: -10.5, cz: -10.3, hw: 1.5, hd: 1.0 };
+  var TRASH_ZONE = { cx: -10.5, cz: -8.5, radius: 0.8 };
   var DROP_FORWARD_SPEED = 4.0;
   var DROP_UP_SPEED = 2.0;
 

@@ -50,7 +50,17 @@
       // --- Building walls ---
       var T = 0.2;
       H.createWall(THREE, scene, collidables, 0, BZ1, BW + T, T);           // North
-      H.createWall(THREE, scene, collidables, BX1, -BD / 2, T, BD);         // West
+      // West wall — with side door gap at north corner (z: -12 .. -9.6)
+      var westDoorZ2 = -9.6; // south edge of gap
+      var westWallLen = BZ2 - westDoorZ2; // remaining wall length: 0 - (-9.6) = 9.6
+      H.createWall(THREE, scene, collidables, BX1, westDoorZ2 + westWallLen / 2, T, westWallLen); // West (south of door)
+      // Lintel above side door
+      var westDoorWidth = BZ1 - westDoorZ2; // -12 - (-9.6) = -2.4, abs = 2.4
+      H.createWall(THREE, scene, collidables, BX1, (BZ1 + westDoorZ2) / 2, T, Math.abs(westDoorWidth), { h: 0.5, y: 2.75 });
+      // Side door frame post (south side of gap)
+      var westFrameMat = new THREE.MeshLambertMaterial({ color: 0x99a8b8 });
+      var westPost = new THREE.Mesh(new THREE.BoxGeometry(0.25, 3, 0.08), westFrameMat);
+      westPost.position.set(BX1, 1.5, westDoorZ2); scene.add(westPost); collidables.push(westPost);
       H.createWall(THREE, scene, collidables, BX2, -BD / 2, T, BD);         // East
       // South wall — two segments with entrance gap (x: -1.2..1.2)
       var doorHalf = 1.2;
@@ -150,9 +160,21 @@
       createBed(-5.5, -5, 0);
       createBed(-5.5, -3, 0);
 
-      H.createSign(THREE, scene, Game.Lang.t('sign.examination'), -7.88, 2.5, -8, Math.PI / 2);
+      H.createSign(THREE, scene, Game.Lang.t('sign.examination'), -7.88, 2.5, -6, Math.PI / 2);
+      // Sign above side door (interior, on remaining west wall near door edge)
+      H.createSign(THREE, scene, Game.Lang.t('sign.deliveryZone'), -7.88, 2.5, -9.4, Math.PI / 2);
 
       // === OUTDOOR ENVIRONMENT ===
+
+      // --- Asphalt pad outside west side door (for delivery zone) ---
+      var westPad = new THREE.Mesh(
+        new THREE.BoxGeometry(8, 0.1, 6),
+        new THREE.MeshLambertMaterial({ map: H.createAsphaltTexture(THREE) })
+      );
+      westPad.position.set(-12, -0.055, -10.3);
+      westPad.receiveShadow = true;
+      scene.add(westPad);
+      collidables.push(westPad);
 
       // --- Trees ---
       var trunkMat = new THREE.MeshLambertMaterial({ color: 0x8B5A2B });
