@@ -1,4 +1,4 @@
-# EmergencyRND V2 — Пациенты, очереди, состояния
+# EmergencyRND V2 — Пациенты, очереди, состояния, волны
 
 ## Patient Data Pools
 ```
