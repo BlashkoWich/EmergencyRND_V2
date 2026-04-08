@@ -434,6 +434,34 @@
       return false;
     },
 
+    addItemBulk: function(type, maxCount) {
+      if (maxCount <= 0) return 0;
+      var isInstrument = type.startsWith('instrument_');
+      if (isInstrument) {
+        // Instruments don't stack — just add one
+        return this.addItem(type) ? 1 : 0;
+      }
+      // Try to stack into existing slot with same type
+      for (var i = 0; i < 6; i++) {
+        if (slots[i] && slots[i].type === type && slots[i].count < maxStack) {
+          var canAdd = Math.min(maxStack - slots[i].count, maxCount);
+          slots[i].count += canAdd;
+          refreshUI();
+          return canAdd;
+        }
+      }
+      // Find empty slot
+      for (var i = 0; i < 6; i++) {
+        if (slots[i] === null) {
+          var canAdd = Math.min(maxStack, maxCount);
+          slots[i] = { type: type, count: canAdd };
+          refreshUI();
+          return canAdd;
+        }
+      }
+      return 0;
+    },
+
     removeActive: function() {
       var data = slots[activeSlot];
       if (data) {
@@ -446,6 +474,22 @@
         return type;
       }
       return null;
+    },
+
+    removeActiveN: function(n) {
+      var data = slots[activeSlot];
+      if (!data) return null;
+      var type = data.type;
+      data.count -= n;
+      if (data.count <= 0) {
+        slots[activeSlot] = null;
+      }
+      refreshUI();
+      return type;
+    },
+
+    getActiveCount: function() {
+      return slots[activeSlot] ? slots[activeSlot].count : 0;
     },
 
     getActive: function() {

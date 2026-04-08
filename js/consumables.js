@@ -982,12 +982,13 @@
         var tutorialActive = Game.Tutorial && Game.Tutorial.isActive();
         var pickupAllowed = !tutorialActive || Game.Tutorial.isAllowed('pickup_item');
 
-        // If holding a box, LMB takes item from box (always allowed during tutorial)
+        // If holding a box, LMB takes items from box (bulk — fills slot to max)
         if (heldBox) {
           if (Game.Cashier && Game.Cashier.isPopupOpen()) return;
           if (heldBox.remaining <= 0) return;
-          if (Game.Inventory.addItem(heldBox.type)) {
-            heldBox.remaining--;
+          var added = Game.Inventory.addItemBulk(heldBox.type, heldBox.remaining);
+          if (added > 0) {
+            heldBox.remaining -= added;
             updateBoxLabel(heldBox);
             if (heldBox.remaining <= 0) {
               markBoxEmpty(heldBox);
@@ -999,11 +1000,12 @@
           return;
         }
 
-        // Take item from grounded box on LMB
+        // Take items from grounded box on LMB (bulk — fills slot to max)
         if (hoveredBox) {
           if (hoveredBox.remaining <= 0) return;
-          if (Game.Inventory.addItem(hoveredBox.type)) {
-            hoveredBox.remaining--;
+          var added = Game.Inventory.addItemBulk(hoveredBox.type, hoveredBox.remaining);
+          if (added > 0) {
+            hoveredBox.remaining -= added;
             updateBoxLabel(hoveredBox);
             if (hoveredBox.remaining <= 0) {
               markBoxEmpty(hoveredBox);
