@@ -332,7 +332,8 @@ lastCarryColor         // 'green'|'red'|null — текущий цвет outline
 - `setup(THREE, scene, camera, controls, collidables)` — инициализация
 - `registerExisting(bedMeshes, chairMeshes)` — регистрация начальных кроватей/стульев из World
 - `registerFixture(opts)` — регистрация доп. мебели (стеллажи, панель, касса и т.д.): `{type, group, collisionBox, onMoved, canPickUp, wallMount}`
-- `update(delta)` — обновление каждый кадр
+- `updateCarried()` — обновление позиции переносимой мебели (каждый кадр, 60fps)
+- `update(delta)` — обновление каждый 2-й кадр (interaction, hover, hold progress)
 - `spawnFurniture(type)` — создание мебели в зоне доставки
 - `getIndoorBeds()` / `getIndoorChairs()` — слоты для пациентов (только indoor)
 - `getAllBeds()` / `getAllChairs()` — все слоты (для подсчёта очереди)

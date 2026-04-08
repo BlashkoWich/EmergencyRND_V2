@@ -619,6 +619,7 @@
 
   window.Game.Furniture = {
     TYPES: FURNITURE_TYPES,
+    updateCarried: updateCarriedFurniture,
 
     setup: function(_THREE, _scene, _camera, _controls, _collidables) {
       THREE = _THREE;
@@ -743,7 +744,6 @@
         }
       }
 
-      updateCarriedFurniture();
       updateFurnitureInteraction();
 
       // Show carry hint

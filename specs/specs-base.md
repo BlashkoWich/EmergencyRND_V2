@@ -133,16 +133,19 @@ specs/
 5. `Game.Staff.update(delta)` — NPC-сотрудники
 6. `Game.Cashier.update(delta)` — касса, терминал, очередь оплаты
 
+Каждый кадр (60fps, позиция переносимой мебели):
+7. `Game.Furniture.updateCarried()` — обновление позиции переносимой мебели (raycast от камеры, wall clamping, валидация). Вызывается каждый кадр для плавного следования за камерой
+
 Каждый 2-й кадр (30fps, `delta * 2`):
-7. `Game.Furniture.update(delta)` — перемещение мебели, interaction
-8. `Game.WashingMachine.update(delta)` — стиральная машина
-9. `Game.Shelves.update(delta)` — interaction стеллажей
-10. `Game.ToolPanel.update(delta)` — interaction панели инструментов
-11. `Game.Trash.update(delta)` — мусор
-12. `Game.Shift.update(delta)` — время смены, hover таблички, задачи
+8. `Game.Furniture.update(delta)` — interaction мебели (hover, hold progress E, подсказки)
+9. `Game.WashingMachine.update(delta)` — стиральная машина
+10. `Game.Shelves.update(delta)` — interaction стеллажей
+11. `Game.ToolPanel.update(delta)` — interaction панели инструментов
+12. `Game.Trash.update(delta)` — мусор
+13. `Game.Shift.update(delta)` — время смены, hover таблички, задачи
 
 Условно:
-13. `Game.Tutorial.update(delta)` — только если `Game.Tutorial.isActive()`
+14. `Game.Tutorial.update(delta)` — только если `Game.Tutorial.isActive()`
 
 Рендер: `composer.render()` или `renderer.render(scene, camera)` (зависит от `useComposer`)
 
@@ -377,7 +380,8 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 Система мебели: покупка, перемещение, размещение, indoor/outdoor статус, динамические слоты пациентов.
 - `setup(THREE, scene, camera, controls, collidables)` — инициализация, raycaster, E key binding
 - `registerExisting(bedMeshes, chairMeshes)` — регистрация начальной мебели из World.setup()
-- `update(delta)` — обновление каждый кадр (перенос, interaction raycast, outline валидации)
+- `updateCarried()` — обновление позиции переносимой мебели (каждый кадр, 60fps). Raycast от камеры, wall clamping, outline валидации
+- `update(delta)` — обновление каждый 2-й кадр (interaction raycast, hover, hold progress E, подсказки)
 - `spawnFurniture(type)` — создание мебели в зоне доставки ('bed' | 'chair')
 - `getIndoorBeds()` → slot[] — слоты indoor кроватей `{ pos, occupied }`
 - `getIndoorChairs()` → slot[] — слоты indoor стульев
