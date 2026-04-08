@@ -98,12 +98,38 @@ CONSUMABLE_KEYS: ['painkiller', 'antihistamine', 'strepsils']
 - Пациенты в очереди повёрнуты на `Math.PI` (лицом к стойке)
 
 ## Spawning
-- ��ациенты спавнятся ТОЛЬКО когда смена открыта (`Game.Shift.isOpen() === true`)
-- Первый пациент спавнится при открытии смены через `Game.Patients.spawnFirstPatient()` — заходит пешком (НЕ телепорт)
-- Далее каждые `SPAWN_INTERVAL = 10` секунд (таймер в animation loop, только при открытой смене)
-- Если `queue.length >= maxQueue` → спавн не происходит, уведомление о переполнении (maxQueue = min(2 + totalFurniture - 5, 10), min 2)
+
+### Режимы спавна (зависит от уровня)
+- **Level 1 (tutorial):** sequential — один пациент, ручное управление через туториал
+- **Level 2+:** cluster — кластерный спавн (группки пациентов)
+
+### Кластерный спавн (Level 2+)
+Пациенты приходят группками (кластерами), потом пауза, потом следующая группка.
+Для игрока выглядит как естественный поток, без нотификаций о кластерах.
+
+- **Размер кластера** (случайный в диапазоне):
+  - Level 2: 3-4 пациента
+  - Level 3: 3-5 пациентов
+  - Level 4: 4-6 пациентов
+- **Интервал внутри кластера**: 2.5 сек между входом каждого пациента (`CLUSTER_SPAWN_DELAY = 2.5`)
+- **Пауза между кластерами**: 90-120 сек (`CLUSTER_PAUSE_MIN = 90`, `CLUSTER_PAUSE_MAX = 120`), рандомизируется один раз при входе в паузу
+- **Блокировка следующего кластера**: новый кластер не начнётся, пока в очереди есть необслуженные пациенты (`queue.length === 0`)
+- При открытии смены вызывается `Game.Patients.startFirstCluster()` — первый кластер начинается сразу
+- `getSpawnMode()` в `levels.js` возвращает `'cluster'` для level >= 2, `'sequential'` для level 1
+- Если очередь полна (`queue.length >= maxQueue`) — кластер обрывается, оставшиеся пациенты не спавнятся
+
+**Переменные:** `clusterTimer`, `clusterRemaining`, `clusterPauseTimer`, `clusterPauseDuration`, `inClusterPause`
+**Функции:** `getClusterSize()`, `startFirstCluster()`
+**Файлы:** `patients.js`, `levels.js` (`getSpawnMode()`), `shift.js` (вызов `startFirstCluster()`)
+
+### Level 2 сразу после туториала
+- XP threshold L1->L2 снижен с 50 до 10 (ровно столько даёт первый пациент в туторе)
+- После оплаты первого пациента — попап "Level 2!" -> та же смена продолжается с кластерным спавном
+
+### Общие правила спавна
+- Пациенты спавнятся ТОЛЬКО когда смена открыта (`Game.Shift.isOpen() === true`)
 - Точка появления: `(0, 0, 1)` — у входа, пациент идёт пешком к очереди
-- При создании выбирается случайный тип из `CONSUMABLE_KEYS`, затем случайный case из `MEDICAL_DATA[type].cases[]` (symptom, diagnosis, complaint — связный кейс)
+- При создании выбирается случайный тип из `CONSUMABLE_KEYS`, затем случайный case из `MEDICAL_DATA[type].cases[]` (diagnosis, complaint — связный кейс)
 - Генерируются витальные показатели через `generateVitals(severity.key)` — значения коррелируют с тяжестью
 - Случайный возраст 18-75 через `randomInt(18, 75)`
 
@@ -130,7 +156,9 @@ CONSUMABLE_KEYS: ['painkiller', 'antihistamine', 'strepsils']
 ```js
 beds = [
   { pos: Vector3(-4.5, 0, -9), occupied: bool },
-  { pos: Vector3(-4.5, 0, -7), occupied: bool }
+  { pos: Vector3(-4.5, 0, -7), occupied: bool },
+  { pos: Vector3(-4.5, 0, -5), occupied: bool },
+  { pos: Vector3(-4.5, 0, -3), occupied: bool }
 ]
 waitingChairs = [
   { pos: Vector3(5.5, 0, -2),   occupied: bool },
@@ -188,7 +216,9 @@ waitingChairs = [
   - `medium` (Среднее) → стартовое HP = 50
   - `mild` (Лёгкое) → стартовое HP = 80
 - Максимальное HP = 100
-- **Деградация HP**: каждые 3 секунды, пока `treated === false`, пациент теряет 1 HP
+- **Деградация HP**: каждые 3 секунды, пока `treated === false`, пациент теряет HP:
+  - На кровати (`atBed`): 1 HP за тик (стандартная скорость)
+  - В очереди/ожидании (`queued`/`waiting`): 0.5 HP за тик (замедленная — буфер на распределение группы)
   - **HP НЕ падает** пока пациент идёт к зоне ожидания (state=`walking`), идёт к кровати (state=`walking`), или во время активной мини-игры диагностики
   - Заморозка при ходьбе: state=`walking` или (state=`queued` и ещё не дошёл до позиции в очереди)
   - Заморозка при мини-игре: `Game.Diagnostics.isActive()` и `Game.Diagnostics.getPatient() === patient`
