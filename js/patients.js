@@ -22,7 +22,7 @@
 
   // --- Walk speed multiplier per severity ---
   var WALK_SPEED = {
-    severe: 0.35, medium: 0.65, mild: 0.9, normal: 1.0
+    severe: 1.0, medium: 1.0, mild: 1.0, normal: 1.0
   };
 
   // --- Injury poses ---
@@ -152,22 +152,56 @@
   var firstPatientPaid = false; // tracks if the very first patient has been paid
   var animations = [];
 
-  // Cluster spawn state
-  var clusterTimer = 0;
-  var clusterRemaining = 0;
-  var clusterPauseTimer = 0;
-  var clusterPauseDuration = 0;
-  var inClusterPause = false;
-  var CLUSTER_SPAWN_DELAY = 2.5;
-  var CLUSTER_PAUSE_MIN = 90;
-  var CLUSTER_PAUSE_MAX = 120;
+  // Wave spawn system — scripted waves with guaranteed severity diversity
+  var WAVE_SPAWN_DELAY = 1.5; // seconds between patients within a wave
 
-  function getClusterSize() {
-    var lvl = Game.Levels ? Game.Levels.getLevel() : 2;
-    if (lvl >= 4) return 4 + Math.floor(Math.random() * 3); // 4-6
-    if (lvl >= 3) return 3 + Math.floor(Math.random() * 3); // 3-5
-    return 3 + Math.floor(Math.random() * 2);                // 3-4 (level 2)
-  }
+  // composition: [mild_count, medium_count, severe_count]
+  var WAVE_CONFIG = {
+    2: {
+      waves: [
+        { time: 0,   composition: [2, 2, 0] },
+        { time: 55,  composition: [1, 2, 0] },
+        { time: 120, composition: [2, 2, 0] },
+        { time: 200, composition: [1, 2, 0] }
+      ]
+    },
+    3: {
+      waves: [
+        { time: 0,   composition: [1, 2, 1] },
+        { time: 45,  composition: [1, 1, 1] },
+        { time: 100, composition: [2, 1, 1] },
+        { time: 160, composition: [1, 2, 1] },
+        { time: 230, composition: [1, 1, 1] }
+      ]
+    },
+    4: {
+      waves: [
+        { time: 0,   composition: [1, 2, 1] },
+        { time: 35,  composition: [1, 1, 2] },
+        { time: 80,  composition: [2, 1, 0] },
+        { time: 130, composition: [1, 2, 1] },
+        { time: 185, composition: [1, 1, 2] },
+        { time: 245, composition: [1, 1, 1] }
+      ]
+    }
+  };
+
+  // Wave state
+  var currentWaveIndex = 0;
+  var waveSpawnQueue = [];   // array of severity keys to spawn, severe first
+  var waveSpawnTimer = 0;
+  var waveStarted = false;   // whether wave system has been initialized
+  var lastWaveSize = 0;      // how many patients were in the previous wave
+  var currentSpawnWaveNumber = 0; // wave number assigned to patients being spawned
+
+  // Shared wave queue timer
+  var QUEUE_PATIENCE = 60.0;
+  var waveQueueTimer = 0;
+  var waveQueueTimerActive = false;
+  var activeWaveNumber = -1; // which wave the timer is for
+
+  // Wave banner DOM elements (cached in setup)
+  var waveBannerEl, waveTextEl, waveTimerFillEl, waveTimerTextEl;
 
   // --- UI elements ---
   var hintEl, popupEl, popupName, popupDiagnosis, popupSupply, popupSupplyIcon, popupSeverity;
@@ -180,7 +214,7 @@
   var screenCenter;
 
   function getQueuePosition(index) {
-    return new THREE.Vector3(0, 0, -7.5 + index);
+    return new THREE.Vector3(-2 + index * 1.2, 0, -7.5);
   }
 
   function createPatientMesh() {
@@ -425,7 +459,7 @@
     }
   }
 
-  function spawnPatient(instant) {
+  function spawnPatient(instant, explicitSeverityKey) {
     var mesh = createPatientMesh();
     mesh.position.set(0, 0, 1);
     scene.add(mesh);
@@ -435,7 +469,13 @@
     var medCase = randomFrom(data.cases);
     var currentLevel = Game.Levels ? Game.Levels.getLevel() : 1;
     var severity;
-    if (currentLevel === 1) {
+    if (explicitSeverityKey) {
+      // Wave system provides explicit severity
+      for (var si = 0; si < SEVERITIES.length; si++) {
+        if (SEVERITIES[si].key === explicitSeverityKey) { severity = SEVERITIES[si]; break; }
+      }
+      if (!severity) severity = SEVERITIES[2]; // fallback to mild
+    } else if (currentLevel === 1) {
       severity = SEVERITIES[2]; // mild only
     } else if (currentLevel === 2) {
       // mild + medium
@@ -446,7 +486,8 @@
       var roll = Math.random();
       severity = roll < 0.60 ? SEVERITIES[2] : roll < 0.85 ? SEVERITIES[1] : SEVERITIES[0];
     }
-    var needsDiagnosis = (currentLevel >= 2) ? (Math.random() < 0.2) : false;
+    var diagChance = Game.Levels && Game.Levels.getDiagnosisChance ? Game.Levels.getDiagnosisChance() : 0.2;
+    var needsDiagnosis = (currentLevel >= 2) ? (Math.random() < diagChance) : false;
 
     // Build multi-consumable list based on severity
     var requiredConsumables;
@@ -493,6 +534,7 @@
       healthBar: null,
       lastDrawnHp: -1,
       particleTimer: 0,
+      waveNumber: currentSpawnWaveNumber,
       anim: {
         walkPhase: 0,
         walkBlend: 0,
@@ -1817,6 +1859,10 @@
       initParticlePool();
 
       // Cache UI elements
+      waveBannerEl = document.getElementById('wave-banner');
+      waveTextEl = document.getElementById('wave-text');
+      waveTimerFillEl = document.getElementById('wave-timer-fill');
+      waveTimerTextEl = document.getElementById('wave-timer-text');
       hintEl = document.getElementById('interact-hint');
       popupEl = document.getElementById('patient-popup');
       popupName = document.getElementById('popup-name');
@@ -1966,9 +2012,20 @@
       }
     },
     startFirstCluster: function() {
-      clusterRemaining = getClusterSize();
-      clusterTimer = 0;
-      inClusterPause = false;
+      // Legacy alias — kept for compatibility
+      this.startWaveSystem();
+    },
+    startWaveSystem: function() {
+      currentWaveIndex = 0;
+      waveSpawnQueue = [];
+      waveSpawnTimer = 0;
+      waveStarted = true;
+      lastWaveSize = 0;
+      currentSpawnWaveNumber = 0;
+      waveQueueTimer = 0;
+      waveQueueTimerActive = false;
+      activeWaveNumber = -1;
+      if (waveBannerEl) waveBannerEl.style.display = 'none';
     },
     onPatientPaid: function() {
       onPatientPaid();
@@ -1996,13 +2053,17 @@
       spawnTimer = 0;
       sequentialSpawnTimer = 0;
       sequentialSpawnActive = false;
+      waveQueueTimerActive = false;
+      activeWaveNumber = -1;
+      if (waveBannerEl) waveBannerEl.style.display = 'none';
       firstPatientPaid = false;
-      // Reset cluster state
-      clusterTimer = 0;
-      clusterRemaining = 0;
-      clusterPauseTimer = 0;
-      clusterPauseDuration = 0;
-      inClusterPause = false;
+      // Reset wave state
+      currentWaveIndex = 0;
+      waveSpawnQueue = [];
+      waveSpawnTimer = 0;
+      lastWaveSize = 0;
+      currentSpawnWaveNumber = 0;
+      waveStarted = false;
       // Remove heal particles
       for (var j = healParticles.length - 1; j >= 0; j--) {
         scene.remove(healParticles[j].mesh);
@@ -2016,35 +2077,108 @@
         var currentLevel = Game.Levels ? Game.Levels.getLevel() : 1;
         var spawnMode = Game.Levels ? Game.Levels.getSpawnMode() : 'sequential';
 
-        if (spawnMode === 'cluster') {
-          // Level 2+: cluster spawn — patients arrive in quick succession
+        if (spawnMode === 'wave') {
+          // Level 2+: scripted wave spawn with guaranteed severity diversity
+          var config = WAVE_CONFIG[currentLevel] || WAVE_CONFIG[4];
+          var gameTime = Game.Shift.getGameTime ? Game.Shift.getGameTime() : 0;
           var totalSlots = Game.Furniture.getAllBeds().length + Game.Furniture.getAllChairs().length;
           var maxQueue = Math.min(totalSlots + 2, 12);
           if (maxQueue < 4) maxQueue = 4;
 
-          if (inClusterPause) {
-            clusterPauseTimer += delta;
-            if (clusterPauseTimer >= clusterPauseDuration && queue.length === 0) {
-              inClusterPause = false;
-              clusterRemaining = getClusterSize();
-              clusterTimer = 0;
-            }
-          } else if (clusterRemaining > 0) {
-            clusterTimer += delta;
-            if (clusterTimer >= CLUSTER_SPAWN_DELAY) {
-              clusterTimer = 0;
-              if (queue.length >= maxQueue) {
-                Game.Inventory.showNotification(Game.Lang.t('notify.queueOverflow'));
-                clusterRemaining = 0;
-              } else {
-                spawnPatient();
-                clusterRemaining--;
+          // Check if next wave should start
+          if (currentWaveIndex < config.waves.length && waveSpawnQueue.length === 0) {
+            var nextWave = config.waves[currentWaveIndex];
+            if (gameTime >= nextWave.time) {
+              // First wave always triggers; subsequent waves require at least one patient from prev wave to have left
+              var canSpawn = true;
+              if (currentWaveIndex > 0 && lastWaveSize > 0) {
+                var prevWaveNum = currentSpawnWaveNumber;
+                var stillActive = 0;
+                for (var wi = 0; wi < patients.length; wi++) {
+                  if (patients[wi].waveNumber === prevWaveNum && patients[wi].state !== 'leaving') {
+                    stillActive++;
+                  }
+                }
+                canSpawn = stillActive < lastWaveSize;
+              }
+              if (canSpawn) {
+                // Build spawn queue: severe first, then medium, then mild
+                var comp = nextWave.composition; // [mild, medium, severe]
+                waveSpawnQueue = [];
+                for (var ws = 0; ws < comp[2]; ws++) waveSpawnQueue.push('severe');
+                for (var wm = 0; wm < comp[1]; wm++) waveSpawnQueue.push('medium');
+                for (var wl = 0; wl < comp[0]; wl++) waveSpawnQueue.push('mild');
+                lastWaveSize = comp[0] + comp[1] + comp[2];
+                currentSpawnWaveNumber = currentWaveIndex;
+                currentWaveIndex++;
               }
             }
-          } else {
-            inClusterPause = true;
-            clusterPauseTimer = 0;
-            clusterPauseDuration = CLUSTER_PAUSE_MIN + Math.random() * (CLUSTER_PAUSE_MAX - CLUSTER_PAUSE_MIN);
+          }
+
+          // Spawn all patients from wave queue at once
+          var spawnedThisFrame = false;
+          while (waveSpawnQueue.length > 0) {
+            if (queue.length >= maxQueue) {
+              Game.Inventory.showNotification(Game.Lang.t('notify.queueOverflow'));
+              waveSpawnQueue.length = 0;
+            } else {
+              var severityKey = waveSpawnQueue.shift();
+              spawnPatient(false, severityKey);
+              spawnedThisFrame = true;
+            }
+          }
+          // Show wave banner when new wave spawns
+          if (spawnedThisFrame && !waveQueueTimerActive) {
+            waveQueueTimer = QUEUE_PATIENCE;
+            waveQueueTimerActive = true;
+            activeWaveNumber = currentSpawnWaveNumber;
+            if (waveBannerEl) {
+              waveTextEl.textContent = Game.Lang.t('wave.arrived');
+              waveBannerEl.style.display = 'block';
+              waveBannerEl.classList.remove('urgent');
+            }
+          }
+
+          // Update shared wave queue timer
+          if (waveQueueTimerActive) {
+            // Count queued patients from active wave
+            var queuedFromWave = 0;
+            for (var qi = 0; qi < patients.length; qi++) {
+              var qs = patients[qi].state;
+              if (patients[qi].waveNumber === activeWaveNumber && (qs === 'queued' || qs === 'interacting')) {
+                queuedFromWave++;
+              }
+            }
+            if (queuedFromWave === 0) {
+              // All patients assigned or gone — hide banner
+              waveQueueTimerActive = false;
+              if (waveBannerEl) waveBannerEl.style.display = 'none';
+            } else {
+              waveQueueTimer -= delta;
+              // Update banner visuals
+              if (waveBannerEl) {
+                var ratio = Math.max(0, waveQueueTimer / QUEUE_PATIENCE);
+                waveTimerFillEl.style.width = (ratio * 100) + '%';
+                waveTimerTextEl.textContent = Math.ceil(Math.max(0, waveQueueTimer)) + 's';
+                if (ratio < 0.25) {
+                  waveBannerEl.classList.add('urgent');
+                } else {
+                  waveBannerEl.classList.remove('urgent');
+                }
+              }
+              // Timer expired — remove all queued patients from this wave
+              if (waveQueueTimer <= 0) {
+                for (var ri = patients.length - 1; ri >= 0; ri--) {
+                  if (patients[ri].waveNumber === activeWaveNumber && patients[ri].state === 'queued') {
+                    if (Game.Shift) Game.Shift.trackPatientLost();
+                    removePatient(patients[ri]);
+                  }
+                }
+                Game.Inventory.showNotification(Game.Lang.t('notify.patientLeft'));
+                waveQueueTimerActive = false;
+                if (waveBannerEl) waveBannerEl.style.display = 'none';
+              }
+            }
           }
         } else {
           // Level 1-2: sequential mode

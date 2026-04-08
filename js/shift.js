@@ -207,11 +207,11 @@
     updateSignTexture();
     updateTaskText();
     Game.Inventory.showNotification(Game.Lang.t('shift.started', [dayNumber]), 'rgba(34, 139, 34, 0.85)');
-    // Spawn first patient (or start cluster)
+    // Spawn first patient (or start wave system)
     var spawnMode = Game.Levels ? Game.Levels.getSpawnMode() : 'sequential';
-    if (spawnMode === 'cluster') {
-      if (Game.Patients && Game.Patients.startFirstCluster) {
-        Game.Patients.startFirstCluster();
+    if (spawnMode === 'wave') {
+      if (Game.Patients && Game.Patients.startWaveSystem) {
+        Game.Patients.startWaveSystem();
       }
     } else {
       if (Game.Patients && Game.Patients.spawnFirstPatient) {
@@ -647,6 +647,7 @@
     isPopupOpen: function() { return dayEndPopupOpen; },
     hasInteraction: function() { return hoveredSign; },
     getDayNumber: function() { return dayNumber; },
+    getGameTime: function() { return gameTime; },
 
     trackEarning: function(amount) { dayStats.moneyEarned += amount; },
     trackSpending: function(amount) { dayStats.moneySpent += amount; },

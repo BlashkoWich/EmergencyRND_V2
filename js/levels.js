@@ -219,7 +219,13 @@
     },
 
     getSpawnMode: function() {
-      return level >= 2 ? 'cluster' : 'sequential';
+      return level >= 2 ? 'wave' : 'sequential';
+    },
+
+    getDiagnosisChance: function() {
+      if (level >= 4) return 0.30;
+      if (level >= 3) return 0.25;
+      return 0.20;
     },
 
     getSpawnInterval: function() {

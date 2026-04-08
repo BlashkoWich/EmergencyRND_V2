@@ -87,9 +87,9 @@ CONSUMABLE_KEYS: ['painkiller', 'antihistamine', 'strepsils']
 
 ## Queue System
 - Очередь перед ресепшном по оси Z
-- **Динамический максимум очереди**: базовый лимит 2, увеличивается на 1 за каждый купленный предмет мебели (сверх начальных 5), максимум 10
-  - Формула: `maxQueue = min(2 + totalFurniture - 5, 10)`, минимум 2
-  - Начальное состояние: 2 кровати + 3 сту��а = 5 → maxQueue = 2
+- **Динамический максимум очереди**: `maxQueue = min(totalSlots + 2, 12)`, минимум 4
+  - Начальное состояние: 3 кровати + 3 стула = 6 → maxQueue = 8
+
 - Если очередь полна, новый пациент не появляется, уведомление "Пациент не смог зайти из-за того, что очередь переполнена"
 - Позиция в очереди: `getQueuePosition(index)` → `(0, 0, -7.5 + index)`
   - index 0 → z=-7.5 (ближе к стойке)
@@ -101,26 +101,51 @@ CONSUMABLE_KEYS: ['painkiller', 'antihistamine', 'strepsils']
 
 ### Режимы спавна (зависит от уровня)
 - **Level 1 (tutorial):** sequential — один пациент, ручное управление через туториал
-- **Level 2+:** cluster — кластерный спавн (группки пациентов)
+- **Level 2+:** wave — скриптованные волны с гарантированным разнообразием тяжести
 
-### Кластерный спавн (Level 2+)
-Пациенты приходят группками (кластерами), потом пауза, потом следующая группка.
-Для игрока выглядит как естественный поток, без нотификаций о кластерах.
+### Волновой спавн (Level 2+)
+Пациенты приходят волнами по фиксированному расписанию. Каждая волна имеет заданный состав по тяжести.
+Волны приходят по таймеру от начала смены, **не блокируются** состоянием очереди — волны накладываются друг на друга.
 
-- **Размер кластера** (случайный в диапазоне):
-  - Level 2: 3-4 пациента
-  - Level 3: 3-5 пациентов
-  - Level 4: 4-6 пациентов
-- **Интервал внутри кластера**: 2.5 сек между входом каждого пациента (`CLUSTER_SPAWN_DELAY = 2.5`)
-- **Пауза между кластерами**: 90-120 сек (`CLUSTER_PAUSE_MIN = 90`, `CLUSTER_PAUSE_MAX = 120`), рандомизируется один раз при входе в паузу
-- **Блокировка следующего кластера**: новый кластер не начнётся, пока в очереди есть необслуженные пациенты (`queue.length === 0`)
-- При открытии смены вызывается `Game.Patients.startFirstCluster()` — первый кластер начинается сразу
-- `getSpawnMode()` в `levels.js` возвращает `'cluster'` для level >= 2, `'sequential'` для level 1
-- Если очередь полна (`queue.length >= maxQueue`) — кластер обрывается, оставшиеся пациенты не спавнятся
+- **Порядок спавна внутри волны**: сначала severe, потом medium, потом mild — самые критичные пациенты приходят первыми
+- **Интервал внутри волны**: 1.5 сек между входом каждого пациента (`WAVE_SPAWN_DELAY = 1.5`)
+- **Если очередь полна** (`queue.length >= maxQueue`) — пациент пропускается (уходит, не дождавшись), нотификация "Пациент не смог зайти"
+- При открытии смены вызывается `Game.Patients.startWaveSystem()` — инициализирует индекс волны
+- `getSpawnMode()` в `levels.js` возвращает `'wave'` для level >= 2, `'sequential'` для level 1
 
-**Переменные:** `clusterTimer`, `clusterRemaining`, `clusterPauseTimer`, `clusterPauseDuration`, `inClusterPause`
-**Функции:** `getClusterSize()`, `startFirstCluster()`
-**Файлы:** `patients.js`, `levels.js` (`getSpawnMode()`), `shift.js` (вызов `startFirstCluster()`)
+### Конфигурация волн (`WAVE_CONFIG`)
+Composition: `[mild_count, medium_count, severe_count]`
+
+**Level 2** (4 волны, ~14 пациентов):
+| Волна | Время | Состав | Всего |
+|-------|-------|--------|-------|
+| W1 | 0s | 2 mild, 2 medium | 4 |
+| W2 | 55s | 1 mild, 2 medium | 3 |
+| W3 | 120s | 2 mild, 2 medium | 4 |
+| W4 | 200s | 1 mild, 2 medium | 3 |
+
+**Level 3** (5 волн, ~18 пациентов):
+| Волна | Время | Состав | Всего |
+|-------|-------|--------|-------|
+| W1 | 0s | 1 mild, 2 medium, 1 severe | 4 |
+| W2 | 45s | 1 mild, 1 medium, 1 severe | 3 |
+| W3 | 100s | 2 mild, 1 medium, 1 severe | 4 |
+| W4 | 160s | 1 mild, 2 medium, 1 severe | 4 |
+| W5 | 230s | 1 mild, 1 medium, 1 severe | 3 |
+
+**Level 4** (6 волн, ~22 пациента):
+| Волна | Время | Состав | Всего |
+|-------|-------|--------|-------|
+| W1 | 0s | 1 mild, 2 medium, 1 severe | 4 |
+| W2 | 35s | 1 mild, 1 medium, 2 severe | 4 |
+| W3 | 80s | 2 mild, 1 medium | 3 |
+| W4 | 130s | 1 mild, 2 medium, 1 severe | 4 |
+| W5 | 185s | 1 mild, 1 medium, 2 severe | 4 |
+| W6 | 245s | 1 mild, 1 medium, 1 severe | 3 |
+
+**Переменные:** `currentWaveIndex`, `waveSpawnQueue`, `waveSpawnTimer`, `waveStarted`
+**Функции:** `startWaveSystem()`
+**Файлы:** `patients.js` (`WAVE_CONFIG`, wave logic), `levels.js` (`getSpawnMode()`), `shift.js` (вызов `startWaveSystem()`)
 
 ### Level 2 сразу после туториала
 - XP threshold L1->L2 снижен с 50 до 10 (ровно столько даёт первый пациент в туторе)
@@ -134,9 +159,18 @@ CONSUMABLE_KEYS: ['painkiller', 'antihistamine', 'strepsils']
 - Случайный возраст 18-75 через `randomInt(18, 75)`
 
 ## Severity Distribution (при спавне)
-- 60% — `mild` (Лёгкое, startHp=80)
-- 25% — `medium` (Среднее, startHp=50)
-- 15% — `severe` (Тяжёлое, startHp=30)
+В волновом режиме (Level 2+) тяжесть задаётся конфигурацией волны (`WAVE_CONFIG`), а не случайным броском.
+В sequential режиме (Level 1) все пациенты mild.
+
+Стартовые значения HP по тяжести:
+- `mild` (Лёгкое): startHp=80
+- `medium` (Среднее): startHp=50
+- `severe` (Тяжёлое): startHp=30
+
+### Шанс диагностики (по уровню)
+- Level 2: 20%
+- Level 3: 25%
+- Level 4: 30%
 
 ### Мульти-препаратная система (по тяжести)
 При спавне на основе severity формируется список `requiredConsumables`:
@@ -157,8 +191,7 @@ CONSUMABLE_KEYS: ['painkiller', 'antihistamine', 'strepsils']
 beds = [
   { pos: Vector3(-4.5, 0, -9), occupied: bool },
   { pos: Vector3(-4.5, 0, -7), occupied: bool },
-  { pos: Vector3(-4.5, 0, -5), occupied: bool },
-  { pos: Vector3(-4.5, 0, -3), occupied: bool }
+  { pos: Vector3(-4.5, 0, -5), occupied: bool }
 ]
 waitingChairs = [
   { pos: Vector3(5.5, 0, -2),   occupied: bool },

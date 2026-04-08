@@ -148,7 +148,6 @@
       createBed(-5.5, -9, 0);
       createBed(-5.5, -7, 0);
       createBed(-5.5, -5, 0);
-      createBed(-5.5, -3, 0);
 
       H.createSign(THREE, scene, Game.Lang.t('sign.examination'), -7.88, 2.5, -8, Math.PI / 2);
 
@@ -273,8 +272,7 @@
         beds: [
           { pos: new THREE.Vector3(-4.5, 0, -9), occupied: false },
           { pos: new THREE.Vector3(-4.5, 0, -7), occupied: false },
-          { pos: new THREE.Vector3(-4.5, 0, -5), occupied: false },
-          { pos: new THREE.Vector3(-4.5, 0, -3), occupied: false }
+          { pos: new THREE.Vector3(-4.5, 0, -5), occupied: false }
         ],
         waitingChairs: [
           { pos: new THREE.Vector3(5.5, 0, -2), occupied: false },
