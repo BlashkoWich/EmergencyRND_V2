@@ -935,11 +935,19 @@
 
       // Priority 1: Check for dirty beds
       var dirtyBeds = Game.Furniture.getDirtyBeds ? Game.Furniture.getDirtyBeds() : [];
-      if (dirtyBeds.length > 0 && baskets.clean.items.length > 0) {
-        // Has clean linen in basket — go change beds
+      if (dirtyBeds.length > 0 && (staff.hasCleanLinen || baskets.clean.items.length > 0)) {
+        // Has clean linen in basket or already holding — go change beds
         staff.dirtyBedQueue = dirtyBeds.slice();
-        staff.state = 'walkToCleanBasket';
-        staff.targetPos = new THREE.Vector3(baskets.clean.pos.x, 0, baskets.clean.pos.z + 0.6);
+        if (staff.hasCleanLinen) {
+          // Already holding clean linen from a previous aborted cycle — go straight to bed
+          var nextBed = staff.dirtyBedQueue.shift();
+          staff.targetPos = new THREE.Vector3(nextBed.pos.x + 1.0, 0, nextBed.pos.z);
+          staff._currentBedSlot = nextBed;
+          staff.state = 'walkToBed';
+        } else {
+          staff.state = 'walkToCleanBasket';
+          staff.targetPos = new THREE.Vector3(baskets.clean.pos.x, 0, baskets.clean.pos.z + 0.6);
+        }
         return;
       }
 
@@ -1174,6 +1182,12 @@
   }
 
   function goToDepositDirty(staff) {
+    // Safety net: return any unused clean linen to basket
+    if (staff.hasCleanLinen) {
+      baskets.clean.items.push('linen_clean');
+      updateBasketSprite(baskets.clean);
+      staff.hasCleanLinen = false;
+    }
     if (staff.dirtyLinenCollected > 0) {
       staff.state = 'walkToDirtyBasket';
       staff.targetPos = new THREE.Vector3(baskets.dirty.pos.x, 0, baskets.dirty.pos.z + 0.6);
@@ -1507,11 +1521,14 @@
         if (!hoveredBasket || (basketMode !== 'take' && basketMode !== 'both')) return;
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
         if (Game.Cashier && Game.Cashier.isPopupOpen()) return;
-        if (hoveredBasket.items.length > 0 && !Game.Inventory.isFull()) {
-          var itemType = hoveredBasket.items.pop();
-          Game.Inventory.addItem(itemType);
-          updateBasketSprite(hoveredBasket);
-          if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('item_picked_up', itemType);
+        if (hoveredBasket.items.length > 0) {
+          var itemType = hoveredBasket.type;
+          var added = Game.Inventory.addItemBulk(itemType, hoveredBasket.items.length);
+          if (added > 0) {
+            hoveredBasket.items.splice(hoveredBasket.items.length - added, added);
+            updateBasketSprite(hoveredBasket);
+            if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('item_picked_up', itemType);
+          }
         }
       });
 
@@ -1525,8 +1542,11 @@
 
         var activeItem = Game.Inventory.getActive();
         if (activeItem && activeItem === hoveredBasket.type) {
-          Game.Inventory.removeActive();
-          hoveredBasket.items.push(activeItem);
+          var count = Game.Inventory.getActiveCount();
+          Game.Inventory.removeActiveN(count);
+          for (var i = 0; i < count; i++) {
+            hoveredBasket.items.push(activeItem);
+          }
           updateBasketSprite(hoveredBasket);
           Game.Inventory.showNotification(Game.Lang.t('notify.putInBasket'), 'rgba(34, 139, 34, 0.85)');
         }

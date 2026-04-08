@@ -232,8 +232,12 @@
       return;
     }
 
-    Game.Inventory.removeActive();
-    dirtyLinenCount++;
+    var availableSpace = MAX_LOAD - dirtyLinenCount;
+    var inventoryCount = Game.Inventory.getActiveCount();
+    var toLoad = Math.min(inventoryCount, availableSpace);
+
+    Game.Inventory.removeActiveN(toLoad);
+    dirtyLinenCount += toLoad;
     if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('linen_loaded');
     setStatusColor(0xcc8844, 0.5);
     Game.Inventory.showNotification(Game.Lang.t('wash.loaded', [dirtyLinenCount, MAX_LOAD]), 'rgba(34, 139, 34, 0.85)');
