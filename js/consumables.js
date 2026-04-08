@@ -25,8 +25,8 @@
 
   var GRAVITY = -9.8;
   var GROUND_Y = 0;
-  var DELIVERY_ZONE = { cx: 0, cz: 5, hw: 1.5, hd: 1.0 };
-  var TRASH_ZONE = { cx: 3, cz: 1.5, radius: 0.8 };
+  var DELIVERY_ZONE = { cx: -10.5, cz: -10.3, hw: 1.5, hd: 1.0 };
+  var TRASH_ZONE = { cx: -10.5, cz: -8.5, radius: 0.8 };
   var DROP_FORWARD_SPEED = 4.0;
   var DROP_UP_SPEED = 2.0;
 
@@ -982,17 +982,16 @@
         var tutorialActive = Game.Tutorial && Game.Tutorial.isActive();
         var pickupAllowed = !tutorialActive || Game.Tutorial.isAllowed('pickup_item');
 
-        // If holding a box, LMB takes item from box (always allowed during tutorial)
+        // If holding a box, LMB takes items from box (bulk — fills slot to max)
         if (heldBox) {
           if (Game.Cashier && Game.Cashier.isPopupOpen()) return;
           if (heldBox.remaining <= 0) return;
-          if (Game.Inventory.addItem(heldBox.type)) {
-            if (!tutorialActive) {
-              heldBox.remaining--;
-              updateBoxLabel(heldBox);
-              if (heldBox.remaining <= 0) {
-                markBoxEmpty(heldBox);
-              }
+          var added = Game.Inventory.addItemBulk(heldBox.type, heldBox.remaining);
+          if (added > 0) {
+            heldBox.remaining -= added;
+            updateBoxLabel(heldBox);
+            if (heldBox.remaining <= 0) {
+              markBoxEmpty(heldBox);
             }
             if (tutorialActive) Game.Tutorial.onEvent('item_picked_up', heldBox.type);
           } else {
@@ -1001,16 +1000,15 @@
           return;
         }
 
-        // Take item from grounded box on LMB
+        // Take items from grounded box on LMB (bulk — fills slot to max)
         if (hoveredBox) {
           if (hoveredBox.remaining <= 0) return;
-          if (Game.Inventory.addItem(hoveredBox.type)) {
-            if (!tutorialActive) {
-              hoveredBox.remaining--;
-              updateBoxLabel(hoveredBox);
-              if (hoveredBox.remaining <= 0) {
-                markBoxEmpty(hoveredBox);
-              }
+          var added = Game.Inventory.addItemBulk(hoveredBox.type, hoveredBox.remaining);
+          if (added > 0) {
+            hoveredBox.remaining -= added;
+            updateBoxLabel(hoveredBox);
+            if (hoveredBox.remaining <= 0) {
+              markBoxEmpty(hoveredBox);
             }
             if (tutorialActive) Game.Tutorial.onEvent('item_picked_up', hoveredBox.type);
           } else {

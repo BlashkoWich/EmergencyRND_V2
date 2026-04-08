@@ -298,6 +298,20 @@
     return type;
   }
 
+  function takeItemsFromShelf(slot, n) {
+    var type = slot.item;
+    slot.count -= n;
+    if (slot.count <= 0) {
+      unregisterItemMeshes(slot.itemMesh);
+      scene.remove(slot.itemMesh);
+      slot.item = null;
+      slot.itemMesh = null;
+      slot.count = 0;
+    }
+    updateCountSprite(slot);
+    return type;
+  }
+
   function clearShelfHover() {
     if (hoveredShelf && shelfMode === 'place') unhighlightShelf(hoveredShelf);
     if (hoveredSlot && shelfMode === 'take') unhighlightItemMesh(hoveredSlot.itemMesh);
@@ -485,8 +499,9 @@
 
         if (!hoveredSlot) return;
         var type = hoveredSlot.item;
-        if (Game.Inventory.addItem(type)) {
-          takeItemFromShelf(hoveredSlot);
+        var added = Game.Inventory.addItemBulk(type, hoveredSlot.count);
+        if (added > 0) {
+          takeItemsFromShelf(hoveredSlot, added);
           if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('item_taken_from_shelf', type);
         } else {
           Game.Inventory.showNotification(Game.Lang.t('notify.inventoryFull'));
@@ -509,10 +524,15 @@
           Game.Inventory.showNotification(Game.Lang.t('notify.instrumentsToPanel'), 'rgba(200, 150, 50, 0.85)');
           return;
         }
-        var slot = findSlotForType(hoveredShelf, type);
-        if (!slot) return;
-        Game.Inventory.removeActive();
-        placeItemOnShelf(slot, type);
+        var count = Game.Inventory.getActiveCount();
+        var placed = 0;
+        for (var i = 0; i < count; i++) {
+          var slot = findSlotForType(hoveredShelf, type);
+          if (!slot) break;
+          placeItemOnShelf(slot, type);
+          placed++;
+        }
+        if (placed > 0) Game.Inventory.removeActiveN(placed);
       });
 
       // Register with central interaction system

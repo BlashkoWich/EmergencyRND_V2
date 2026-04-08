@@ -121,6 +121,7 @@ CSS-класс `.lang-btn` — идентичен `.quality-btn` (полупро
 |---------|---------|--------|
 | `title` | Заголовок страницы | `title` |
 | `overlay.*` | Стартовый экран | `overlay.start` |
+| `pause.*` | Экран паузы | `pause.title`, `pause.subtitle` |
 | `quality.*` | Настройки графики | `quality.low` |
 | `hint.*` | Подсказки взаимодействия | `hint.interact` |
 | `popup.*` | Попап пациента | `popup.age`, `popup.btn.bed` |
@@ -135,7 +136,7 @@ CSS-класс `.lang-btn` — идентичен `.quality-btn` (полупро
 | `item.*` | Названия предметов | `item.strepsils`, `item.instrument_hammer` |
 | `furniture.*` | Мебель | `furniture.bed`, `furniture.hint.move` |
 | `staff.*` | Сотрудники | `staff.administrator`, `staff.status.treating` |
-| `sign.*` | 3D надписи | `sign.delivery`, `sign.instruments`, `sign.clinic`, `sign.cashier` |
+| `sign.*` | 3D надписи | `sign.delivery`, `sign.deliveryZone`, `sign.instruments`, `sign.clinic`, `sign.cashier` |
 | `inv.*` | Инвентарь | `inv.shop`, `inv.drop` |
 | `notify.*` | Уведомления | `notify.inventoryFull`, `notify.treatmentStarted` |
 | `levels.*` | Уровни/разблокировки | `levels.unlock2.0`, `levels.xp.treatment` |

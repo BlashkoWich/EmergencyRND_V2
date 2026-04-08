@@ -133,16 +133,19 @@ specs/
 5. `Game.Staff.update(delta)` — NPC-сотрудники
 6. `Game.Cashier.update(delta)` — касса, терминал, очередь оплаты
 
+Каждый кадр (60fps, позиция переносимой мебели):
+7. `Game.Furniture.updateCarried()` — обновление позиции переносимой мебели (raycast от камеры, wall clamping, валидация). Вызывается каждый кадр для плавного следования за камерой
+
 Каждый 2-й кадр (30fps, `delta * 2`):
-7. `Game.Furniture.update(delta)` — перемещение мебели, interaction
-8. `Game.WashingMachine.update(delta)` — стиральная машина
-9. `Game.Shelves.update(delta)` — interaction стеллажей
-10. `Game.ToolPanel.update(delta)` — interaction панели инструментов
-11. `Game.Trash.update(delta)` — мусор
-12. `Game.Shift.update(delta)` — время смены, hover таблички, задачи
+8. `Game.Furniture.update(delta)` — interaction мебели (hover, hold progress E, подсказки)
+9. `Game.WashingMachine.update(delta)` — стиральная машина
+10. `Game.Shelves.update(delta)` — interaction стеллажей
+11. `Game.ToolPanel.update(delta)` — interaction панели инструментов
+12. `Game.Trash.update(delta)` — мусор
+13. `Game.Shift.update(delta)` — время смены, hover таблички, задачи
 
 Условно:
-13. `Game.Tutorial.update(delta)` — только если `Game.Tutorial.isActive()`
+14. `Game.Tutorial.update(delta)` — только если `Game.Tutorial.isActive()`
 
 Рендер: `composer.render()` или `renderer.render(scene, camera)` (зависит от `useComposer`)
 
@@ -165,7 +168,8 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 | ID | Тип | Назначение |
 |----|-----|------------|
 | `fps-counter` | div | Счётчик FPS (top-right, зелёный monospace) |
-| `overlay` | div | Первый экран при загрузке / пауза (настройки графики + язык). Клик → показывает level-select-screen |
+| `overlay` | div | Первый экран при загрузке (настройки графики + язык). Клик → показывает level-select-screen |
+| `pause-screen` | div | Экран паузы (скрыт по умолчанию). Показывается при ESC/потере фокуса после входа в игру. Клик → controls.lock() с retry |
 | `level-select-screen` | div | Экран выбора уровня (скрыт по умолчанию). Клик "Начать" → controls.lock() |
 | `crosshair` | div | Прицел (CSS-крестик) |
 | `interact-hint` | div | Динамическая подсказка под прицелом |
@@ -232,7 +236,7 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 | z-index | Элемент |
 |---------|---------|
 | 5 | `#crosshair`, `#interact-hint`, `#inventory-container` |
-| 10 | `#overlay`, `#level-select-screen` |
+| 10 | `#overlay`, `#pause-screen`, `#level-select-screen` |
 | 15 | `#notification` |
 | 20 | `#patient-popup`, `#shop-popup`, `#cashier-popup`, `#day-end-popup` |
 | 22 | `#ad-offer-popup` |
@@ -324,9 +328,10 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 - `update(delta)` — обновление позиции камеры (вызывать только при `controls.isLocked`). Восстанавливает сохранённый quaternion после re-lock для предотвращения camera jump
 - **Камера**: PointerLockControls обрабатывает мышь напрямую (без сглаживания). Фильтр больших delta (>150px) для защиты от бага Pointer Lock API
 - **Перемещение**: velocity-based с экспоненциальным затуханием (`_moveDamping=12.0`). Плавные разгон и торможение вместо мгновенной установки позиции. При столкновении velocity обнуляется
-- Внутренние: `_canMove(direction)`, `_keys`, `_moveSpeed=4.0`, `_sprintSpeed=7.0`, `_collisionDistance=0.4`, `_velocityX/Z` (текущая скорость), `_moveDamping=12.0`, `_collisionOrigin` (Vector3 для рейкаста от y=0.5), `_savedQuat` (сохранённый quaternion при re-lock)
+- Внутренние: `_canMove(direction)`, `_keys`, `_moveSpeed=4.0`, `_sprintSpeed=7.0`, `_collisionDistance=0.4`, `_velocityX/Z` (текущая скорость), `_moveDamping=12.0`, `_collisionOrigin` (Vector3 для рейкаста от y=0.5), `_savedQuat` (сохранённый quaternion при re-lock), `_gameEntered` (boolean — true после первого pointer lock)
 - **Старт**: клик по `#overlay` → скрывает overlay, показывает `#level-select-screen`. Выбор уровня в `levels.js` → `controls.lock()` (старт игры)
-- Unlock handler не показывает overlay если активна реклама (`Game.Ads.isActive()`), открыт магазин (`Game.Shop.isOpen()`), попап пациента (`Game.Patients.isPopupOpen()`), диагностика (`Game.Diagnostics.isActive()`) или попап итогов дня (`Game.Shift.isPopupOpen()`)
+- **Lock handler**: ставит `_gameEntered = true`, скрывает `#overlay` и `#pause-screen`, показывает crosshair
+- **Unlock handler**: не показывает ничего если активна реклама (`Game.Ads.isActive()`), открыт магазин (`Game.Shop.isOpen()`), попап пациента (`Game.Patients.isPopupOpen()`), диагностика (`Game.Diagnostics.isActive()`) или попап итогов дня (`Game.Shift.isPopupOpen()`). После всех проверок: если `_gameEntered` — показывает `#pause-screen`, иначе `#overlay`
 
 ### `Game.Consumables` (`js/consumables.js`)
 - `setup(THREE, scene, camera, controls, collidables)` — инициализация, создание зоны доставки
@@ -375,7 +380,8 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 Система мебели: покупка, перемещение, размещение, indoor/outdoor статус, динамические слоты пациентов.
 - `setup(THREE, scene, camera, controls, collidables)` — инициализация, raycaster, E key binding
 - `registerExisting(bedMeshes, chairMeshes)` — регистрация начальной мебели из World.setup()
-- `update(delta)` — обновление каждый кадр (перенос, interaction raycast, outline валидации)
+- `updateCarried()` — обновление позиции переносимой мебели (каждый кадр, 60fps). Raycast от камеры, wall clamping, outline валидации
+- `update(delta)` — обновление каждый 2-й кадр (interaction raycast, hover, hold progress E, подсказки)
 - `spawnFurniture(type)` — создание мебели в зоне доставки ('bed' | 'chair')
 - `getIndoorBeds()` → slot[] — слоты indoor кроватей `{ pos, occupied }`
 - `getIndoorChairs()` → slot[] — слоты indoor стульев

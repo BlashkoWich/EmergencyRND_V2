@@ -621,6 +621,10 @@
     },
 
     update: function(delta) {
+      var pauseScreen = document.getElementById('pause-screen');
+      var isPauseVisible = pauseScreen && pauseScreen.style.display !== 'none';
+      if (isPauseVisible) return;
+
       if (shiftOpen) {
         if (!(Game.Tutorial && Game.Tutorial.isPaused())) {
           gameTime += delta;
