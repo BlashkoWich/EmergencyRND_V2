@@ -588,6 +588,11 @@
       controls.lock();
     }
 
+    // Check for any deferred level-ups now that tutorial overlay is gone
+    if (Game.Levels && Game.Levels.checkDeferredLevelUp) {
+      Game.Levels.checkDeferredLevelUp();
+    }
+
     // Spawn first patient after tutorial ends
     if (Game.Patients && Game.Patients.spawnFirstPatient) {
       Game.Patients.spawnFirstPatient();

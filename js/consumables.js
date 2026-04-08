@@ -987,12 +987,10 @@
           if (Game.Cashier && Game.Cashier.isPopupOpen()) return;
           if (heldBox.remaining <= 0) return;
           if (Game.Inventory.addItem(heldBox.type)) {
-            if (!tutorialActive) {
-              heldBox.remaining--;
-              updateBoxLabel(heldBox);
-              if (heldBox.remaining <= 0) {
-                markBoxEmpty(heldBox);
-              }
+            heldBox.remaining--;
+            updateBoxLabel(heldBox);
+            if (heldBox.remaining <= 0) {
+              markBoxEmpty(heldBox);
             }
             if (tutorialActive) Game.Tutorial.onEvent('item_picked_up', heldBox.type);
           } else {
@@ -1005,12 +1003,10 @@
         if (hoveredBox) {
           if (hoveredBox.remaining <= 0) return;
           if (Game.Inventory.addItem(hoveredBox.type)) {
-            if (!tutorialActive) {
-              hoveredBox.remaining--;
-              updateBoxLabel(hoveredBox);
-              if (hoveredBox.remaining <= 0) {
-                markBoxEmpty(hoveredBox);
-              }
+            hoveredBox.remaining--;
+            updateBoxLabel(hoveredBox);
+            if (hoveredBox.remaining <= 0) {
+              markBoxEmpty(hoveredBox);
             }
             if (tutorialActive) Game.Tutorial.onEvent('item_picked_up', hoveredBox.type);
           } else {

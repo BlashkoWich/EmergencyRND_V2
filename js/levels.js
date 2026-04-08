@@ -190,6 +190,12 @@
       xp += amount;
       showXPAnimation(amount, breakdown || { treatment: amount, diagnosis: 0 });
 
+      // Defer level-up during tutorial to avoid popup softlock
+      if (Game.Tutorial && Game.Tutorial.isActive()) {
+        updateHUD();
+        return;
+      }
+
       // Check for level up
       var threshold = XP_THRESHOLDS[level - 1];
       if (threshold && xp >= threshold) {
@@ -199,6 +205,16 @@
         onLevelUp(level);
       } else {
         updateHUD();
+      }
+    },
+
+    checkDeferredLevelUp: function() {
+      var threshold = XP_THRESHOLDS[level - 1];
+      if (threshold && xp >= threshold) {
+        xp -= threshold;
+        level++;
+        updateHUD();
+        onLevelUp(level);
       }
     },
 
