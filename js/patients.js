@@ -2028,6 +2028,7 @@
               inClusterPause = false;
               clusterRemaining = getClusterSize();
               clusterTimer = 0;
+              Game.Inventory.showNotification(Game.Lang.t('notify.newWave'));
             }
           } else if (clusterRemaining > 0) {
             clusterTimer += delta;
