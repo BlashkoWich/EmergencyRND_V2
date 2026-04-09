@@ -109,7 +109,7 @@
 
   // --- Health system constants ---
   var SEVERITIES = [
-    { key: 'severe', label: Game.Lang.t('severity.severe'), startHp: 30 },
+    { key: 'severe', label: Game.Lang.t('severity.severe'), startHp: 29 },
     { key: 'medium', label: Game.Lang.t('severity.medium'), startHp: 50 },
     { key: 'mild',   label: Game.Lang.t('severity.mild'),  startHp: 80 }
   ];
@@ -691,12 +691,13 @@
     popupBp.className = 'vital-value' + (v.bpSys >= 160 ? ' vital-critical' : v.bpSys >= 140 ? ' vital-warning' : '');
 
     // HP bar
-    var hpPct = Math.max(0, Math.round(patient.hp / patient.maxHp * 100));
-    popupHpText.textContent = hpPct + '%';
-    popupHpFill.style.width = hpPct + '%';
-    var hpColor = hpPct > 60 ? '#32cd32' : hpPct > 30 ? '#ffc800' : '#dc2828';
-    popupHpFill.style.background = hpColor;
-    popupHpText.style.color = hpColor;
+    var hpRatio = Math.max(0, patient.hp / patient.maxHp);
+    var popupSeg = getHealthSegments(hpRatio);
+    popupHpText.textContent = '';
+    popupHpFill.style.width = (popupSeg.count * 20) + '%';
+    var segColor = 'rgb(' + popupSeg.r + ',' + popupSeg.g + ',' + popupSeg.b + ')';
+    popupHpFill.style.background = segColor;
+    popupHpText.style.color = segColor;
 
     // Clinical data
     popupComplaint.textContent = '\u00AB' + patient.complaint + '\u00BB';
@@ -1038,10 +1039,13 @@
   }
 
   // --- Health bar ---
-  function getHealthColor(ratio) {
-    if (ratio > 0.6) return { r: 50, g: 205, b: 50 };
-    if (ratio > 0.3) return { r: 255, g: 200, b: 0 };
-    return { r: 220, g: 40, b: 40 };
+  function getHealthSegments(ratio) {
+    var pct = ratio * 100;
+    if (pct >= 99) return { count: 5, r: 0,   g: 232, b: 0   }; // bright green
+    if (pct >= 60) return { count: 4, r: 50,  g: 205, b: 50  }; // green
+    if (pct >= 30) return { count: 3, r: 240, g: 200, b: 0   }; // yellow
+    if (pct >= 15) return { count: 2, r: 220, g: 40,  b: 40  }; // red
+    return                { count: 1, r: 128, g: 0,   b: 32  }; // burgundy
   }
 
   function createHealthBar(patient) {
@@ -1077,22 +1081,22 @@
     ctx.roundRect(0, 0, 128, 16, 4);
     ctx.fill();
 
-    // Fill
-    var fillW = Math.max(0, Math.min(126, ratio * 126));
-    if (fillW > 0) {
-      var col = getHealthColor(ratio);
-      ctx.fillStyle = 'rgb(' + col.r + ',' + col.g + ',' + col.b + ')';
+    // Draw 5 segments with gaps
+    var seg = getHealthSegments(ratio);
+    var segW = 24;   // width of each segment
+    var gap = 1;     // gap between segments
+    var startX = 2;  // left offset
+    for (var i = 0; i < 5; i++) {
+      var sx = startX + i * (segW + gap);
+      if (i < seg.count) {
+        ctx.fillStyle = 'rgb(' + seg.r + ',' + seg.g + ',' + seg.b + ')';
+      } else {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+      }
       ctx.beginPath();
-      ctx.roundRect(1, 1, fillW, 14, 3);
+      ctx.roundRect(sx, 2, segW, 12, 2);
       ctx.fill();
     }
-
-    // HP text
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 11px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(hpInt + '/' + patient.maxHp, 64, 9);
 
     patient.healthBarTexture.needsUpdate = true;
   }
@@ -2158,8 +2162,14 @@
               // Update banner visuals
               if (waveBannerEl) {
                 var ratio = Math.max(0, waveQueueTimer / QUEUE_PATIENCE);
-                waveTimerFillEl.style.width = (ratio * 100) + '%';
-                waveTimerTextEl.textContent = Math.ceil(Math.max(0, waveQueueTimer)) + 's';
+                var showTimer = waveQueueTimer <= 15;
+                waveTimerFillEl.parentElement.style.display = showTimer ? '' : 'none';
+                waveTimerTextEl.style.display = showTimer ? '' : 'none';
+                if (showTimer) {
+                  var urgentRatio = Math.max(0, waveQueueTimer / 15);
+                  waveTimerFillEl.style.width = (urgentRatio * 100) + '%';
+                  waveTimerTextEl.textContent = Math.ceil(Math.max(0, waveQueueTimer)) + 's';
+                }
                 if (ratio < 0.25) {
                   waveBannerEl.classList.add('urgent');
                 } else {

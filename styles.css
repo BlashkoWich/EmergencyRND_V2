@@ -155,6 +155,20 @@ canvas { display: block; }
 #popup-hp-text { font-family: 'Courier New', monospace; font-weight: 700; opacity: 1; }
 .popup-hp-track {
   height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden;
+  position: relative;
+}
+.popup-hp-track::after {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent calc(20% - 1px),
+    rgba(0, 0, 0, 0.6) calc(20% - 1px),
+    rgba(0, 0, 0, 0.6) 20%
+  );
+  pointer-events: none;
+  z-index: 1;
 }
 .popup-hp-fill {
   height: 100%; border-radius: 3px; transition: width 0.3s ease;
