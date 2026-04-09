@@ -940,7 +940,7 @@
   };
 
   // --- Current language ---
-  var _lang = localStorage.getItem('gameLang') || 'ru';
+  var _lang = localStorage.getItem('gameLang') || 'en';
 
   /**
    * Get a translated string by key, with optional placeholder substitution.
@@ -1022,7 +1022,8 @@
       } else {
         langBtns[i].classList.remove('active');
       }
-      langBtns[i].addEventListener('click', function() {
+      langBtns[i].addEventListener('click', function(e) {
+        e.stopPropagation();
         setLang(this.dataset.lang);
       });
     }

@@ -81,8 +81,14 @@
 
       overlay.addEventListener('click', function() {
         overlay.style.display = 'none';
-        var levelSelect = document.getElementById('level-select-screen');
-        if (levelSelect) levelSelect.style.display = 'flex';
+        controls.lock();
+        // Refresh shop locks and start tutorial
+        if (Game.Shop && Game.Shop.refreshTabLocks) {
+          Game.Shop.refreshTabLocks();
+        }
+        if (Game.Tutorial && Game.Tutorial.checkStart) {
+          Game.Tutorial.checkStart();
+        }
       });
 
       var pauseScreen = document.getElementById('pause-screen');
@@ -125,9 +131,6 @@
         if (Game.Shift && Game.Shift.isPopupOpen()) return;
         if (Game.Levels && Game.Levels.isPopupOpen()) return;
         if (Game.Cashier && Game.Cashier.isPopupOpen()) return;
-        var levelSelect = document.getElementById('level-select-screen');
-        if (levelSelect && levelSelect.style.display !== 'none') return;
-
         if (self._gameEntered) {
           document.getElementById('pause-screen').style.display = 'flex';
           crosshairEl.style.display = 'none';
