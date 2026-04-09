@@ -229,6 +229,7 @@
       'notify.hired': '{0} нанят(а)!',
       'notify.fired': '{0} уволен(а). Выплачено ${1}',
       'notify.wrongItem': 'Это не тот препарат! Нужен: {0}',
+      'notify.newWave': 'Пришла новая группа пациентов!',
 
       // Levels (unlock descriptions)
       'levels.unlock2.0': 'Покупка инструментов для диагностики',
@@ -351,7 +352,7 @@
       'tutorial.step5html': 'Пациенту нужен препарат. Откройте магазин, нажав <b>Q</b>, и закажите:<br><br>{0}<b>{1}</b><br><br>Первый заказ каждого вида — <span style="color:#4ade80">бесплатный</span>!',
       'tutorial.step6html': 'Нажмите кнопку \u00ABЗаказать\u00BB напротив:<br><br>{0}<b>{1}</b>',
       'tutorial.step7': 'Отлично! Товар уже в пути.\nЗакройте магазин кнопкой \u2715 или клавишей Q.',
-      'tutorial.step8': 'Коробка с препаратом появилась в зоне доставки у входа.\nПодойдите к ней и нажмите ЛКМ, чтобы взять препарат.',
+      'tutorial.step8': 'Коробка с препаратом появилась в зоне доставки рядом со стеллажами.\nПодойдите к ней и нажмите ЛКМ, чтобы взять препарат.',
       'tutorial.step9': 'Теперь подойдите к пациенту на кровати и нажмите ЛКМ, чтобы применить препарат.',
       'tutorial.step10': 'Препарат применён! Пациент выздоравливает — полоска здоровья заполняется.\n\nКогда он полностью выздоровеет, он сам пойдёт к кассе для оплаты.',
       'tutorial.step11': 'Пациент выздоровел и идёт к кассе!\nПодойдите к терминалу оплаты (справа от стойки) и нажмите ЛКМ.',
@@ -696,6 +697,7 @@
       'notify.hired': '{0} hired!',
       'notify.fired': '{0} fired. Paid ${1}',
       'notify.wrongItem': 'Wrong medication! Need: {0}',
+      'notify.newWave': 'A new group of patients has arrived!',
 
       // Levels (unlock descriptions)
       'levels.unlock2.0': 'Purchase diagnostic instruments',
@@ -818,7 +820,7 @@
       'tutorial.step5html': 'The patient needs medication. Open the shop by pressing <b>Q</b> and order:<br><br>{0}<b>{1}</b><br><br>First order of each type is <span style="color:#4ade80">free</span>!',
       'tutorial.step6html': 'Click the "Order" button next to:<br><br>{0}<b>{1}</b>',
       'tutorial.step7': 'Great! The item is on its way.\nClose the shop with \u2715 or press Q.',
-      'tutorial.step8': 'A box with medication appeared in the delivery zone at the entrance.\nGo to it and click LMB to take the medication.',
+      'tutorial.step8': 'A box with medication appeared in the delivery zone near the shelves.\nGo to it and click LMB to take the medication.',
       'tutorial.step9': 'Now go to the patient on the bed and click LMB to apply the medication.',
       'tutorial.step10': 'Medication applied! The patient is recovering — the health bar is filling up.\n\nWhen fully recovered, they will go to the cashier to pay.',
       'tutorial.step11': 'The patient has recovered and is heading to the cashier!\nGo to the payment terminal (right of the desk) and click LMB.',

@@ -134,7 +134,7 @@
       pauseTime: true,
       position: 'top-right',
       needsPointerLock: true,
-      arrow3D: { x: 0, y: 0.5, z: 5 }
+      arrow3D: { x: -10.5, y: 0.5, z: -10.3 }
     },
     // 9: Apply medication
     {
@@ -230,7 +230,7 @@
       pauseTime: true,
       position: 'top-right',
       needsPointerLock: true,
-      arrow3D: { x: 0, y: 0.5, z: 5 }
+      arrow3D: { x: -10.5, y: 0.5, z: -10.3 }
     },
     // 18: Replace linen on dirty bed
     {
