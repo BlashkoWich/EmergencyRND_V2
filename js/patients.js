@@ -2099,7 +2099,8 @@
                 var prevWaveNum = currentSpawnWaveNumber;
                 var stillActive = 0;
                 for (var wi = 0; wi < patients.length; wi++) {
-                  if (patients[wi].waveNumber === prevWaveNum && patients[wi].state !== 'leaving') {
+                  var st = patients[wi].state;
+                  if (patients[wi].waveNumber === prevWaveNum && st !== 'leaving' && st !== 'discharged' && st !== 'atCashier') {
                     stillActive++;
                   }
                 }
@@ -2132,7 +2133,7 @@
             }
           }
           // Show wave banner when new wave spawns
-          if (spawnedThisFrame && !waveQueueTimerActive) {
+          if (spawnedThisFrame) {
             waveQueueTimer = QUEUE_PATIENCE;
             waveQueueTimerActive = true;
             activeWaveNumber = currentSpawnWaveNumber;
