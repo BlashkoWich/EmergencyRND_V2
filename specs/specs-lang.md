@@ -132,11 +132,11 @@ CSS-класс `.lang-btn` — идентичен `.quality-btn` (полупро
 | `levelUp.*` | Повышение уровня | `levelUp.title` |
 | `levelSelect.*` | Выбор уровня | `levelSelect.subtitle` |
 | `ad.*` | Рекламная система | `ad.watch`, `ad.timer` |
-| `cashier.*` | Касса | `cashier.due`, `cashier.hint.pay` |
+| `register.*` | Касса самообслуживания | `register.hint.withdraw`, `register.hint.move`, `register.hint.empty`, `register.hint.busy` |
 | `item.*` | Названия предметов | `item.strepsils`, `item.instrument_hammer` |
 | `furniture.*` | Мебель | `furniture.bed`, `furniture.hint.move` |
 | `staff.*` | Сотрудники | `staff.administrator`, `staff.status.treating` |
-| `sign.*` | 3D надписи | `sign.delivery`, `sign.deliveryZone`, `sign.clinic`, `sign.cashier` |
+| `sign.*` | 3D надписи | `sign.delivery`, `sign.deliveryZone`, `sign.clinic`, `sign.selfService` |
 | `inv.*` | Инвентарь | `inv.shop`, `inv.wrench`, `inv.drop` |
 | `notify.*` | Уведомления | `notify.inventoryFull`, `notify.treatmentStarted` |
 | `levels.*` | Уровни/разблокировки | `levels.unlock2.0`, `levels.xp.treatment` |

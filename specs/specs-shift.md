@@ -26,9 +26,9 @@ shiftEnding = false     // 20:00 достигнуто, ждём дообслуж
 gameTime = 0            // 0..SHIFT_DURATION реальных секунд (не идёт во время паузы #pause-screen)
 dayNumber = 1           // текущий день
 dayStats = {
-  patientsServed: 0,    // вылечено пациентов (discharge → cashier)
+  patientsServed: 0,    // вылечено пациентов (discharge → касса самообслуживания)
   patientsLost: 0,      // потеряно (HP ≤ 0 или таймер волны)
-  moneyEarned: 0,       // заработано (оплата на кассе)
+  moneyEarned: 0,       // заработано (зачислено в кассу по завершении 10-сек чекаута)
   moneySpent: 0         // потрачено (покупки в магазине)
 }
 dayEndPopupOpen = false // попап итогов дня показан
@@ -154,7 +154,7 @@ Game.Shift.trackPatientLost()
 - `getGameTime()` — используется волновой системой для определения времени триггера волн
 
 ### cashier.js
-- `processPayment()` → `trackEarning()`
+- По завершении 10-сек чекаута (пациент → `leaving`, деньги зачислены в `registerBalance`) → `trackEarning(paymentInfo.total)`
 - `spend(amount)` → `trackSpending()`
 
 ## DOM Elements

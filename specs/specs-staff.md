@@ -1,7 +1,9 @@
 # EmergencyRND V2 — Система найма сотрудников
 
 ## Overview
-Игрок может нанимать сотрудников в магазине (Q). Сотрудники — автономные NPC, которые выполняют задачи: направление пациентов, расчёт на кассе, диагностика, лечение. Каждый тип — максимум 1 сотрудник. Зарплата выплачивается в конце дня. Баланс может уходить в минус при нехватке средств на зарплату.
+Игрок может нанимать сотрудников в магазине (Q). Сотрудники — автономные NPC, которые выполняют задачи: направление пациентов, диагностика, лечение. Каждый тип — максимум 1 сотрудник. Зарплата выплачивается в конце дня. Баланс может уходить в минус при нехватке средств на зарплату.
+
+**Примечание:** тип `cashier` удалён — теперь действует касса самообслуживания (см. `specs-cashier.md`). Деньги с кассы снимает только игрок.
 
 ## Модуль
 `Game.Staff` — файл `js/staff.js` (IIFE). Загружается после `diagnostics.js`, перед `shift.js`.
@@ -16,7 +18,6 @@
 ```js
 STAFF_TYPES = {
   administrator: { name: Game.Lang.t('staff.administrator'), salary: 100, color: 0x2266aa, hatColor: 0x1a4a88 },
-  cashier:       { name: Game.Lang.t('staff.cashier'),       salary: 100, color: 0x22aa66, hatColor: 0x188844 },
   diagnostician: { name: Game.Lang.t('staff.diagnostician'), salary: 100, color: 0x8844cc, hatColor: 0x6633aa },
   nurse:         { name: Game.Lang.t('staff.nurse'),         salary: 100, color: 0xcc4488, hatColor: 0xaa3366 }
 }
@@ -27,7 +28,6 @@ STAFF_TYPES = {
 ```js
 WORK_POSITIONS = {
   administrator: { x: 0,    z: -9.5,  rotY: Math.PI },
-  cashier:       { x: 3.5,  z: -10.0, rotY: 0 },
   diagnostician: { x: -5.0, z: -11.0, rotY: 0 },
   nurse:         { x: -4.0, z: -11.0, rotY: 0 }
 }
@@ -110,15 +110,6 @@ processing (5 сек):
 
 **Блокировка**: `patient.staffProcessing = true` → игрок видит "Администратор оформляет пациента"
 
-### Кассир
-
-```
-idle → ждет patient.state === 'atCashier'
-processing (5 сек) → processPaymentAuto() → idle
-```
-
-**Блокировка**: если кассир нанят, игрок НЕ может открыть терминал → "Кассир уже работает"
-
 ### Диагност
 
 ```
@@ -184,7 +175,6 @@ returning → idle
 | Сотрудник | Блокировка для игрока |
 |-----------|----------------------|
 | Администратор | Пациент с `staffProcessing=true` → `Game.Lang.t('staff.status.processing')` |
-| Кассир | Терминал полностью заблокирован → `Game.Lang.t('staff.status.cashierWorking')` |
 | Диагност | Мини-игра на конкретном пациенте → `Game.Lang.t('staff.status.diagnosing')` |
 | Медсестра | Лечение конкретного пациента → `Game.Lang.t('staff.status.treating')` |
 
@@ -206,7 +196,6 @@ hire(type)              // создаёт и добавляет, max 1 на ти
 fire(staffId)           // удаляет, платит зарплату за день
 getHiredStaff()         // массив нанятых
 getDailySalary()        // сумма всех зарплат
-isStaffCashierHired()   // bool
 isTypeHired(type)       // bool
 isPatientBeingDiagnosed(patient) // bool
 isPatientBeingTreated(patient)   // bool
@@ -227,12 +216,6 @@ getShelves()            // массив стеллажей
 findSlotWithItem(type)  // слот с предметом или null
 takeFromSlot(slot)      // забрать 1 шт
 placeOnAnyShelf(type)   // положить на первый подходящий стеллаж
-```
-
-### Game.Cashier (новые)
-```js
-getCurrentPatient()     // текущий пациент у кассы
-processPaymentAuto()    // автоматическая оплата
 ```
 
 ### Game.Trash (новые)
@@ -279,8 +262,7 @@ getGroundItemsByType(type)           // все предметы типа на п
 - Отображение в `#stat-salary`
 
 ### cashier.js
-- В `openTerminal()`: блокировка при нанятом кассире
-- `updateBalanceHUD()`: красный цвет при отрицательном балансе
+- `updateBalanceHUD()`: красный цвет при отрицательном балансе, округление вниз (`Math.floor(balance)`)
 
 ### patients.js
 - Проверка `staffProcessing` перед открытием попапа

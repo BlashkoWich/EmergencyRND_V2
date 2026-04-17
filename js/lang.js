@@ -129,16 +129,11 @@
       'ad.confirmNo': 'Продолжить просмотр',
       'ad.reward': 'Зачислено на баланс!',
 
-      // Cashier
-      'cashier.due': 'К оплате:',
-      'cashier.entered': 'Введено:',
-      'cashier.treatment': 'лечение',
-      'cashier.diagnostics': 'диагностика',
-      'cashier.xpTreatment': 'XP лечение',
-      'cashier.xpDiagnostics': 'XP диагностика',
-      'cashier.hint.pay': 'ЛКМ — Оплата  |  Зажми E — Переместить',
-      'cashier.hint.move': 'Зажми E — Переместить кассовый стол',
-      'cashier.staffWorking': 'Кассир уже работает',
+      // Self-service register
+      'register.hint.withdraw': 'Удерживай E — Забрать деньги',
+      'register.hint.move': 'Зажми E — Переместить кассу',
+      'register.hint.empty': 'Касса пуста',
+      'register.hint.busy': 'Идёт обслуживание пациента',
 
       // Item names
       'item.strepsils': 'Стрепсилс',
@@ -154,11 +149,10 @@
       'furniture.chair': 'Стул',
       'furniture.shelf': 'Стеллаж',
       'furniture.toolPanel': 'Панель инструментов',
-      'furniture.cashierDesk': 'Кассовый стол',
+      'furniture.cashierDesk': 'Касса самообслуживания',
 
       // Staff names
       'staff.administrator': 'Администратор',
-      'staff.cashier': 'Кассир',
       'staff.diagnostician': 'Диагност',
       'staff.nurse': 'Медсестра',
 
@@ -178,7 +172,7 @@
       'sign.clinic': 'ЧАСТНАЯ КЛИНИКА',
       'sign.waitingArea': 'ЗОНА ОЖИДАНИЯ',
       'sign.examination': 'СМОТРОВАЯ',
-      'sign.cashier': 'КАССА',
+      'sign.selfService': 'САМООБСЛУЖИВАНИЕ',
       'sign.reception': 'РЕСЕПШЕН',
       'sign.deliveryZone': 'ЗОНА ДОСТАВКИ',
 
@@ -326,10 +320,10 @@
       'tutorial.step7': 'Отлично! Товар уже в пути.\nЗакройте магазин кнопкой \u2715 или клавишей Q.',
       'tutorial.step8': 'Коробка с препаратом появилась в зоне доставки рядом со стеллажами.\nПодойдите к ней и нажмите ЛКМ, чтобы взять препарат.',
       'tutorial.step9': 'Теперь подойдите к пациенту на кровати и нажмите ЛКМ, чтобы применить препарат.',
-      'tutorial.step10': 'Препарат применён! Пациент выздоравливает — полоска здоровья заполняется.\n\nКогда он полностью выздоровеет, он сам пойдёт к кассе для оплаты.',
-      'tutorial.step11': 'Пациент выздоровел и идёт к кассе!\nПодойдите к терминалу оплаты (справа от стойки) и нажмите ЛКМ.',
-      'tutorial.step12': 'Введите сумму к оплате, используя клавиатуру терминала, и нажмите OK.',
-      'tutorial.step13': 'Оплата принята!\n\nСовет: со временем кровати изнашиваются (каждый пациент — -1 HP). Нажмите R, чтобы взять ремонтный ключ, и зажмите E рядом с кроватью, чтобы её починить. Сломанные кровати (0 HP) использовать нельзя.\n\nВы изучили все основы! Теперь управляйте клиникой самостоятельно. Удачи!',
+      'tutorial.step10': 'Препарат применён! Пациент выздоравливает — полоска здоровья заполняется.\n\nКогда он полностью выздоровеет, он сам пойдёт к кассе самообслуживания.',
+      'tutorial.step11': 'Пациент идёт к кассе самообслуживания слева у выхода.\nОн сам оплатит приём — деньги появятся в кассе через несколько секунд.',
+      'tutorial.step12': 'Подойдите к кассе и удерживайте E, чтобы забрать накопленные деньги.',
+      'tutorial.step13': 'Деньги сняты с кассы!\n\nСовет: со временем кровати изнашиваются (каждый пациент — -1 HP). Нажмите R, чтобы взять ремонтный ключ, и зажмите E рядом с кроватью, чтобы её починить. Сломанные кровати (0 HP) использовать нельзя.\n\nВы изучили все основы! Теперь управляйте клиникой самостоятельно. Удачи!',
       'tutorial.defaultMedicine': 'препарат',
 
       // Patient medical data
@@ -559,15 +553,10 @@
       'ad.reward': 'Credited to balance!',
 
       // Cashier
-      'cashier.due': 'Total due:',
-      'cashier.entered': 'Entered:',
-      'cashier.treatment': 'treatment',
-      'cashier.diagnostics': 'diagnostics',
-      'cashier.xpTreatment': 'XP treatment',
-      'cashier.xpDiagnostics': 'XP diagnostics',
-      'cashier.hint.pay': 'LMB — Payment  |  Hold E — Move',
-      'cashier.hint.move': 'Hold E — Move cashier desk',
-      'cashier.staffWorking': 'Cashier is already working',
+      'register.hint.withdraw': 'Hold E — Withdraw money',
+      'register.hint.move': 'Hold E — Move register',
+      'register.hint.empty': 'Register is empty',
+      'register.hint.busy': 'Patient is checking out',
 
       // Item names
       'item.strepsils': 'Strepsils',
@@ -583,11 +572,10 @@
       'furniture.chair': 'Chair',
       'furniture.shelf': 'Shelf',
       'furniture.toolPanel': 'Tool panel',
-      'furniture.cashierDesk': 'Cashier desk',
+      'furniture.cashierDesk': 'Self-checkout',
 
       // Staff names
       'staff.administrator': 'Administrator',
-      'staff.cashier': 'Cashier',
       'staff.diagnostician': 'Diagnostician',
       'staff.nurse': 'Nurse',
 
@@ -607,7 +595,7 @@
       'sign.clinic': 'PRIVATE CLINIC',
       'sign.waitingArea': 'WAITING AREA',
       'sign.examination': 'EXAMINATION',
-      'sign.cashier': 'CASHIER',
+      'sign.selfService': 'SELF CHECKOUT',
       'sign.reception': 'RECEPTION',
       'sign.deliveryZone': 'DELIVERY ZONE',
 
@@ -755,10 +743,10 @@
       'tutorial.step7': 'Great! The item is on its way.\nClose the shop with \u2715 or press Q.',
       'tutorial.step8': 'A box with medication appeared in the delivery zone near the shelves.\nGo to it and click LMB to take the medication.',
       'tutorial.step9': 'Now go to the patient on the bed and click LMB to apply the medication.',
-      'tutorial.step10': 'Medication applied! The patient is recovering — the health bar is filling up.\n\nWhen fully recovered, they will go to the cashier to pay.',
-      'tutorial.step11': 'The patient has recovered and is heading to the cashier!\nGo to the payment terminal (right of the desk) and click LMB.',
-      'tutorial.step12': 'Enter the payment amount using the terminal keypad and press OK.',
-      'tutorial.step13': 'Payment accepted!\n\nTip: beds wear down over time (each patient costs 1 HP). Press R to equip the wrench, then hold E near a bed to repair it. Broken beds (0 HP) cannot be used.\n\nYou\'ve learned all the basics! Now manage the clinic on your own. Good luck!',
+      'tutorial.step10': 'Medication applied! The patient is recovering — the health bar is filling up.\n\nWhen fully recovered, they will go to the self-checkout register.',
+      'tutorial.step11': 'The patient is heading to the self-checkout register on the left near the exit.\nThey will pay themselves — money will appear in the register after a few seconds.',
+      'tutorial.step12': 'Walk up to the register and hold E to withdraw the accumulated money.',
+      'tutorial.step13': 'Money withdrawn!\n\nTip: beds wear down over time (each patient costs 1 HP). Press R to equip the wrench, then hold E near a bed to repair it. Broken beds (0 HP) cannot be used.\n\nYou\'ve learned all the basics! Now manage the clinic on your own. Good luck!',
       'tutorial.defaultMedicine': 'medication',
 
       // Patient medical data

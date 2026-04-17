@@ -2086,7 +2086,7 @@
                 var stillActive = 0;
                 for (var wi = 0; wi < patients.length; wi++) {
                   var st = patients[wi].state;
-                  if (patients[wi].waveNumber === prevWaveNum && st !== 'leaving' && st !== 'discharged' && st !== 'atCashier') {
+                  if (patients[wi].waveNumber === prevWaveNum && st !== 'leaving' && st !== 'discharged' && st !== 'atRegister') {
                     stillActive++;
                   }
                 }

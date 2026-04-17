@@ -32,7 +32,7 @@ CONSUMABLE_KEYS: ['painkiller', 'antihistamine', 'strepsils']
   requiredConsumables: string[],   // полный список (1-3 шт)
   pendingConsumables: string[],    // оставшиеся неприменённые
   mesh: THREE.Group,
-  state: string,           // 'queued'|'interacting'|'walking'|'atBed'|'waiting'|'discharged'|'atCashier'|'leaving'
+  state: string,           // 'queued'|'interacting'|'walking'|'atBed'|'waiting'|'discharged'|'atRegister'|'leaving'
   targetPos: Vector3|null,
   queueTarget: Vector3|null,
   destination: object|null,
@@ -70,9 +70,9 @@ CONSUMABLE_KEYS: ['painkiller', 'antihistamine', 'strepsils']
 | `walking`     | Идёт к кровати или стулу |
 | `atBed`       | Лежит на кровати, доступен для лечения |
 | `waiting`     | Сидит в зоне ожидания, можно перевести на кровать |
-| `discharged`  | Выписан (HP=100), идёт к кассе |
-| `atCashier`   | Стоит у кассы, ждёт оплаты |
-| `leaving`     | После оплаты идёт к выходу, fade-out при z>18 |
+| `discharged`  | Выписан (HP=100), идёт к кассе самообслуживания |
+| `atRegister`  | Стоит у кассы, таймер чекаута 10 сек, после — деньги в `registerBalance`, переход в `leaving` |
+| `leaving`     | После чекаута идёт к выходу, fade-out при z>18 |
 
 ## Queue System
 - Горизонтальная очередь перед ресепшном (вдоль оси X)
@@ -94,7 +94,7 @@ CONSUMABLE_KEYS: ['painkiller', 'antihistamine', 'strepsils']
 
 #### Условия триггера волны:
 1. `gameTime >= wave.time` (время смены достигло порога)
-2. Первая волна — всегда сразу. Последующие — только когда **хотя бы один пациент из предыдущей волны покинул активное лечение** — т.е. перешёл в состояние `discharged`, `atCashier` или `leaving` (вылечен, оплатил, потерян). Пациенты в `queued` и `interacting` считаются «ещё активными» и блокируют следующую волну
+2. Первая волна — всегда сразу. Последующие — только когда **хотя бы один пациент из предыдущей волны покинул активное лечение** — т.е. перешёл в состояние `discharged`, `atRegister` или `leaving` (вылечен, оплатил, потерян). Пациенты в `queued` и `interacting` считаются «ещё активными» и блокируют следующую волну
 
 #### Порядок спавна внутри волны:
 severe → medium → mild (самые критичные первыми)

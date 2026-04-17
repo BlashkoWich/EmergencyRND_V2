@@ -77,7 +77,7 @@ js/
   staff.js              — система найма сотрудников (NPC, зарплата)
   trash.js              — система мусора (спавн, модели, партиклы вони, мухи, уборка игроком)
   shift.js              — система смен (время, табличка, задачи, маскот, итоги дня)
-  cashier.js            — касса и оплата
+  cashier.js            — касса самообслуживания (банк кассы + снятие денег hold-E + индикатор)
   tutorial.js           — пошаговый туториал (state machine, 14 шагов, 3D-стрелки, spotlight)
 serve.mjs               — вспомогательный Node.js HTTP-сервер для локальной разработки
 specs/
@@ -233,7 +233,7 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 | 5 | `#crosshair`, `#interact-hint`, `#inventory-container` |
 | 10 | `#overlay`, `#pause-screen`, `#level-select-screen` |
 | 15 | `#notification` |
-| 20 | `#patient-popup`, `#shop-popup`, `#cashier-popup`, `#day-end-popup` |
+| 20 | `#patient-popup`, `#shop-popup`, `#day-end-popup` |
 | 22 | `#ad-offer-popup` |
 | 25 | `#diagnostics-overlay` |
 | 50 | `#ad-overlay`, `#ad-reward-animation` |
@@ -260,7 +260,7 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 | `'furniture'` | Мебель (кроме carriedFurniture) | true | 5 |
 | `'boxes'` | Коробки (grounded, !pickedUp) | true | 5 |
 | `'consumables'` | Расходники на земле (grounded, !pickedUp) | true | 5 |
-| `'cashier'` | Терминал кассы + пациент atCashier | false | 3 |
+| `'cashier'` | Все меши кассы самообслуживания | false | 3 |
 | `'shelvesItems'` | Предметы на стеллажах | false | 5 |
 | `'shelvesPlace'` | Структура стеллажей (для размещения) | false | 5 |
 | `'toolPanelItems'` | Инструменты на панели | false | 5 |
@@ -418,11 +418,10 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 Система найма сотрудников: NPC-помощники, зарплата.
 - `setup(THREE, scene, camera, controls, collidables)` — инициализация
 - `update(delta)` — обновление всех сотрудников, прогресс-бары
-- `hire(type)` — нанять (max 1 на тип). Типы: `administrator`, `cashier`, `diagnostician`, `nurse`
+- `hire(type)` — нанять (max 1 на тип). Типы: `administrator`, `diagnostician`, `nurse`
 - `fire(staffId)` — уволить (выплата зарплаты за день)
 - `getHiredStaff()` → массив нанятых
 - `getDailySalary()` → число (сумма зарплат)
-- `isStaffCashierHired()` → boolean
 - `isTypeHired(type)` → boolean
 - `isPatientBeingDiagnosed(patient)` → boolean
 - `isPatientBeingTreated(patient)` → boolean
@@ -448,15 +447,21 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 - `trackPatientServed()` / `trackPatientLost()` — статистика пациентов
 
 ### `Game.Cashier` (`js/cashier.js`)
-Касса и оплата.
-- `setup(THREE, scene, camera, controls, cashierDesk)` — инициализация
-- `update(delta)` — hover-детекция, очередь
-- `isPopupOpen()` → boolean
-- `hasInteraction()` → boolean
+Касса самообслуживания (накопительная). Пациенты сами оплачивают приём за 10 секунд, деньги копятся в `registerBalance`; игрок снимает их удержанием E (4 сек / $100).
+- `setup(THREE, scene, camera, controls, cashierDesk)` — инициализация (создаёт индикатор-sprite, регистрирует fixture, регистрирует `cashier` interaction)
+- `update(delta)` — hover-детекция, продвижение очереди, таймер чекаута, индикатор, частицы
+- `isPopupOpen()` → boolean (всегда `false` — backward-compat стаб)
+- `hasInteraction()` → boolean — hover на кассу И в ней есть деньги
+- `isDeskHovered()` → boolean — hover на любую часть кассы
 - `hasPatients()` → boolean — есть ли пациенты на кассе/в очереди
-- `getBalance()` → number
-- `spend(amount)` — списание
-- `earn(amount)` — зачисление (используется рекламой для начисления награды)
+- `getBalance()` → number — баланс игрока (HUD округляет вниз через `Math.floor`)
+- `spend(amount)` — списание с баланса
+- `earn(amount)` — прямое зачисление (ads reward)
+- `getRegisterBalance()` → number — сколько в кассе ещё не снято
+- `hasMoney()` → boolean — `registerBalance > 0`
+- `isWithdrawing()` → boolean — активное снятие
+- `startWithdraw()` / `tickWithdraw(delta)` / `stopWithdraw()` — управление снятием (вызывается из `furniture.js` при eHoldMode === 'withdraw')
+- `getWithdrawProgress()` → 0..1 — доля снятого от начального баланса для SVG-прогресса
 - `addPatientToQueue(patient)` — добавить в очередь
 - `clearQueue()` — очистка очереди (при переходе между днями)
 

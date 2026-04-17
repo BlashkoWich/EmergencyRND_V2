@@ -726,6 +726,9 @@
   // --- Hold cancel ---
 
   function cancelHold() {
+    if (eHoldMode === 'withdraw' && Game.Cashier && Game.Cashier.isWithdrawing && Game.Cashier.isWithdrawing()) {
+      Game.Cashier.stopWithdraw();
+    }
     eKeyHeld = false;
     eHoldTarget = null;
     eHoldMode = null;
@@ -757,6 +760,23 @@
     if (Game.Shelves && Game.Shelves.hasInteraction()) return;
 
     if (hoveredFurniture) {
+      // Self-checkout with money → withdraw hold (continuous drain)
+      if (hoveredFurniture.type === 'cashierDesk'
+          && Game.Cashier && Game.Cashier.hasMoney && Game.Cashier.hasMoney()) {
+        if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('withdraw')) return;
+        eKeyHeld = true;
+        eHoldStartTime = performance.now();
+        eHoldTarget = hoveredFurniture;
+        eHoldMode = 'withdraw';
+        eHoldDuration = 0; // unused — drains continuously
+        Game.Cashier.startWithdraw();
+        if (holdProgressEl) {
+          holdProgressEl.style.strokeDashoffset = String(HOLD_CIRCUMFERENCE);
+          holdProgressEl.parentElement.style.display = 'block';
+        }
+        return;
+      }
+
       // Wrench + bed → repair hold
       var wrenchEquipped = Game.Wrench && Game.Wrench.isEquipped && Game.Wrench.isEquipped();
       if (wrenchEquipped && hoveredFurniture.type === 'bed') {
@@ -933,24 +953,47 @@
     update: function(delta) {
       // Hold-E progress
       if (eKeyHeld && eHoldTarget) {
-        // Cancel if target no longer valid
-        if (eHoldTarget !== hoveredFurniture || carriedFurniture || !controls.isLocked ||
-            Game.Patients.isPopupOpen() || Game.Shop.isOpen()) {
-          cancelHold();
-        } else {
-          var progress = Math.min((performance.now() - eHoldStartTime) / eHoldDuration, 1.0);
-          if (holdProgressEl) {
-            holdProgressEl.style.strokeDashoffset = String(HOLD_CIRCUMFERENCE * (1 - progress));
-          }
-          if (progress >= 1.0) {
-            var target = eHoldTarget;
-            var mode = eHoldMode;
+        // Withdraw mode — continuous drain while held
+        if (eHoldMode === 'withdraw') {
+          if (eHoldTarget !== hoveredFurniture || carriedFurniture || !controls.isLocked ||
+              Game.Patients.isPopupOpen() || Game.Shop.isOpen() ||
+              !Game.Cashier.hasMoney()) {
+            if (Game.Cashier.isWithdrawing && Game.Cashier.isWithdrawing()) {
+              Game.Cashier.stopWithdraw();
+            }
             cancelHold();
-            eWaitForRelease = true;
-            if (mode === 'repair') {
-              completeBedRepair(target);
-            } else {
-              pickUpFurniture(target);
+          } else {
+            Game.Cashier.tickWithdraw(delta);
+            var wProgress = Game.Cashier.getWithdrawProgress();
+            if (holdProgressEl) {
+              holdProgressEl.style.strokeDashoffset = String(HOLD_CIRCUMFERENCE * (1 - wProgress));
+            }
+            if (!Game.Cashier.hasMoney()) {
+              Game.Cashier.stopWithdraw();
+              cancelHold();
+              eWaitForRelease = true;
+            }
+          }
+        } else {
+          // Cancel if target no longer valid
+          if (eHoldTarget !== hoveredFurniture || carriedFurniture || !controls.isLocked ||
+              Game.Patients.isPopupOpen() || Game.Shop.isOpen()) {
+            cancelHold();
+          } else {
+            var progress = Math.min((performance.now() - eHoldStartTime) / eHoldDuration, 1.0);
+            if (holdProgressEl) {
+              holdProgressEl.style.strokeDashoffset = String(HOLD_CIRCUMFERENCE * (1 - progress));
+            }
+            if (progress >= 1.0) {
+              var target = eHoldTarget;
+              var mode = eHoldMode;
+              cancelHold();
+              eWaitForRelease = true;
+              if (mode === 'repair') {
+                completeBedRepair(target);
+              } else {
+                pickUpFurniture(target);
+              }
             }
           }
         }

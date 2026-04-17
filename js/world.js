@@ -260,34 +260,53 @@
         }
       }
 
-      // --- Cashier desk (right of reception) ---
+      // --- Self-service checkout (right of exit) ---
       var cashierDeskGroup = new THREE.Group();
 
-      var cashierTableMat = new THREE.MeshLambertMaterial({ color: 0x8B6F47 });
-      var cashierTable = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.8, 0.6), cashierTableMat);
-      cashierTable.position.set(0, 0.4, 0); cashierTable.castShadow = true; cashierDeskGroup.add(cashierTable);
+      // Base cabinet — metallic gray
+      var baseMat = new THREE.MeshLambertMaterial({ color: 0x5a5a60 });
+      var baseCabinet = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.9, 0.5), baseMat);
+      baseCabinet.position.set(0, 0.45, 0); baseCabinet.castShadow = true; cashierDeskGroup.add(baseCabinet);
 
-      // Card terminal on the table (positions relative to group origin)
-      var terminalMat = new THREE.MeshLambertMaterial({ color: 0x2a2a2a });
-      var terminalBody = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.04, 0.28), terminalMat);
-      terminalBody.position.set(0, 0.84, 0); terminalBody.castShadow = true; cashierDeskGroup.add(terminalBody);
+      // Top panel — slightly slanted dark panel holding the screen
+      var panelMat = new THREE.MeshLambertMaterial({ color: 0x2a2a2a });
+      var topPanel = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.4, 0.08), panelMat);
+      topPanel.position.set(0, 1.15, -0.05);
+      topPanel.rotation.x = -0.3;
+      topPanel.castShadow = true;
+      cashierDeskGroup.add(topPanel);
 
-      var terminalScreenMat = new THREE.MeshLambertMaterial({ color: 0x1a3a1a, emissive: 0x0a1a0a, emissiveIntensity: 0.5 });
-      var terminalScreen = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.005, 0.10), terminalScreenMat);
-      terminalScreen.position.set(0, 0.865, 0.08); cashierDeskGroup.add(terminalScreen);
+      // LCD screen — green emissive, attached to front face of panel
+      var screenMat = new THREE.MeshLambertMaterial({ color: 0x1a3a1a, emissive: 0x0a3a0a, emissiveIntensity: 0.6 });
+      var lcdScreen = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.3, 0.005), screenMat);
+      lcdScreen.position.set(0, 1.15, 0);
+      lcdScreen.rotation.x = -0.3;
+      // Offset slightly forward of panel along tilted direction
+      lcdScreen.position.z += Math.sin(0.3) * 0.04;
+      lcdScreen.position.y += Math.cos(0.3) * 0.04 - 0.04;
+      cashierDeskGroup.add(lcdScreen);
 
-      // Terminal keypad area (light gray dots area)
-      var keypadMat = new THREE.MeshLambertMaterial({ color: 0x3a3a3a });
-      var keypadArea = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.005, 0.12), keypadMat);
-      keypadArea.position.set(0, 0.865, -0.08); cashierDeskGroup.add(keypadArea);
+      // Card reader slot on top of cabinet
+      var cardReaderMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
+      var cardReader = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.02, 0.06), cardReaderMat);
+      cardReader.position.set(0, 0.92, 0.15);
+      cashierDeskGroup.add(cardReader);
 
-      cashierDeskGroup.position.set(3.5, 0, -9.5);
+      // Receipt printer slot — white paper peek
+      var receiptMat = new THREE.MeshLambertMaterial({ color: 0xf5f5f0 });
+      var receiptSlot = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.015, 0.04), receiptMat);
+      receiptSlot.position.set(0, 0.92, 0.23);
+      cashierDeskGroup.add(receiptSlot);
+
+      cashierDeskGroup.position.set(-3.5, 0, -1.5);
+      cashierDeskGroup.rotation.y = Math.PI;
       scene.add(cashierDeskGroup);
 
-      var cashierTableBox = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.8, 0.7), new THREE.MeshBasicMaterial({ visible: false }));
-      cashierTableBox.position.set(3.5, 0.4, -9.5); scene.add(cashierTableBox); collidables.push(cashierTableBox);
+      var cashierTableBox = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.9, 0.6), new THREE.MeshBasicMaterial({ visible: false }));
+      cashierTableBox.position.set(-3.5, 0.45, -1.5); scene.add(cashierTableBox); collidables.push(cashierTableBox);
 
-      H.createSign(THREE, scene, Game.Lang.t('sign.cashier'), 3.5, 2.5, -11.78, 0);
+      // Sign above exit (interior of south wall) — wall-mounted per memory guidance
+      H.createSign(THREE, scene, Game.Lang.t('sign.selfService'), -3.5, 2.5, -0.11, Math.PI);
       H.createSign(THREE, scene, Game.Lang.t('sign.reception'), 0, 2.5, -11.78, 0);
 
       // Return destination slots for patient system
@@ -307,8 +326,8 @@
         cashierDesk: {
           group: cashierDeskGroup,
           collisionBox: cashierTableBox,
-          terminalMeshes: [terminalBody, terminalScreen, keypadArea],
-          patientPos: new THREE.Vector3(3.5, 0, -8.0)
+          terminalMeshes: [baseCabinet, topPanel, lcdScreen, cardReader, receiptSlot],
+          patientPos: new THREE.Vector3(-3.5, 0, -2.5)
         },
         sunLight: sunLight
       };

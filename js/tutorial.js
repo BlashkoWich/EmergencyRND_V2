@@ -155,24 +155,25 @@
       pauseTime: false,
       position: 'center'
     },
-    // 11: Go to cashier
+    // 11: Patient walks to self-checkout
     {
       text: Game.Lang.t('tutorial.step11'),
-      trigger: 'terminal_opened',
-      allowed: ['movement', 'camera', 'cashier_click'],
+      trigger: 'patient_at_register',
+      allowed: ['movement', 'camera'],
       pauseTime: false,
       position: 'top-right',
       needsPointerLock: true,
-      arrow3D: { x: 3.5, y: 0.5, z: -9.5 }
+      arrow3D: { x: -3.5, y: 1.6, z: -1.5 }
     },
-    // 12: Payment
+    // 12: Withdraw money
     {
       text: Game.Lang.t('tutorial.step12'),
-      trigger: 'payment_done',
-      allowed: ['terminal_keys', 'terminal_ok'],
+      trigger: 'register_withdrawn',
+      allowed: ['movement', 'camera', 'withdraw'],
       pauseTime: false,
-      position: 'left',
-      spotlight: '#cashier-popup'
+      position: 'top-right',
+      needsPointerLock: true,
+      arrow3D: { x: -3.5, y: 1.6, z: -1.5 }
     },
     // 13: Done!
     {

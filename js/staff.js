@@ -8,7 +8,6 @@
   // ====== STAFF TYPES ======
   var STAFF_TYPES = {
     administrator: { name: Game.Lang.t('staff.administrator'), salary: 100, color: 0x2266aa, hatColor: 0x1a4a88 },
-    cashier:       { name: Game.Lang.t('staff.cashier'),       salary: 100, color: 0x22aa66, hatColor: 0x188844 },
     diagnostician: { name: Game.Lang.t('staff.diagnostician'), salary: 100, color: 0x8844cc, hatColor: 0x6633aa },
     nurse:         { name: Game.Lang.t('staff.nurse'),         salary: 100, color: 0xcc4488, hatColor: 0xaa3366 }
   };
@@ -21,7 +20,6 @@
   // Work positions for each staff type
   var WORK_POSITIONS = {
     administrator: { x: 0, z: -9.5, rotY: Math.PI },
-    cashier:       { x: 3.5, z: -10.0, rotY: 0 },
     diagnostician: { x: -5.0, z: -11.0, rotY: 0 },
     nurse:         { x: -4.0, z: -11.0, rotY: 0 }
   };
@@ -489,26 +487,6 @@
     staff.assignTimer = 0;
   }
 
-  // ====== CASHIER STAFF LOGIC ======
-  function updateCashierStaff(staff, delta) {
-    if (staff.state === 'idle') {
-      var current = Game.Cashier.getCurrentPatient ? Game.Cashier.getCurrentPatient() : null;
-      if (current && current.state === 'atCashier') {
-        setTimedState(staff, 'processing', 5.0);
-        staff.targetPatient = current;
-      }
-    } else if (staff.state === 'processing') {
-      staff.stateTimer -= delta;
-      if (staff.stateTimer <= 0) {
-        if (Game.Cashier.processPaymentAuto) {
-          Game.Cashier.processPaymentAuto();
-        }
-        staff.state = 'idle';
-        staff.targetPatient = null;
-      }
-    }
-  }
-
   // ====== DIAGNOSTICIAN LOGIC ======
   function updateDiagnostician(staff, delta) {
     var speed = STAFF_SPEED * delta;
@@ -804,7 +782,6 @@
 
       switch (s.type) {
         case 'administrator': updateAdministrator(s, delta); break;
-        case 'cashier':       updateCashierStaff(s, delta); break;
         case 'diagnostician': updateDiagnostician(s, delta); break;
         case 'nurse':         updateNurse(s, delta); break;
       }
@@ -915,12 +892,6 @@
       return total;
     },
 
-    isStaffCashierHired: function() {
-      for (var i = 0; i < hiredStaff.length; i++) {
-        if (hiredStaff[i].type === 'cashier') return true;
-      }
-      return false;
-    },
 
     isPatientBeingDiagnosed: function(patient) {
       return !!patient.staffDiagnosing;
