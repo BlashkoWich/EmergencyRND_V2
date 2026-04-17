@@ -26,7 +26,7 @@
   var GRAVITY = -9.8;
   var GROUND_Y = 0;
   var DELIVERY_ZONE = { cx: -10.5, cz: -10.3, hw: 1.5, hd: 1.0 };
-  var TRASH_ZONE = { cx: -10.5, cz: -8.5, radius: 0.8 };
+  var TRASH_ZONE = { cx: -14.3, cz: -10.3, radius: 1.1 };
   var DROP_FORWARD_SPEED = 4.0;
   var DROP_UP_SPEED = 2.0;
 
@@ -74,50 +74,98 @@
   function createTrashBin() {
     var group = new THREE.Group();
 
-    // Body — dark gray cylinder, slight taper
-    var bodyGeo = new THREE.CylinderGeometry(0.28, 0.22, 0.7, 14);
-    var bodyMat = new THREE.MeshLambertMaterial({ color: 0x3a3a3a });
+    // Bin dimensions — large industrial dumpster-style bin
+    var BIN_RADIUS_TOP = 0.75;
+    var BIN_RADIUS_BOT = 0.62;
+    var BIN_HEIGHT = 1.7;
+
+    // Body — dark green, slightly tapered (wheelie-bin look)
+    var bodyGeo = new THREE.CylinderGeometry(BIN_RADIUS_TOP, BIN_RADIUS_BOT, BIN_HEIGHT, 20);
+    var bodyMat = new THREE.MeshLambertMaterial({ color: 0x2a5a35 });
     var body = new THREE.Mesh(bodyGeo, bodyMat);
-    body.position.y = 0.35;
+    body.position.y = BIN_HEIGHT / 2;
     body.castShadow = true;
     group.add(body);
 
     // Rim — torus at top
-    var rimGeo = new THREE.TorusGeometry(0.28, 0.025, 8, 18);
-    var rimMat = new THREE.MeshLambertMaterial({ color: 0x555555 });
+    var rimGeo = new THREE.TorusGeometry(BIN_RADIUS_TOP, 0.05, 10, 22);
+    var rimMat = new THREE.MeshLambertMaterial({ color: 0x1a3a22 });
     var rim = new THREE.Mesh(rimGeo, rimMat);
     rim.rotation.x = Math.PI / 2;
-    rim.position.y = 0.7;
+    rim.position.y = BIN_HEIGHT;
     group.add(rim);
 
-    // Red accent stripe
-    var stripeGeo = new THREE.CylinderGeometry(0.26, 0.26, 0.06, 14);
-    var stripeMat = new THREE.MeshLambertMaterial({ color: 0xcc3333 });
+    // Inner void (dark top to look open)
+    var innerGeo = new THREE.CylinderGeometry(BIN_RADIUS_TOP - 0.04, BIN_RADIUS_BOT - 0.04, BIN_HEIGHT - 0.02, 20);
+    var innerMat = new THREE.MeshLambertMaterial({ color: 0x0a0a0a });
+    var inner = new THREE.Mesh(innerGeo, innerMat);
+    inner.position.y = BIN_HEIGHT / 2 + 0.01;
+    group.add(inner);
+
+    // Yellow warning stripe near the top
+    var stripeGeo = new THREE.CylinderGeometry(BIN_RADIUS_TOP + 0.005, BIN_RADIUS_TOP - 0.01, 0.18, 20);
+    var stripeMat = new THREE.MeshLambertMaterial({ color: 0xffcc00 });
     var stripe = new THREE.Mesh(stripeGeo, stripeMat);
-    stripe.position.y = 0.55;
+    stripe.position.y = BIN_HEIGHT - 0.22;
     group.add(stripe);
 
-    // Inner void (dark top to look open)
-    var innerGeo = new THREE.CylinderGeometry(0.24, 0.19, 0.68, 14);
-    var innerMat = new THREE.MeshLambertMaterial({ color: 0x1a1a1a });
-    var inner = new THREE.Mesh(innerGeo, innerMat);
-    inner.position.y = 0.36;
-    group.add(inner);
+    // Large localized "TRASH" label — painted on the bin on four sides
+    var labelCanvas = document.createElement('canvas');
+    labelCanvas.width = 512; labelCanvas.height = 256;
+    var lctx = labelCanvas.getContext('2d');
+    lctx.fillStyle = '#ffcc00';
+    lctx.fillRect(0, 0, 512, 256);
+    lctx.strokeStyle = '#1a1a1a';
+    lctx.lineWidth = 14;
+    lctx.strokeRect(7, 7, 498, 242);
+    lctx.fillStyle = '#1a1a1a';
+    lctx.font = 'bold 150px Segoe UI, Arial, sans-serif';
+    lctx.textAlign = 'center';
+    lctx.textBaseline = 'middle';
+    lctx.fillText(Game.Lang.t('sign.trash'), 256, 138);
+    var labelTex = new THREE.CanvasTexture(labelCanvas);
+    labelTex.anisotropy = 4;
+    var labelMat = new THREE.MeshBasicMaterial({ map: labelTex, transparent: false });
+
+    var labelW = 1.0, labelH = 0.5;
+    var labelY = BIN_HEIGHT * 0.55;
+    var labelR = BIN_RADIUS_TOP + 0.001;
+    var labelPlaneGeo = new THREE.PlaneGeometry(labelW, labelH);
+
+    // East face (toward delivery zone / player)
+    var lblE = new THREE.Mesh(labelPlaneGeo, labelMat);
+    lblE.position.set(labelR, labelY, 0);
+    lblE.rotation.y = Math.PI / 2;
+    group.add(lblE);
+    // West face
+    var lblW = new THREE.Mesh(labelPlaneGeo, labelMat);
+    lblW.position.set(-labelR, labelY, 0);
+    lblW.rotation.y = -Math.PI / 2;
+    group.add(lblW);
+    // North face
+    var lblN = new THREE.Mesh(labelPlaneGeo, labelMat);
+    lblN.position.set(0, labelY, -labelR);
+    lblN.rotation.y = Math.PI;
+    group.add(lblN);
+    // South face
+    var lblS = new THREE.Mesh(labelPlaneGeo, labelMat);
+    lblS.position.set(0, labelY, labelR);
+    group.add(lblS);
 
     group.position.set(TRASH_ZONE.cx, 0, TRASH_ZONE.cz);
     scene.add(group);
     trashBinMesh = group;
 
-    // Collision box
+    // Collision box (matches new bin footprint)
     var colBox = new THREE.Mesh(
-      new THREE.BoxGeometry(0.65, 0.8, 0.65),
+      new THREE.BoxGeometry(1.55, BIN_HEIGHT + 0.1, 1.55),
       new THREE.MeshBasicMaterial({ visible: false })
     );
-    colBox.position.set(TRASH_ZONE.cx, 0.4, TRASH_ZONE.cz);
+    colBox.position.set(TRASH_ZONE.cx, (BIN_HEIGHT + 0.1) / 2, TRASH_ZONE.cz);
     scene.add(colBox);
     collidables.push(colBox);
 
-    // Ground zone indicator
+    // Ground zone indicator (marks the drop zone)
     var canvas = document.createElement('canvas');
     canvas.width = 128; canvas.height = 128;
     var ctx = canvas.getContext('2d');
@@ -127,22 +175,16 @@
     ctx.lineWidth = 4;
     ctx.setLineDash([10, 6]);
     ctx.strokeRect(4, 4, 120, 120);
-    ctx.fillStyle = '#cc3333';
-    ctx.font = 'bold 22px Segoe UI, Arial, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(Game.Lang.t('sign.trash'), 64, 64);
 
     var tex = new THREE.CanvasTexture(canvas);
+    var zoneDiameter = TRASH_ZONE.radius * 2;
     var zoneMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(1.4, 1.4),
+      new THREE.PlaneGeometry(zoneDiameter, zoneDiameter),
       new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false })
     );
     zoneMesh.rotation.x = -Math.PI / 2;
     zoneMesh.position.set(TRASH_ZONE.cx, 0.01, TRASH_ZONE.cz);
     scene.add(zoneMesh);
-
-    // Sign on wall
   }
 
   function markBoxEmpty(box) {
