@@ -63,6 +63,11 @@
 - `staffTreating === true` → "Медсестра уже лечит этого пациента"
 - **Автовыбор**: при клике система автоматически ищет подходящий препарат в инвентаре через `findAndActivateOneOf(pendingConsumables)` — игроку НЕ нужно вручную выбирать слот
 - Нет подходящего препарата в инвентаре → "Нет нужных препаратов в инвентаре"
+- **Hold-to-treat**: применение препарата не мгновенное — требуется удержание ЛКМ **0.75с** (`TREAT_HOLD_DURATION`). В центре экрана показывается SVG-кольцо прогресса (`#treat-hold-progress`, r=16, stroke `#4ad4ff`). Только по завершению удержания вызывается `treatPatient()` (→ `Game.Inventory.removeActive()` + `applyOneConsumable`).
+  - Все early-checks (`treated`, `needsDiagnosis`, `staffTreating`, отсутствие `activeType`, `wrongTreatment` для неподходящего препарата) выполняются **мгновенно** при нажатии ЛКМ — UX уведомлений/тряски неизменен.
+  - Отмена hold (`cancelTreatHold()`): отпускание ЛКМ, `hoveredPatient` изменился, потеря pointer lock, открытие попапа пациента, активная диагностика, удаление пациента, смена `state`/`treated`/`animating`/`staffTreating`, изменение `pendingConsumables` или активного слота инвентаря.
+  - Подсказка `patient.hint.treat` во время удержания переключается на `patient.hint.treatHold` ("Удерживайте ЛКМ — Лечить").
+  - Лечение медсестрой (`treatPatientByStaff`) — **мгновенное**, hold не применяется (NPC).
 - Найден подходящий препарат:
   1. `Game.Inventory.removeActive()` — препарат убирается из инвентаря
   2. Удаляется из `pendingConsumables`, удаляется соответствующий индикатор (`removeOneIndicator`)
@@ -95,6 +100,20 @@
 - Типы анимаций:
   - `'heal'` — зелёная/синяя вспышка (emissiveIntensity → 0), по завершении: сброс emissive, если `treated=true` → `removeAllIndicators`, `animating=false`
   - `'shake'` — тряска (sin-осцилляция x ±0.05, 8 колебаний за 0.3с) + красная вспышка, по завершении сброс позиции и `animating=false`
+  - `'smiley'` — спрайт-смайлик над пациентом после применения препарата (см. ниже)
+
+## Smiley Reactions
+После каждого применения препарата в `applyOneConsumable` (как частичное, так и полное лечение) вызывается `spawnSmileyReaction(patient)`. Срабатывает одинаково для игрока и для медсестры.
+
+- Пул из 10 процедурных canvas-текстур 64×64 (`smileyTextures[]`), ленивая инициализация в `initSmileyTextures()` — рисуются один раз и переиспользуются; НЕ диспозятся. Варианты: classic smile, laugh (teeth), heart-eyes, wink, grin (teeth), tongue out, relieved, star-eyes, sunglasses (cool), blushing.
+- Случайный выбор индекса с защитой от повторов двух последних (`lastSmileyIndex` / `prevSmileyIndex`) через `chooseSmileyIndex()`.
+- Спрайт: `THREE.Sprite` с `SpriteMaterial({ map, transparent, depthTest: false })`. Позиция: `(mesh.x, baseY, mesh.z)` где `baseY = 1.1` (лёжа/`atBed`) или `1.6` (иначе) — стартует на уровне пациента и поднимается вверх за время жизни.
+- Анимация `type: 'smiley'`, длительность `SMILEY_LIFETIME = 1.4с`. На стадиях:
+  - 0–15% времени — pop-in от 0 до масштаба 0.55 (линейно)
+  - 15–70% — держится на 0.55
+  - 70–100% — линейный fade-out opacity 1 → 0
+  - на всём протяжении — подъём по Y на `SMILEY_RISE = 0.5` ед., следование за X/Z пациента
+- По завершении таймера / при удалении пациента (`patients.indexOf === -1`): `scene.remove(sprite)` + `sprite.material.dispose()` (материал уникален на каждый спрайт; текстура общая).
 
 ## Health Bar (3D Sprite)
 - Создаётся при спавне пациента (`createHealthBar()`)

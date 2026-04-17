@@ -152,6 +152,21 @@
   var firstPatientPaid = false; // tracks if the very first patient has been paid
   var animations = [];
 
+  // Hold-to-treat mechanic
+  var TREAT_HOLD_DURATION = 0.75; // seconds
+  var treatHold = null; // { patient, consumableType, timer } | null
+  var treatHoldEl = null;   // container div for SVG ring
+  var treatHoldRing = null; // <circle> element (strokeDashoffset)
+  var TREAT_HOLD_CIRC = 2 * Math.PI * 16; // r=16
+
+  // Smiley reaction textures (lazy-built, shared)
+  var SMILEY_COUNT = 10;
+  var SMILEY_LIFETIME = 1.4; // seconds
+  var SMILEY_RISE = 0.5;     // units
+  var smileyTextures = null;
+  var lastSmileyIndex = -1;
+  var prevSmileyIndex = -2;
+
   // Wave spawn system — scripted waves with guaranteed severity diversity
   var WAVE_SPAWN_DELAY = 1.5; // seconds between patients within a wave
 
@@ -642,7 +657,9 @@
           }
         }
         if (hasAny) {
-          hintEl.textContent = Game.Lang.t('patient.hint.treat');
+          hintEl.textContent = (treatHold && treatHold.patient === hoveredPatient)
+            ? Game.Lang.t('patient.hint.treatHold')
+            : Game.Lang.t('patient.hint.treat');
         } else {
           hintEl.textContent = pendingNames.length > 1
             ? Game.Lang.t('patient.hint.needMedicines', [pendingNames.join(', ')])
@@ -1412,6 +1429,7 @@
       }
       animations.push({ patient: patient, type: 'heal', timer: 0.3, maxTime: 0.3 });
     }
+    spawnSmileyReaction(patient);
   }
 
   function treatPatient(patient) {
@@ -1419,6 +1437,233 @@
     Game.Inventory.removeActive();
     applyOneConsumable(patient, activeType);
     if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('patient_treated');
+  }
+
+  // --- Hold-to-treat ---
+
+  function ensureTreatHoldUI() {
+    if (treatHoldEl) return;
+    treatHoldEl = document.createElement('div');
+    treatHoldEl.id = 'treat-hold-progress';
+    treatHoldEl.style.cssText = 'position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);pointer-events:none;display:none;z-index:6;';
+    treatHoldEl.innerHTML = ''
+      + '<svg width="44" height="44" viewBox="0 0 44 44">'
+      +   '<circle cx="22" cy="22" r="16" fill="none" stroke="rgba(0,0,0,0.35)" stroke-width="3"/>'
+      +   '<circle cx="22" cy="22" r="16" fill="none" stroke="#4ad4ff" stroke-width="3" stroke-linecap="round"'
+      +   ' transform="rotate(-90 22 22)" stroke-dasharray="' + TREAT_HOLD_CIRC.toFixed(3) + '" stroke-dashoffset="' + TREAT_HOLD_CIRC.toFixed(3) + '"/>'
+      + '</svg>';
+    document.body.appendChild(treatHoldEl);
+    treatHoldRing = treatHoldEl.querySelector('circle:nth-child(2)');
+  }
+
+  function setTreatHoldProgress(p) {
+    if (!treatHoldRing) return;
+    treatHoldRing.setAttribute('stroke-dashoffset', String(TREAT_HOLD_CIRC * (1 - p)));
+  }
+
+  function startTreatHold(patient, consumableType) {
+    ensureTreatHoldUI();
+    treatHold = { patient: patient, consumableType: consumableType, timer: 0 };
+    setTreatHoldProgress(0);
+    if (treatHoldEl) treatHoldEl.style.display = 'block';
+  }
+
+  function cancelTreatHold() {
+    treatHold = null;
+    if (treatHoldEl) treatHoldEl.style.display = 'none';
+    setTreatHoldProgress(0);
+  }
+
+  function updateTreatHold(delta) {
+    if (!treatHold) return;
+    var p = treatHold.patient;
+    var abort = !controls.isLocked
+      || popupPatient
+      || (Game.Diagnostics && Game.Diagnostics.isActive())
+      || !p
+      || patients.indexOf(p) === -1
+      || p.state !== 'atBed'
+      || p.treated
+      || p.animating
+      || p.staffTreating
+      || hoveredPatient !== p
+      || !p.pendingConsumables
+      || p.pendingConsumables.indexOf(treatHold.consumableType) === -1
+      || Game.Inventory.getActive() !== treatHold.consumableType;
+    if (abort) {
+      cancelTreatHold();
+      return;
+    }
+    treatHold.timer += delta;
+    var prog = Math.min(treatHold.timer / TREAT_HOLD_DURATION, 1);
+    setTreatHoldProgress(prog);
+    if (treatHold.timer >= TREAT_HOLD_DURATION) {
+      var patient = p;
+      cancelTreatHold();
+      treatPatient(patient);
+    }
+  }
+
+  // --- Smiley reactions ---
+
+  function drawSmileyBase(ctx) {
+    // yellow circle with black outline on 64x64 canvas
+    ctx.fillStyle = '#ffd83a';
+    ctx.beginPath();
+    ctx.arc(32, 32, 26, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = '#1a1a1a';
+    ctx.stroke();
+  }
+
+  function drawSimpleEyes(ctx) {
+    ctx.fillStyle = '#1a1a1a';
+    ctx.beginPath(); ctx.arc(22, 26, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(42, 26, 3, 0, Math.PI * 2); ctx.fill();
+  }
+
+  function drawSmileyVariant(ctx, i) {
+    drawSmileyBase(ctx);
+    ctx.strokeStyle = '#1a1a1a';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.fillStyle = '#1a1a1a';
+    if (i === 0) {
+      // classic smile
+      drawSimpleEyes(ctx);
+      ctx.beginPath(); ctx.arc(32, 34, 10, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke();
+    } else if (i === 1) {
+      // laugh — open mouth with teeth
+      drawSimpleEyes(ctx);
+      ctx.fillStyle = '#3a1a1a';
+      ctx.beginPath(); ctx.arc(32, 36, 8, 0, Math.PI); ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(25, 36, 14, 3);
+    } else if (i === 2) {
+      // heart-eyes
+      ctx.fillStyle = '#ff4070';
+      drawHeart(ctx, 22, 26, 6);
+      drawHeart(ctx, 42, 26, 6);
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.beginPath(); ctx.arc(32, 36, 8, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke();
+    } else if (i === 3) {
+      // wink
+      ctx.fillStyle = '#1a1a1a';
+      ctx.beginPath(); ctx.arc(22, 26, 3, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(38, 26); ctx.lineTo(46, 26); ctx.stroke();
+      ctx.beginPath(); ctx.arc(32, 36, 9, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke();
+    } else if (i === 4) {
+      // grin with teeth
+      drawSimpleEyes(ctx);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(22, 36, 20, 8);
+      ctx.strokeRect(22, 36, 20, 8);
+      ctx.beginPath(); ctx.moveTo(27, 36); ctx.lineTo(27, 44); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(32, 36); ctx.lineTo(32, 44); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(37, 36); ctx.lineTo(37, 44); ctx.stroke();
+    } else if (i === 5) {
+      // tongue out
+      drawSimpleEyes(ctx);
+      ctx.beginPath(); ctx.arc(32, 36, 9, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke();
+      ctx.fillStyle = '#ff5a8a';
+      ctx.beginPath(); ctx.ellipse(32, 44, 5, 6, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.stroke();
+    } else if (i === 6) {
+      // relieved — closed happy eyes
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.beginPath(); ctx.arc(22, 27, 4, Math.PI, 0, true); ctx.stroke();
+      ctx.beginPath(); ctx.arc(42, 27, 4, Math.PI, 0, true); ctx.stroke();
+      ctx.beginPath(); ctx.arc(32, 36, 8, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+    } else if (i === 7) {
+      // star-eyes
+      drawStar(ctx, 22, 26, 5, '#ffcf3a');
+      drawStar(ctx, 42, 26, 5, '#ffcf3a');
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.beginPath(); ctx.arc(32, 36, 9, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke();
+    } else if (i === 8) {
+      // cool — sunglasses
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(12, 22, 18, 8);
+      ctx.fillRect(34, 22, 18, 8);
+      ctx.fillRect(30, 25, 4, 2);
+      ctx.beginPath(); ctx.arc(32, 38, 8, 0.1 * Math.PI, 0.9 * Math.PI); ctx.stroke();
+    } else {
+      // blushing happy
+      ctx.fillStyle = '#ff9eb5';
+      ctx.beginPath(); ctx.arc(17, 38, 4, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(47, 38, 4, 0, Math.PI * 2); ctx.fill();
+      drawSimpleEyes(ctx);
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.beginPath(); ctx.arc(32, 36, 8, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+    }
+  }
+
+  function drawHeart(ctx, cx, cy, r) {
+    ctx.beginPath();
+    ctx.moveTo(cx, cy + r * 0.7);
+    ctx.bezierCurveTo(cx + r, cy + r * 0.2, cx + r, cy - r * 0.8, cx, cy - r * 0.2);
+    ctx.bezierCurveTo(cx - r, cy - r * 0.8, cx - r, cy + r * 0.2, cx, cy + r * 0.7);
+    ctx.fill();
+  }
+
+  function drawStar(ctx, cx, cy, size, fill) {
+    ctx.fillStyle = fill;
+    ctx.beginPath();
+    for (var k = 0; k < 10; k++) {
+      var r = k % 2 === 0 ? size : size * 0.45;
+      var a = -Math.PI / 2 + k * Math.PI / 5;
+      var x = cx + Math.cos(a) * r;
+      var y = cy + Math.sin(a) * r;
+      if (k === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function initSmileyTextures() {
+    if (smileyTextures) return;
+    smileyTextures = [];
+    for (var i = 0; i < SMILEY_COUNT; i++) {
+      var c = document.createElement('canvas');
+      c.width = 64; c.height = 64;
+      var ctx = c.getContext('2d');
+      drawSmileyVariant(ctx, i);
+      smileyTextures.push(new THREE.CanvasTexture(c));
+    }
+  }
+
+  function chooseSmileyIndex() {
+    var idx = Math.floor(Math.random() * SMILEY_COUNT);
+    var guard = 0;
+    while ((idx === lastSmileyIndex || idx === prevSmileyIndex) && guard < 8) {
+      idx = Math.floor(Math.random() * SMILEY_COUNT);
+      guard++;
+    }
+    prevSmileyIndex = lastSmileyIndex;
+    lastSmileyIndex = idx;
+    return idx;
+  }
+
+  function spawnSmileyReaction(patient) {
+    if (!patient || !patient.mesh) return;
+    initSmileyTextures();
+    var tex = smileyTextures[chooseSmileyIndex()];
+    var mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false });
+    var sprite = new THREE.Sprite(mat);
+    sprite.scale.set(0.0, 0.0, 1);
+    var isLying = patient.state === 'atBed';
+    var baseY = isLying ? 1.1 : 1.6;
+    sprite.position.set(patient.mesh.position.x, baseY, patient.mesh.position.z);
+    scene.add(sprite);
+    animations.push({
+      patient: patient,
+      type: 'smiley',
+      timer: SMILEY_LIFETIME,
+      maxTime: SMILEY_LIFETIME,
+      sprite: sprite,
+      baseY: baseY
+    });
   }
 
   function wrongTreatment(patient) {
@@ -1525,6 +1770,24 @@
           }
           animations.splice(i, 1);
         }
+      }
+
+      if (anim.type === 'smiley') {
+        var patientAlive = anim.patient && patients.indexOf(anim.patient) !== -1;
+        if (!patientAlive || anim.timer <= 0) {
+          scene.remove(anim.sprite);
+          if (anim.sprite.material) anim.sprite.material.dispose();
+          animations.splice(i, 1);
+          continue;
+        }
+        var tS = 1 - (anim.timer / anim.maxTime); // 0..1
+        var scaleS = tS < 0.15 ? (tS / 0.15) * 0.55 : 0.55;
+        anim.sprite.position.x = anim.patient.mesh.position.x;
+        anim.sprite.position.z = anim.patient.mesh.position.z;
+        anim.sprite.position.y = anim.baseY + tS * SMILEY_RISE;
+        anim.sprite.material.opacity = tS < 0.7 ? 1 : Math.max(0, 1 - (tS - 0.7) / 0.3);
+        anim.sprite.scale.set(scaleS, scaleS, 1);
+        continue;
       }
 
       if (anim.type === 'shake') {
@@ -1927,7 +2190,7 @@
             Game.Inventory.showNotification(Game.Lang.t('notify.wrongItem', [hoveredPatient.pendingConsumables[0]]));
             return;
           }
-          treatPatient(hoveredPatient);
+          startTreatHold(hoveredPatient, activeType);
           return;
         }
 
@@ -1937,6 +2200,12 @@
         }
 
         openPopup(hoveredPatient);
+      });
+
+      // Cancel hold on any LMB release
+      document.addEventListener('mouseup', function(e) {
+        if (e.button !== 0) return;
+        if (treatHold) cancelTreatHold();
       });
 
       // Popup buttons
@@ -2200,6 +2469,7 @@
 
       updatePatients(delta);
       updateHealthTimers(delta);
+      updateTreatHold(delta);
       updateAnimations(delta);
       updateHealParticles(delta);
       updateIndicators();
