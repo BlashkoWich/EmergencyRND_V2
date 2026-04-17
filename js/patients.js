@@ -167,56 +167,20 @@
   var lastSmileyIndex = -1;
   var prevSmileyIndex = -2;
 
-  // Wave spawn system — scripted waves with guaranteed severity diversity
-  var WAVE_SPAWN_DELAY = 1.5; // seconds between patients within a wave
-
-  // composition: [mild_count, medium_count, severe_count]
-  var WAVE_CONFIG = {
-    2: {
-      waves: [
-        { time: 0,   composition: [2, 2, 0] },
-        { time: 55,  composition: [1, 2, 0] },
-        { time: 120, composition: [2, 2, 0] },
-        { time: 200, composition: [1, 2, 0] }
-      ]
-    },
-    3: {
-      waves: [
-        { time: 0,   composition: [1, 2, 1] },
-        { time: 45,  composition: [1, 1, 1] },
-        { time: 100, composition: [2, 1, 1] },
-        { time: 160, composition: [1, 2, 1] },
-        { time: 230, composition: [1, 1, 1] }
-      ]
-    },
-    4: {
-      waves: [
-        { time: 0,   composition: [1, 2, 1] },
-        { time: 35,  composition: [1, 1, 2] },
-        { time: 80,  composition: [2, 1, 0] },
-        { time: 130, composition: [1, 2, 1] },
-        { time: 185, composition: [1, 1, 2] },
-        { time: 245, composition: [1, 1, 1] }
-      ]
-    }
-  };
-
-  // Wave state
-  var currentWaveIndex = 0;
-  var waveSpawnQueue = [];   // array of severity keys to spawn, severe first
-  var waveSpawnTimer = 0;
-  var waveStarted = false;   // whether wave system has been initialized
-  var lastWaveSize = 0;      // how many patients were in the previous wave
-  var currentSpawnWaveNumber = 0; // wave number assigned to patients being spawned
-
-  // Shared wave queue timer
-  var QUEUE_PATIENCE = 60.0;
-  var waveQueueTimer = 0;
-  var waveQueueTimerActive = false;
-  var activeWaveNumber = -1; // which wave the timer is for
-
-  // Wave banner DOM elements (cached in setup)
-  var waveBannerEl, waveTextEl, waveTimerFillEl, waveTimerTextEl;
+  // Slot-based auto-spawn (Level 2+). Each freed hospital slot schedules its
+  // OWN independent countdown in `pendingSpawns`, so healing several patients
+  // at once queues up several incoming arrivals instead of serialising through
+  // a single shared timer. Initial burst fills all available slots with 1-3s
+  // stagger (chained); steady-state arrivals: each freed slot adds a 10-20s
+  // timer. Spawn also gated by queue cap of 2.
+  var autoSpawnActive = false;      // true after startWaveSystem() is called
+  var initialSpawnCount = 0;        // how many initial-burst patients have spawned
+  var initialBurstTarget = 0;       // captured at startWaveSystem(): beds+chairs
+  var pendingSpawns = [];           // array of countdown timers (sec); each fires one patient
+  var prevTotalInBuilding = 0;      // for detecting slot-freed events between frames
+  var INITIAL_MIN = 1, INITIAL_MAX = 3;   // seconds between initial-burst patients
+  var STEADY_MIN = 10, STEADY_MAX = 20;   // seconds per freed slot in steady state
+  var QUEUE_CAP = 2;                // hard cap on queued/interacting patients
 
   // --- UI elements ---
   var hintEl, popupEl, popupName, popupDiagnosis, popupSupply, popupSupplyIcon, popupSeverity;
@@ -549,7 +513,6 @@
       healthBar: null,
       lastDrawnHp: -1,
       particleTimer: 0,
-      waveNumber: currentSpawnWaveNumber,
       anim: {
         walkPhase: 0,
         walkBlend: 0,
@@ -1410,8 +1373,13 @@
     patient.animating = true;
 
     if (patient.pendingConsumables.length === 0) {
-      // All items applied — fully treated
+      // All items applied — fully treated. Recovery takes a random 4-7s
+      // regardless of severity, so per-patient HP rate is scaled from the
+      // current HP deficit.
       patient.treated = true;
+      var recoveryDuration = 4 + Math.random() * 3;
+      var hpDeficit = Math.max(1, MAX_HP - patient.hp);
+      patient.recoveryRate = hpDeficit / recoveryDuration;
       Game.Inventory.showNotification(Game.Lang.t('notify.treatmentStarted'), 'rgba(34, 139, 34, 0.85)');
       for (var j = 0; j < patient.mesh.userData.bodyParts.length; j++) {
         var part = patient.mesh.userData.bodyParts[j];
@@ -1818,8 +1786,8 @@
     for (var i = patients.length - 1; i >= 0; i--) {
       var p = patients[i];
       if (p.treated) {
-        // Recovery: 3 HP/sec
-        p.hp += HP_RECOVERY_RATE * delta;
+        // Recovery: per-patient rate scaled so total heal takes 4-7s.
+        p.hp += (p.recoveryRate || HP_RECOVERY_RATE) * delta;
         if (p.hp >= MAX_HP) {
           p.hp = MAX_HP;
           updateHealthBarTexture(p);
@@ -2119,10 +2087,6 @@
       initParticlePool();
 
       // Cache UI elements
-      waveBannerEl = document.getElementById('wave-banner');
-      waveTextEl = document.getElementById('wave-text');
-      waveTimerFillEl = document.getElementById('wave-timer-fill');
-      waveTimerTextEl = document.getElementById('wave-timer-text');
       hintEl = document.getElementById('interact-hint');
       popupEl = document.getElementById('patient-popup');
       popupName = document.getElementById('popup-name');
@@ -2275,16 +2239,13 @@
       this.startWaveSystem();
     },
     startWaveSystem: function() {
-      currentWaveIndex = 0;
-      waveSpawnQueue = [];
-      waveSpawnTimer = 0;
-      waveStarted = true;
-      lastWaveSize = 0;
-      currentSpawnWaveNumber = 0;
-      waveQueueTimer = 0;
-      waveQueueTimerActive = false;
-      activeWaveNumber = -1;
-      if (waveBannerEl) waveBannerEl.style.display = 'none';
+      autoSpawnActive = true;
+      initialSpawnCount = 0;
+      // Initial burst fills every available slot (beds + waiting chairs).
+      initialBurstTarget = Game.Furniture.getAllBeds().length
+                         + Game.Furniture.getAllChairs().length;
+      pendingSpawns = [0]; // first initial-burst patient fires on next tick; chain continues after each spawn
+      prevTotalInBuilding = 0;
     },
     onPatientPaid: function() {
       onPatientPaid();
@@ -2312,17 +2273,13 @@
       spawnTimer = 0;
       sequentialSpawnTimer = 0;
       sequentialSpawnActive = false;
-      waveQueueTimerActive = false;
-      activeWaveNumber = -1;
-      if (waveBannerEl) waveBannerEl.style.display = 'none';
       firstPatientPaid = false;
-      // Reset wave state
-      currentWaveIndex = 0;
-      waveSpawnQueue = [];
-      waveSpawnTimer = 0;
-      lastWaveSize = 0;
-      currentSpawnWaveNumber = 0;
-      waveStarted = false;
+      // Reset auto-spawn state
+      autoSpawnActive = false;
+      initialSpawnCount = 0;
+      initialBurstTarget = 0;
+      pendingSpawns = [];
+      prevTotalInBuilding = 0;
       // Remove heal particles
       for (var j = healParticles.length - 1; j >= 0; j--) {
         scene.remove(healParticles[j].mesh);
@@ -2337,114 +2294,64 @@
         var spawnMode = Game.Levels ? Game.Levels.getSpawnMode() : 'sequential';
 
         if (spawnMode === 'wave') {
-          // Level 2+: scripted wave spawn with guaranteed severity diversity
-          var config = WAVE_CONFIG[currentLevel] || WAVE_CONFIG[4];
-          var gameTime = Game.Shift.getGameTime ? Game.Shift.getGameTime() : 0;
-          var totalSlots = Game.Furniture.getAllBeds().length + Game.Furniture.getAllChairs().length;
-          var maxQueue = Math.min(totalSlots + 2, 12);
-          if (maxQueue < 4) maxQueue = 4;
+          // Level 2+: per-slot auto-spawn. Each slot that frees up in the
+          // steady state pushes its own 10-20s countdown into `pendingSpawns`,
+          // so healing several patients at once triggers several independent
+          // arrivals instead of serialising through one shared timer. During
+          // the initial burst, timers are chained (1-3s each) until
+          // `initialBurstTarget` patients have arrived.
+          if (autoSpawnActive) {
+            var totalCap = Game.Furniture.getAllBeds().length
+                         + Game.Furniture.getAllChairs().length;
 
-          // Check if next wave should start
-          if (currentWaveIndex < config.waves.length && waveSpawnQueue.length === 0) {
-            var nextWave = config.waves[currentWaveIndex];
-            if (gameTime >= nextWave.time) {
-              // First wave always triggers; subsequent waves require at least one patient from prev wave to have left
-              var canSpawn = true;
-              if (currentWaveIndex > 0 && lastWaveSize > 0) {
-                var prevWaveNum = currentSpawnWaveNumber;
-                var stillActive = 0;
-                for (var wi = 0; wi < patients.length; wi++) {
-                  var st = patients[wi].state;
-                  if (patients[wi].waveNumber === prevWaveNum && st !== 'leaving' && st !== 'discharged' && st !== 'atRegister') {
-                    stillActive++;
-                  }
-                }
-                canSpawn = stillActive < lastWaveSize;
-              }
-              if (canSpawn) {
-                // Build spawn queue: severe first, then medium, then mild
-                var comp = nextWave.composition; // [mild, medium, severe]
-                waveSpawnQueue = [];
-                for (var ws = 0; ws < comp[2]; ws++) waveSpawnQueue.push('severe');
-                for (var wm = 0; wm < comp[1]; wm++) waveSpawnQueue.push('medium');
-                for (var wl = 0; wl < comp[0]; wl++) waveSpawnQueue.push('mild');
-                lastWaveSize = comp[0] + comp[1] + comp[2];
-                currentSpawnWaveNumber = currentWaveIndex;
-                currentWaveIndex++;
-              }
+            // Count patients occupying the hospital. discharged/atRegister/leaving
+            // have already freed their bed/chair (see finishTreatment() and
+            // removePatient()), so they don't count toward the cap.
+            var totalInBuilding = 0;
+            var queuedCount = 0;
+            for (var i = 0; i < patients.length; i++) {
+              var st = patients[i].state;
+              if (st === 'atRegister' || st === 'leaving' || st === 'discharged') continue;
+              totalInBuilding++;
+              if (st === 'queued' || st === 'interacting') queuedCount++;
             }
-          }
 
-          // Spawn all patients from wave queue at once
-          var spawnedThisFrame = false;
-          while (waveSpawnQueue.length > 0) {
-            if (queue.length >= maxQueue) {
-              Game.Inventory.showNotification(Game.Lang.t('notify.queueOverflow'));
-              waveSpawnQueue.length = 0;
-            } else {
-              var severityKey = waveSpawnQueue.shift();
-              spawnPatient(false, severityKey);
-              spawnedThisFrame = true;
+            // Detect freed slots (post-burst). One timer per freed slot.
+            if (initialSpawnCount >= initialBurstTarget
+                && totalInBuilding < prevTotalInBuilding) {
+              var freed = prevTotalInBuilding - totalInBuilding;
+              for (var f = 0; f < freed; f++) {
+                pendingSpawns.push(STEADY_MIN + Math.random() * (STEADY_MAX - STEADY_MIN));
+              }
             }
-          }
-          // Show wave banner when new wave spawns
-          if (spawnedThisFrame) {
-            waveQueueTimer = QUEUE_PATIENCE;
-            waveQueueTimerActive = true;
-            activeWaveNumber = currentSpawnWaveNumber;
-            if (waveBannerEl) {
-              waveTextEl.textContent = Game.Lang.t('wave.arrived');
-              waveBannerEl.style.display = 'block';
-              waveBannerEl.classList.remove('urgent');
-            }
-          }
 
-          // Update shared wave queue timer
-          if (waveQueueTimerActive) {
-            // Count queued patients from active wave
-            var queuedFromWave = 0;
-            for (var qi = 0; qi < patients.length; qi++) {
-              var qs = patients[qi].state;
-              if (patients[qi].waveNumber === activeWaveNumber && (qs === 'queued' || qs === 'interacting')) {
-                queuedFromWave++;
+            // Tick all pending timers
+            for (var t = 0; t < pendingSpawns.length; t++) {
+              pendingSpawns[t] -= delta;
+            }
+
+            // Fire any expired timers whose caps allow spawning right now.
+            // Multiple may fire in one frame if slots freed en masse.
+            var idx = 0;
+            while (idx < pendingSpawns.length) {
+              if (pendingSpawns[idx] <= 0
+                  && totalInBuilding < totalCap
+                  && queuedCount < QUEUE_CAP) {
+                pendingSpawns.splice(idx, 1);
+                spawnPatient(); // random severity via level-aware weights in spawnPatient()
+                initialSpawnCount++;
+                totalInBuilding++;
+                queuedCount++;
+                // Chain the next initial-burst spawn, if burst not complete.
+                if (initialSpawnCount < initialBurstTarget) {
+                  pendingSpawns.push(INITIAL_MIN + Math.random() * (INITIAL_MAX - INITIAL_MIN));
+                }
+              } else {
+                idx++;
               }
             }
-            if (queuedFromWave === 0) {
-              // All patients assigned or gone — hide banner
-              waveQueueTimerActive = false;
-              if (waveBannerEl) waveBannerEl.style.display = 'none';
-            } else {
-              waveQueueTimer -= delta;
-              // Update banner visuals
-              if (waveBannerEl) {
-                var ratio = Math.max(0, waveQueueTimer / QUEUE_PATIENCE);
-                var showTimer = waveQueueTimer <= 15;
-                waveTimerFillEl.parentElement.style.display = showTimer ? '' : 'none';
-                waveTimerTextEl.style.display = showTimer ? '' : 'none';
-                if (showTimer) {
-                  var urgentRatio = Math.max(0, waveQueueTimer / 15);
-                  waveTimerFillEl.style.width = (urgentRatio * 100) + '%';
-                  waveTimerTextEl.textContent = Math.ceil(Math.max(0, waveQueueTimer)) + 's';
-                }
-                if (ratio < 0.25) {
-                  waveBannerEl.classList.add('urgent');
-                } else {
-                  waveBannerEl.classList.remove('urgent');
-                }
-              }
-              // Timer expired — remove all queued patients from this wave
-              if (waveQueueTimer <= 0) {
-                for (var ri = patients.length - 1; ri >= 0; ri--) {
-                  if (patients[ri].waveNumber === activeWaveNumber && patients[ri].state === 'queued') {
-                    if (Game.Shift) Game.Shift.trackPatientLost();
-                    removePatient(patients[ri]);
-                  }
-                }
-                Game.Inventory.showNotification(Game.Lang.t('notify.patientLeft'));
-                waveQueueTimerActive = false;
-                if (waveBannerEl) waveBannerEl.style.display = 'none';
-              }
-            }
+
+            prevTotalInBuilding = totalInBuilding;
           }
         } else {
           // Level 1-2: sequential mode
