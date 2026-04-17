@@ -100,7 +100,7 @@
       'levelSelect.l4.header': 'Уровень 4',
       'levelSelect.start': 'Начать',
       'levelSelect.l1f1': 'Только лёгкие пациенты',
-      'levelSelect.l1f2': 'Покупка препаратов и белья',
+      'levelSelect.l1f2': 'Покупка препаратов',
       'levelSelect.l1f3': 'Без диагностики',
       'levelSelect.l1f4': 'Пациенты приходят по одному',
       'levelSelect.l2f1': '+ Пациенты средней тяжести',
@@ -144,8 +144,6 @@
       'item.strepsils': 'Стрепсилс',
       'item.painkiller': 'Обезболивающее',
       'item.antihistamine': 'Антигистаминное',
-      'item.linen_clean': 'Постельное бельё',
-      'item.linen_dirty': 'Грязное бельё',
       'item.instrument_stethoscope': 'Фонендоскоп',
       'item.instrument_hammer': 'Рефлекс-молоток',
       'item.instrument_rhinoscope': 'Риноскоп',
@@ -154,9 +152,6 @@
       // Furniture names
       'furniture.bed': 'Кровать',
       'furniture.chair': 'Стул',
-      'furniture.washingMachine': 'Стиральная машина',
-      'furniture.basketClean': 'Корзина (чистое)',
-      'furniture.basketDirty': 'Корзина (грязное)',
       'furniture.shelf': 'Стеллаж',
       'furniture.toolPanel': 'Панель инструментов',
       'furniture.cashierDesk': 'Кассовый стол',
@@ -166,7 +161,6 @@
       'staff.cashier': 'Кассир',
       'staff.diagnostician': 'Диагност',
       'staff.nurse': 'Медсестра',
-      'staff.janitor': 'Уборщик',
 
       // Staff status labels
       'staff.status.processing': 'Оформление',
@@ -175,28 +169,22 @@
       'staff.status.returnInstrument': 'Возвращает',
       'staff.status.pickMedicine': 'Берёт лекарство',
       'staff.status.treating': 'Лечение',
-      'staff.status.changingLinen': 'Смена белья',
       'staff.status.cleaningTrash': 'Уборка мусора',
-      'staff.status.depositDirty': 'Складывает',
-      'staff.status.loadingMachine': 'Загрузка',
-      'staff.status.collectClean': 'Собирает бельё',
 
       // Signs (3D text on canvas)
       'sign.delivery': 'ДОСТАВКА',
       'sign.trash': 'МУСОР',
       'sign.instruments': 'ИНСТРУМЕНТЫ',
-      'sign.clean': 'ЧИСТОЕ',
-      'sign.dirty': 'ГРЯЗНОЕ',
       'sign.clinic': 'ЧАСТНАЯ КЛИНИКА',
       'sign.waitingArea': 'ЗОНА ОЖИДАНИЯ',
       'sign.examination': 'СМОТРОВАЯ',
       'sign.cashier': 'КАССА',
       'sign.reception': 'РЕСЕПШЕН',
-      'sign.laundry': 'СТИРКА',
       'sign.deliveryZone': 'ЗОНА ДОСТАВКИ',
 
       // Inventory
       'inv.shop': 'Q — Магазин',
+      'inv.wrench': 'R — Ремонтный ключ',
       'inv.drop': 'G — Бросить',
 
       // Notifications
@@ -205,7 +193,7 @@
       'notify.firstOrderFree': 'Первый заказ бесплатно!',
       'notify.upgradeSlot': 'Теперь можно хранить {0} препаратов в слоте!',
       'notify.unlockLevel': 'Разблокируется на уровне {0}',
-      'notify.linenReplaced': 'Бельё заменено!',
+      'notify.bedRepaired': 'Кровать отремонтирована!',
       'notify.cannotMove': 'Сейчас нельзя переместить',
       'notify.cannotMoveOccupied': 'Нельзя переместить — предмет занят',
       'notify.cannotPlaceHere': 'Нельзя разместить здесь',
@@ -224,7 +212,6 @@
       'notify.queueOverflow': 'Пациент не смог зайти из-за того, что очередь переполнена',
       'wave.arrived': 'Скорая привезла пациентов! Определите каждого — решите, кого спасать первым.',
       'notify.instrumentsToPanel': 'Инструменты вешайте на панель',
-      'notify.putInBasket': 'Положено в корзину',
       'notify.alreadyHired': '{0} уже нанят(а)!',
       'notify.hired': '{0} нанят(а)!',
       'notify.fired': '{0} уволен(а). Выплачено ${1}',
@@ -289,8 +276,8 @@
       'patient.pulse': '{0} уд/м',
       'patient.needInstrument': 'Необходим: {0}',
       'patient.outdoorWarning': 'Пока кровать/стул на улице — их нельзя использовать',
-      'patient.dirtyWarning1': 'Грязное бельё на {0} кровати — замените бельё',
-      'patient.dirtyWarningN': 'Грязное бельё на {0} кроватях — замените бельё',
+      'patient.brokenWarning1': '{0} кровать сломана — почините ремонтным ключом',
+      'patient.brokenWarningN': '{0} кроватей сломано — почините ремонтным ключом',
 
       // Severity labels
       'severity.severe': 'Тяжёлое',
@@ -298,23 +285,15 @@
       'severity.mild': 'Лёгкое',
 
       // Furniture hints
-      'furniture.hint.replaceLinen': 'ЛКМ — Заменить бельё',
-      'furniture.hint.needCleanLinen': 'Нужно чистое бельё для замены',
       'furniture.hint.move': 'Зажми E — Переместить {0}',
       'furniture.hint.place': 'E — Поставить {0}  |  Колёсико — Поворот',
 
-      // Washing machine
-      'wash.hint.washing': 'Стирка... {0} сек.',
-      'wash.hint.loadDirty': 'Загрузите грязное бельё (ЛКМ)',
-      'wash.hint.loadAndStart': 'ЛКМ — Загрузить бельё ({0}/{1})  |  E — Запустить стирку',
-      'wash.hint.load': 'ЛКМ — Загрузить бельё ({0}/{1})',
-      'wash.hint.fullStart': 'Машинка полная ({0}/{1})  |  E — Запустить стирку',
-      'wash.hint.start': 'E — Запустить стирку ({0} шт.)',
-      'wash.started': 'Стирка запущена! ({0} шт.)',
-      'wash.finished': 'Стирка завершена! Заберите бельё.',
-      'wash.full': 'Машинка полная ({0}/{1})',
-      'wash.loaded': 'Загружено бельё ({0}/{1})',
-      'wash.loadFirst': 'Сначала загрузите грязное бельё',
+      // Wrench / bed repair
+      'wrench.equipped': 'Ремонтный ключ в руке',
+      'wrench.unequipped': 'Ремонтный ключ убран',
+      'wrench.hint.bedHp': 'Кровать: {0}/{1} HP — зажмите E для ремонта',
+      'wrench.hint.broken': 'Кровать сломана ({0}/{1}) — зажмите E для ремонта',
+      'controls.wrench': 'R — взять ремонтный ключ',
 
       // Trash
       'trash.hint': 'Убрать мусор (ЛКМ)',
@@ -326,12 +305,6 @@
       // Tool panel hints
       'panel.hint.take': 'Взять {0} на ЛКМ',
       'panel.hint.hang': 'Повесить на E',
-
-      // Staff basket hints
-      'basket.cleanLinen': 'Чистое бельё',
-      'basket.dirtyLinen': 'Грязное бельё',
-      'basket.take': 'ЛКМ — Взять ({0})',
-      'basket.put': 'E — Положить',
 
       // Staff warnings
       'staff.diagWarning': 'Диагносту не хватает инструментов:',
@@ -357,18 +330,7 @@
       'tutorial.step10': 'Препарат применён! Пациент выздоравливает — полоска здоровья заполняется.\n\nКогда он полностью выздоровеет, он сам пойдёт к кассе для оплаты.',
       'tutorial.step11': 'Пациент выздоровел и идёт к кассе!\nПодойдите к терминалу оплаты (справа от стойки) и нажмите ЛКМ.',
       'tutorial.step12': 'Введите сумму к оплате, используя клавиатуру терминала, и нажмите OK.',
-      'tutorial.step13': 'Оплата принята!\n\nОбратите внимание: после ухода пациента кровать стала грязной. На грязную кровать нельзя положить нового пациента!\n\nДавайте научимся менять бельё.',
-      'tutorial.step14': 'Откройте магазин (Q) и закажите чистое постельное бельё.',
-      'tutorial.step15html': 'Нажмите кнопку \u00ABЗаказать\u00BB напротив:<br><br><span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#dde4f0;vertical-align:middle;margin-right:6px;border:1px solid #aab;"></span><b>{0}</b>',
-      'tutorial.step16': 'Отлично! Закройте магазин.',
-      'tutorial.step17': 'Подойдите к коробке с бельём в зоне доставки и возьмите чистое бельё на ЛКМ.',
-      'tutorial.step18': 'Теперь подойдите к грязной кровати и нажмите ЛКМ, чтобы заменить бельё.',
-      'tutorial.step19': 'Кровать снова чистая!\n\nНо у вас в инвентаре осталось грязное бельё. Его можно постирать в стиральной машине!\n\nВыберите грязное бельё в инвентаре (клавиши 1-6) и подойдите к стиральной машине.',
-      'tutorial.step20': 'Выберите грязное бельё в инвентаре и нажмите ЛКМ на стиральной машине, чтобы загрузить.',
-      'tutorial.step21': 'Бельё загружено! Нажмите E, чтобы запустить стирку.',
-      'tutorial.step22': 'Стирка запущена! Подождите, пока машинка закончит...\n\nЭто займёт 5 секунд.',
-      'tutorial.step23': 'Стирка завершена! Чистое бельё появилось на машинке.\nПодберите его на ЛКМ.',
-      'tutorial.step24': 'Отлично! Теперь у вас снова есть чистое бельё.\n\nВы изучили все основы!\nТеперь управляйте клиникой самостоятельно.\n\nУдачи!',
+      'tutorial.step13': 'Оплата принята!\n\nСовет: со временем кровати изнашиваются (каждый пациент — -1 HP). Нажмите R, чтобы взять ремонтный ключ, и зажмите E рядом с кроватью, чтобы её починить. Сломанные кровати (0 HP) использовать нельзя.\n\nВы изучили все основы! Теперь управляйте клиникой самостоятельно. Удачи!',
       'tutorial.defaultMedicine': 'препарат',
 
       // Patient medical data
@@ -568,7 +530,7 @@
       'levelSelect.l4.header': 'Level 4',
       'levelSelect.start': 'Start',
       'levelSelect.l1f1': 'Only mild patients',
-      'levelSelect.l1f2': 'Buy medications and linen',
+      'levelSelect.l1f2': 'Buy medications',
       'levelSelect.l1f3': 'No diagnostics',
       'levelSelect.l1f4': 'Patients come one at a time',
       'levelSelect.l2f1': '+ Medium severity patients',
@@ -612,8 +574,6 @@
       'item.strepsils': 'Strepsils',
       'item.painkiller': 'Painkiller',
       'item.antihistamine': 'Antihistamine',
-      'item.linen_clean': 'Bed linen',
-      'item.linen_dirty': 'Dirty linen',
       'item.instrument_stethoscope': 'Stethoscope',
       'item.instrument_hammer': 'Reflex hammer',
       'item.instrument_rhinoscope': 'Rhinoscope',
@@ -622,9 +582,6 @@
       // Furniture names
       'furniture.bed': 'Bed',
       'furniture.chair': 'Chair',
-      'furniture.washingMachine': 'Washing machine',
-      'furniture.basketClean': 'Basket (clean)',
-      'furniture.basketDirty': 'Basket (dirty)',
       'furniture.shelf': 'Shelf',
       'furniture.toolPanel': 'Tool panel',
       'furniture.cashierDesk': 'Cashier desk',
@@ -634,7 +591,6 @@
       'staff.cashier': 'Cashier',
       'staff.diagnostician': 'Diagnostician',
       'staff.nurse': 'Nurse',
-      'staff.janitor': 'Janitor',
 
       // Staff status labels
       'staff.status.processing': 'Processing',
@@ -643,28 +599,22 @@
       'staff.status.returnInstrument': 'Returning',
       'staff.status.pickMedicine': 'Picking medicine',
       'staff.status.treating': 'Treating',
-      'staff.status.changingLinen': 'Changing linen',
       'staff.status.cleaningTrash': 'Cleaning trash',
-      'staff.status.depositDirty': 'Depositing',
-      'staff.status.loadingMachine': 'Loading',
-      'staff.status.collectClean': 'Collecting linen',
 
       // Signs (3D text on canvas)
       'sign.delivery': 'DELIVERY',
       'sign.trash': 'TRASH',
       'sign.instruments': 'INSTRUMENTS',
-      'sign.clean': 'CLEAN',
-      'sign.dirty': 'DIRTY',
       'sign.clinic': 'PRIVATE CLINIC',
       'sign.waitingArea': 'WAITING AREA',
       'sign.examination': 'EXAMINATION',
       'sign.cashier': 'CASHIER',
       'sign.reception': 'RECEPTION',
-      'sign.laundry': 'LAUNDRY',
       'sign.deliveryZone': 'DELIVERY ZONE',
 
       // Inventory
       'inv.shop': 'Q — Shop',
+      'inv.wrench': 'R — Wrench',
       'inv.drop': 'G — Drop',
 
       // Notifications
@@ -673,7 +623,7 @@
       'notify.firstOrderFree': 'First order free!',
       'notify.upgradeSlot': 'Now you can store {0} medications per slot!',
       'notify.unlockLevel': 'Unlocks at level {0}',
-      'notify.linenReplaced': 'Linen replaced!',
+      'notify.bedRepaired': 'Bed repaired!',
       'notify.cannotMove': 'Cannot move now',
       'notify.cannotMoveOccupied': 'Cannot move — item is occupied',
       'notify.cannotPlaceHere': 'Cannot place here',
@@ -692,7 +642,6 @@
       'notify.queueOverflow': 'Patient could not enter because the queue is full',
       'wave.arrived': 'Ambulance brought patients! Assign each one — decide who to save first.',
       'notify.instrumentsToPanel': 'Hang instruments on the panel',
-      'notify.putInBasket': 'Put in basket',
       'notify.alreadyHired': '{0} is already hired!',
       'notify.hired': '{0} hired!',
       'notify.fired': '{0} fired. Paid ${1}',
@@ -757,8 +706,8 @@
       'patient.pulse': '{0} bpm',
       'patient.needInstrument': 'Required: {0}',
       'patient.outdoorWarning': 'Beds/chairs cannot be used while outside',
-      'patient.dirtyWarning1': 'Dirty linen on {0} bed — replace linen',
-      'patient.dirtyWarningN': 'Dirty linen on {0} beds — replace linen',
+      'patient.brokenWarning1': '{0} bed is broken — repair with the wrench',
+      'patient.brokenWarningN': '{0} beds are broken — repair with the wrench',
 
       // Severity labels
       'severity.severe': 'Severe',
@@ -766,23 +715,15 @@
       'severity.mild': 'Mild',
 
       // Furniture hints
-      'furniture.hint.replaceLinen': 'LMB — Replace linen',
-      'furniture.hint.needCleanLinen': 'Need clean linen to replace',
       'furniture.hint.move': 'Hold E — Move {0}',
       'furniture.hint.place': 'E — Place {0}  |  Scroll — Rotate',
 
-      // Washing machine
-      'wash.hint.washing': 'Washing... {0} sec.',
-      'wash.hint.loadDirty': 'Load dirty linen (LMB)',
-      'wash.hint.loadAndStart': 'LMB — Load linen ({0}/{1})  |  E — Start wash',
-      'wash.hint.load': 'LMB — Load linen ({0}/{1})',
-      'wash.hint.fullStart': 'Machine full ({0}/{1})  |  E — Start wash',
-      'wash.hint.start': 'E — Start wash ({0} pcs.)',
-      'wash.started': 'Wash started! ({0} pcs.)',
-      'wash.finished': 'Wash finished! Pick up linen.',
-      'wash.full': 'Machine full ({0}/{1})',
-      'wash.loaded': 'Linen loaded ({0}/{1})',
-      'wash.loadFirst': 'Load dirty linen first',
+      // Wrench / bed repair
+      'wrench.equipped': 'Wrench equipped',
+      'wrench.unequipped': 'Wrench stowed',
+      'wrench.hint.bedHp': 'Bed: {0}/{1} HP — hold E to repair',
+      'wrench.hint.broken': 'Bed broken ({0}/{1}) — hold E to repair',
+      'controls.wrench': 'R — equip wrench',
 
       // Trash
       'trash.hint': 'Clean trash (LMB)',
@@ -794,12 +735,6 @@
       // Tool panel hints
       'panel.hint.take': 'Take {0} with LMB',
       'panel.hint.hang': 'Hang with E',
-
-      // Staff basket hints
-      'basket.cleanLinen': 'Clean linen',
-      'basket.dirtyLinen': 'Dirty linen',
-      'basket.take': 'LMB — Take ({0})',
-      'basket.put': 'E — Put',
 
       // Staff warnings
       'staff.diagWarning': 'Diagnostician needs instruments:',
@@ -825,18 +760,7 @@
       'tutorial.step10': 'Medication applied! The patient is recovering — the health bar is filling up.\n\nWhen fully recovered, they will go to the cashier to pay.',
       'tutorial.step11': 'The patient has recovered and is heading to the cashier!\nGo to the payment terminal (right of the desk) and click LMB.',
       'tutorial.step12': 'Enter the payment amount using the terminal keypad and press OK.',
-      'tutorial.step13': 'Payment accepted!\n\nNote: after the patient left, the bed became dirty. You cannot place a new patient on a dirty bed!\n\nLet\'s learn to change the linen.',
-      'tutorial.step14': 'Open the shop (Q) and order clean bed linen.',
-      'tutorial.step15html': 'Click the "Order" button next to:<br><br><span style="display:inline-block;width:14px;height:14px;border-radius:3px;background:#dde4f0;vertical-align:middle;margin-right:6px;border:1px solid #aab;"></span><b>{0}</b>',
-      'tutorial.step16': 'Great! Close the shop.',
-      'tutorial.step17': 'Go to the linen box in the delivery zone and take clean linen with LMB.',
-      'tutorial.step18': 'Now go to the dirty bed and click LMB to replace the linen.',
-      'tutorial.step19': 'The bed is clean again!\n\nBut you have dirty linen in your inventory. You can wash it in the washing machine!\n\nSelect dirty linen in inventory (keys 1-6) and go to the washing machine.',
-      'tutorial.step20': 'Select dirty linen in inventory and click LMB on the washing machine to load it.',
-      'tutorial.step21': 'Linen loaded! Press E to start the wash.',
-      'tutorial.step22': 'Wash started! Wait for the machine to finish...\n\nThis will take 5 seconds.',
-      'tutorial.step23': 'Wash complete! Clean linen appeared on the machine.\nPick it up with LMB.',
-      'tutorial.step24': 'Great! Now you have clean linen again.\n\nYou\'ve learned all the basics!\nNow manage the clinic on your own.\n\nGood luck!',
+      'tutorial.step13': 'Payment accepted!\n\nTip: beds wear down over time (each patient costs 1 HP). Press R to equip the wrench, then hold E near a bed to repair it. Broken beds (0 HP) cannot be used.\n\nYou\'ve learned all the basics! Now manage the clinic on your own. Good luck!',
       'tutorial.defaultMedicine': 'medication',
 
       // Patient medical data

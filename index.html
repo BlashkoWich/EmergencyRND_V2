@@ -64,7 +64,7 @@
       <div id="popup-instrument-hint" style="display:none; padding: 7px 0 7px 12px; margin-bottom: 4px; border-left: 2px solid rgba(255,170,68,0.4); font-size: 0.88rem;"></div>
     </div>
     <div id="outdoor-warning" style="display:none; color:#ff8844; font-size:0.85rem; padding:4px 12px; border-left:2px solid rgba(255,136,68,0.4);"></div>
-    <div id="dirty-linen-warning" style="display:none; color:#cc8844; font-size:0.85rem; padding:4px 12px; border-left:2px solid rgba(204,136,68,0.4);"></div>
+    <div id="broken-bed-warning" style="display:none; color:#cc4444; font-size:0.85rem; padding:4px 12px; border-left:2px solid rgba(204,68,68,0.4);"></div>
     <div class="buttons">
       <button id="btn-bed"><span data-lang-key="popup.btn.bed"></span> <span id="bed-count" style="opacity:0.7"></span></button>
       <button id="btn-wait"><span data-lang-key="popup.btn.wait"></span> <span id="chair-count" style="opacity:0.7"></span></button>
@@ -94,11 +94,6 @@
       <div class="shop-item" data-type="antihistamine">
         <span class="shop-item-icon" style="background:#33aa55"></span>
         <span class="shop-item-name" data-lang-key="item.antihistamine"></span>
-        <button class="shop-buy-btn"></button>
-      </div>
-      <div class="shop-item" data-type="linen_clean">
-        <span class="shop-item-icon" style="background:#dde4f0"></span>
-        <span class="shop-item-name" data-lang-key="item.linen_clean"></span>
         <button class="shop-buy-btn"></button>
       </div>
     </div>
@@ -174,12 +169,6 @@
       <div class="staff-hire-item" data-type="nurse">
         <span class="shop-item-icon" style="background:#cc4488"></span>
         <span class="shop-item-name" data-lang-key="staff.nurse"></span>
-        <span class="staff-salary">$100/<span data-lang-key="shop.perDay"></span></span>
-        <button class="shop-buy-btn staff-hire-btn" data-lang-key="shop.hire"></button>
-      </div>
-      <div class="staff-hire-item" data-type="janitor">
-        <span class="shop-item-icon" style="background:#888844"></span>
-        <span class="shop-item-name" data-lang-key="staff.janitor"></span>
         <span class="staff-salary">$100/<span data-lang-key="shop.perDay"></span></span>
         <button class="shop-buy-btn staff-hire-btn" data-lang-key="shop.hire"></button>
       </div>
@@ -418,8 +407,8 @@
   <script src="js/inventory.js?v=2"></script>
   <script src="js/shop.js?v=2"></script>
   <script src="js/ads.js?v=2"></script>
+  <script src="js/wrench.js?v=2"></script>
   <script src="js/furniture.js?v=2"></script>
-  <script src="js/washing-machine.js?v=2"></script>
   <script src="js/shelves.js?v=2"></script>
   <script src="js/tool-panel.js?v=2"></script>
   <script src="js/diagnostics.js?v=2"></script>
@@ -525,7 +514,7 @@
     Game.Levels.setup(controls);
     Game.Shop.setup(controls);
     Game.Ads.setup();
-    Game.WashingMachine.setup(THREE, scene, camera, controls, collidables);
+    Game.Wrench.setup(THREE, scene, camera, controls);
     Game.Shelves.setup(THREE, scene, camera, controls, collidables);
     Game.ToolPanel.setup(THREE, scene, camera, controls, collidables);
     Game.Diagnostics.setup(controls);
@@ -626,7 +615,6 @@
       // Throttled updates (every 2nd frame)
       if (frameCount % 2 === 0) {
         Game.Furniture.update(delta * 2);
-        Game.WashingMachine.update(delta * 2);
         Game.Shelves.update(delta * 2);
         Game.ToolPanel.update(delta * 2);
         Game.Trash.update(delta * 2);

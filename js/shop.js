@@ -105,7 +105,7 @@
       var type = itemEl.dataset.type;
       var btn = itemEl.querySelector('.shop-buy-btn');
       if (!btn) continue;
-      var basePrice = type === 'linen_clean' ? 100 : 80;
+      var basePrice = 80;
       if (!firstOrderUsed[type]) {
         btn.textContent = Game.Lang.t('shop.order.free');
         btn.style.background = '#2a8a5a';
@@ -205,7 +205,7 @@
 
         // Buy button handler
         (function(btn, t) {
-          var basePrice = t === 'linen_clean' ? 100 : 80;
+          var basePrice = 80;
           btn.addEventListener('click', function() {
             if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('shop_buy')) return;
             // First order of each type is free

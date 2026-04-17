@@ -23,12 +23,12 @@
 - `Game.Consumables` — расходники (типы, физика, подбор, бросок)
 - `Game.Inventory` — инвентарь (6 слотов, UI, выбор слота)
 - `Game.Shop` — магазин расходников (попап, покупка)
-- `Game.Furniture` — система мебели (покупка, перемещение, indoor/outdoor, динамические слоты, грязное бельё)
-- `Game.WashingMachine` — стиральная машина (загрузка грязного белья, стирка, выдача чистого)
+- `Game.Furniture` — система мебели (покупка, перемещение, indoor/outdoor, динамические слоты, HP кроватей, ремонт)
+- `Game.Wrench` — ремонтный ключ (переключение клавишей R, first-person модель, подсказка HP кровати)
 - `Game.Shelves` — стеллажи (создание, размещение расходников; инструменты отклоняются)
 - `Game.ToolPanel` — настенная панель для инструментов (3 типизированных слота)
 - `Game.Diagnostics` — мини-игры диагностики (фонендоскоп, рефлекс-молоток, риноскоп)
-- `Game.Staff` — система найма сотрудников (NPC-помощники, корзины для белья, зарплата)
+- `Game.Staff` — система найма сотрудников (NPC-помощники, зарплата)
 - `Game.Trash` — система мусора (спавн внутри больницы с уровня 3, модели, партиклы вони, мухи, уборка)
 - `Game.Shift` — система смен и дней (время, табличка Open/Closed, задачи, итоги дня)
 - `Game.Cashier` — касса и система оплаты
@@ -37,7 +37,7 @@
 
 - `Game.Lang` — система локализации (переводы ru/en, функция t(), переключение языка)
 
-Порядок загрузки: lang → helpers → world → patients → controls → consumables → inventory → shop → ads → furniture → washing-machine → shelves → tool-panel → diagnostics → staff → trash → shift → cashier → tutorial → inline module (оркестратор).
+Порядок загрузки: lang → helpers → world → patients → controls → consumables → inventory → shop → ads → wrench → furniture → shelves → tool-panel → diagnostics → staff → trash → shift → cashier → tutorial → inline module (оркестратор).
 
 ## IMPORTANT: Локализация (i18n)
 **Все тексты в игре ОБЯЗАНЫ быть на всех доступных языках (ru, en).** При разработке любой новой фичи или изменении текста:
@@ -71,16 +71,16 @@ js/
   inventory.js          — инвентарь (6 слотов, UI-бар, выбор слота, уведомления)
   shop.js               — магазин расходников (попап с табами: препараты + инструменты + мебель)
   ads.js                — реклама за деньги (попап предложения, фиктивный ролик 20с, награда $200)
-  furniture.js          — система мебели (покупка, перемещение, indoor/outdoor, динамические слоты, грязное бельё)
-  washing-machine.js    — стиральная машина (загрузка, стирка, выдача)
+  wrench.js             — ремонтный ключ (R — взять/убрать, first-person модель, hold-E для ремонта кровати)
+  furniture.js          — система мебели (покупка, перемещение, indoor/outdoor, динамические слоты, HP кроватей, ремонт)
   shelves.js            — стеллажи (создание, размещение расходников; инструменты отклоняются)
   tool-panel.js         — настенная панель для инструментов (3 типизированных слота, крюки)
   diagnostics.js        — диагностика (мини-игры: фонендоскоп, рефлекс-молоток, риноскоп)
-  staff.js              — система найма сотрудников (NPC, корзины для белья, зарплата)
-  trash.js              — система мусора (спавн, модели, партиклы вони, мухи, уборка игроком/уборщиком)
+  staff.js              — система найма сотрудников (NPC, зарплата)
+  trash.js              — система мусора (спавн, модели, партиклы вони, мухи, уборка игроком)
   shift.js              — система смен (время, табличка, задачи, маскот, итоги дня)
   cashier.js            — касса и оплата
-  tutorial.js           — пошаговый туториал (state machine, 25 шагов, 3D-стрелки, spotlight)
+  tutorial.js           — пошаговый туториал (state machine, 14 шагов, 3D-стрелки, spotlight)
 serve.mjs               — вспомогательный Node.js HTTP-сервер для локальной разработки
 specs/
   specs-base.md         — этот файл (техническая база)
@@ -95,7 +95,7 @@ specs/
 - WebGLRenderer, antialias
 - Тени: PCFSoftShadowMap (зависит от настройки качества, см. Quality Settings)
 - Tone mapping: ACESFilmicToneMapping, exposure 1.0
-- **Все материалы** — `MeshLambertMaterial` (кроме эмиссивных: светильники, индикатор стиральной машины, прогресс-бар). Свойства `roughness`/`metalness` не используются
+- **Все материалы** — `MeshLambertMaterial` (кроме эмиссивных: светильники, прогресс-бар). Свойства `roughness`/`metalness` не используются
 
 ## Quality Settings (переключатель на стартовом экране)
 Три уровня: Low / Medium / High. Сохраняется в `localStorage('graphicsQuality')`.
@@ -138,8 +138,7 @@ specs/
 
 Каждый 2-й кадр (30fps, `delta * 2`):
 8. `Game.Furniture.update(delta)` — interaction мебели (hover, hold progress E, подсказки)
-9. `Game.WashingMachine.update(delta)` — стиральная машина
-10. `Game.Shelves.update(delta)` — interaction стеллажей
+9. `Game.Shelves.update(delta)` — interaction стеллажей
 11. `Game.ToolPanel.update(delta)` — interaction панели инструментов
 12. `Game.Trash.update(delta)` — мусор
 13. `Game.Shift.update(delta)` — время смены, hover таблички, задачи
@@ -150,7 +149,7 @@ specs/
 Рендер: `composer.render()` или `renderer.render(scene, camera)` (зависит от `useComposer`)
 
 ## Оркестратор (`index.html` inline module)
-Создаёт renderer, scene, camera, collidables[], composer (EffectComposer с RenderPass + OutlinePass + OutputPass). Вызывает `Game.World.setup()` (возвращает `sunLight`), `Game.Controls.setup()`, `Game.Furniture.setup()` + `registerExisting()`, `Game.WashingMachine.setup()`, `Game.Patients.setup()`, `Game.Consumables.setup()`, `Game.Inventory.setup()`, `Game.Shop.setup()`, `Game.Ads.setup()`, `Game.Shelves.setup()`, `Game.ToolPanel.setup()`, `Game.Diagnostics.setup()`, `Game.Cashier.setup()`, `Game.Shift.setup()`, `Game.Tutorial.setup()`. Экспортирует `Game.Outline`, `Game.FPS`. Настраивает Quality Settings и FPS counter. Запускает animation loop с 60fps лимитом.
+Создаёт renderer, scene, camera, collidables[], composer (EffectComposer с RenderPass + OutlinePass + OutputPass). Вызывает `Game.World.setup()` (возвращает `sunLight`), `Game.Controls.setup()`, `Game.Furniture.setup()` + `registerExisting()`, `Game.Wrench.setup()`, `Game.Patients.setup()`, `Game.Consumables.setup()`, `Game.Inventory.setup()`, `Game.Shop.setup()`, `Game.Ads.setup()`, `Game.Shelves.setup()`, `Game.ToolPanel.setup()`, `Game.Diagnostics.setup()`, `Game.Cashier.setup()`, `Game.Shift.setup()`, `Game.Tutorial.setup()`. Экспортирует `Game.Outline`, `Game.FPS`. Настраивает Quality Settings и FPS counter. Запускает animation loop с 60fps лимитом.
 
 ## Global State
 
@@ -186,7 +185,7 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 | `chair-count` | span | Счётчик свободных стульев "(X/3)" внутри btn-wait |
 | `popup-instrument-hint` | div | Подсказка инструмента в попапе (при needsDiagnosis) |
 | `outdoor-warning` | div | Предупреждение о мебели на улице (в попапе пациента) |
-| `dirty-linen-warning` | div | Предупреждение о грязном белье на кроватях (в попапе пациента) |
+| `broken-bed-warning` | div | Предупреждение о сломанных кроватях (в попапе пациента) |
 | `shop-popup` | div | Попап магазина (табы: препараты + инструменты + мебель) |
 | `shop-tabs` | div | Контейнер табов магазина |
 | `shop-tab-consumables` | div | Секция препаратов |
@@ -253,7 +252,7 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 - Для каждого зарегистрированного модуля вызывает `getMeshesFn()`, рейкастит, находит ближайший хит
 - **Кеширование хитов**: результаты `intersectObjects` сохраняются в `hitResults[name]`. Модули используют `Game.Interaction.getHits(name)` вместо собственных рейкастов
 - Модуль с ближайшим объектом побеждает → `Game.Interaction.isActive(name)` возвращает `true`
-- **Приоритет furniture**: модуль `'furniture'` имеет пониженный приоритет. Если furniture победил по дистанции, но другой модуль тоже имеет хит — побеждает другой модуль. Это позволяет использовать объекты (кассу, стиралку, стеллажи), зарегистрированные одновременно как мебель и как свой модуль
+- **Приоритет furniture**: модуль `'furniture'` имеет пониженный приоритет. Если furniture победил по дистанции, но другой модуль тоже имеет хит — побеждает другой модуль. Это позволяет использовать объекты (кассу, стеллажи), зарегистрированные одновременно как мебель и как свой модуль
 - **Гистерезис**: при потере хита активный модуль удерживается ещё 4 кадра (`HOLD_MIN=4`) для предотвращения мерцания подсказок. Дополнительно: переключение с специализированного модуля на furniture тоже удерживается 4 кадра (предотвращает мерцание на границе maxDist)
 - **Центральный сброс подсказки**: когда ни один модуль не активен, `Game.Interaction.update()` скрывает `#interact-hint`. Модули НЕ должны скрывать подсказку в своих early-return при `!isActive('myName')` — это вызывает мерцание из-за throttled-обновлений
 - Каждый модуль проверяет `Game.Interaction.isActive('myName')` перед подсветкой/хинтом
@@ -262,7 +261,6 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 | name | Модуль | recursive | maxDist |
 |------|--------|-----------|---------|
 | `'patients'` | Пациенты (отфильтрованные по state/animating) | true | 5 |
-| `'washingMachine'` | Стиральная машина | true | 5 |
 | `'furniture'` | Мебель (кроме carriedFurniture) | true | 5 |
 | `'boxes'` | Коробки (grounded, !pickedUp) | true | 5 |
 | `'consumables'` | Расходники на земле (grounded, !pickedUp) | true | 5 |
@@ -271,7 +269,6 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 | `'shelvesPlace'` | Структура стеллажей (для размещения) | false | 5 |
 | `'toolPanelItems'` | Инструменты на панели | false | 5 |
 | `'toolPanelPlace'` | Структура панели (для размещения) | false | 5 |
-| `'staff'` | Корзины с бельём | true | 5 |
 | `'trash'` | Мусор | true | 5 |
 | `'shift'` | Табличка смены | false | 5 |
 
@@ -346,7 +343,6 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 - `hasBoxInteraction()` → boolean — наведён на коробку
 - `isHoldingBox()` → boolean — держит коробку в руках
 - `isInstrument(type)` → boolean — тип начинается с `instrument_`
-- `isLinen(type)` → boolean — тип `linen_clean` или `linen_dirty`
 - `spawnInstrumentInDeliveryZone(type)` — спавн инструмента в зоне доставки
 - `spawnAtPosition(type, position)` — спавн расходника в конкретной позиции
 - `TYPES` — объект с описанием типов расходников
@@ -388,23 +384,23 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 - `getAllBeds()` / `getAllChairs()` → slot[] — все слоты (для подсчёта maxQueue)
 - `getOutdoorBedCount()` / `getOutdoorChairCount()` → number — количество outdoor мебели
 - `isBedSlot(slot)` → boolean — проверка: слот принадлежит кровати
-- `markBedDirty(slot)` — пометить кровать как грязную (создать overlay)
-- `markBedClean(slot)` — пометить кровать как чистую (удалить overlay)
-- `isBedDirty(slot)` → boolean — грязная ли кровать
-- `getDirtyBedCount()` → number — количество грязных indoor кроватей
-- `tryLinenReplace()` → boolean — попытка замены белья (вызывается при ЛКМ)
+- `decrementBedHp(slot)` — уменьшить HP кровати на 1 (вызывается при выписке/уходе пациента); обновляет визуал износа и HP-бар
+- `repairBed(slot)` — восстановить HP кровати до `BED_MAX_HP` (вызывается при завершении hold-E ремонта); обновляет визуал и HP-бар
+- `isBedBroken(slot)` → boolean — HP кровати <= 0
+- `getBedHp(slot)` → number — текущее HP кровати (0..BED_MAX_HP)
+- `getBrokenBedCount()` → number — количество сломанных indoor кроватей
+- `getBrokenBeds()` → slot[] — список сломанных indoor кроватей
+- HP-бар над кроватью автоматически показывается/скрывается в `update(delta)` по условию `Game.Wrench.isEquipped() && controls.isLocked && !carried`
 - `hasInteraction()` → boolean — наведён на мебель
 - `isCarrying()` → boolean — переносит мебель
+- `BED_MAX_HP` — константа: максимальное HP кровати (10)
 - `TYPES` — описание типов мебели `{ bed: {name, price, slotOffset}, chair: {...} }`
 
-### `Game.WashingMachine` (`js/washing-machine.js`)
-Стиральная машина: загрузка грязного белья, стирка, выдача чистого в корзину.
-- `setup(THREE, scene, camera, controls, collidables)` — инициализация, создание 3D модели, raycaster, event listeners
-- `update(delta)` — interaction raycast, обновление таймера стирки, анимация барабана
-- `hasInteraction()` → boolean — наведён на машину
-- `isWashing()` → boolean — идёт стирка
-- `getLoadedCount()` → number — количество загруженного грязного белья
-- По завершении стирки чистое бельё добавляется в корзину "ЧИСТОЕ" через `Game.Staff.addToBasket()`
+### `Game.Wrench` (`js/wrench.js`)
+Ремонтный ключ: клавиша **R** включает/выключает инструмент в руке. Первое-лицевая модель (рукоять + головка) крепится к камере в правом-нижнем углу экрана. Когда ключ экипирован и прицел наведён на кровать — в подсказке показывается HP кровати. Нажатие **E** (зажатие 3 сек) запускает прогресс-бар ремонта; по завершении `Game.Furniture.repairBed()` восстанавливает HP до 10.
+- `setup(THREE, scene, camera, controls)` — создание модели, keydown-обработчик R
+- `isEquipped()` → boolean — ключ в руке
+- `setEquipped(val)` — программное переключение
 
 ### `Game.Shelves` (`js/shelves.js`)
 - `setup(THREE, scene, camera, controls, collidables)` — создание стеллажей
@@ -435,10 +431,10 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 - `update(delta)` — обновление (мини-игра использует свой RAF loop)
 
 ### `Game.Staff` (`js/staff.js`)
-Система найма сотрудников: NPC-помощники, корзины для белья, зарплата.
-- `setup(THREE, scene, camera, controls, collidables)` — инициализация, создание корзин
-- `update(delta)` — обновление всех сотрудников, прогресс-бары, корзины
-- `hire(type)` — нанять (max 1 на тип)
+Система найма сотрудников: NPC-помощники, зарплата.
+- `setup(THREE, scene, camera, controls, collidables)` — инициализация
+- `update(delta)` — обновление всех сотрудников, прогресс-бары
+- `hire(type)` — нанять (max 1 на тип). Типы: `administrator`, `cashier`, `diagnostician`, `nurse`
 - `fire(staffId)` — уволить (выплата зарплаты за день)
 - `getHiredStaff()` → массив нанятых
 - `getDailySalary()` → число (сумма зарплат)
@@ -446,7 +442,6 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 - `isTypeHired(type)` → boolean
 - `isPatientBeingDiagnosed(patient)` → boolean
 - `isPatientBeingTreated(patient)` → boolean
-- `hasBasketInteraction()` → boolean
 
 ### `Game.Trash` (`js/trash.js`)
 Система мусора: спавн внутри больницы, 3D-модели, партиклы вони, мухи, уборка.
@@ -455,8 +450,8 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 - `hasInteraction()` → boolean — курсор на мусоре
 - `getTrashItems()` → массив мешей мусора
 - `getCount()` → число мусора на полу
-- `removeTrash(mesh)` → boolean — удалить конкретный мусор (для уборщика)
-- `findNearest(fromPos)` → mesh|null — ближайший мусор (для уборщика)
+- `removeTrash(mesh)` → boolean — удалить конкретный мусор
+- `findNearest(fromPos)` → mesh|null — ближайший мусор
 
 ### `Game.Shift` (`js/shift.js`)
 Система смен и дней: время, табличка Open/Closed, задачи с маскотом, попап итогов дня.

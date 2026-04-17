@@ -174,124 +174,9 @@
       position: 'left',
       spotlight: '#cashier-popup'
     },
-    // 13: Dirty bed notice
+    // 13: Done!
     {
       text: Game.Lang.t('tutorial.step13'),
-      trigger: 'next_button',
-      allowed: [],
-      pauseTime: true,
-      position: 'center'
-    },
-    // 14: Open shop to buy linen
-    {
-      text: Game.Lang.t('tutorial.step14'),
-      trigger: 'shop_opened',
-      allowed: ['movement', 'camera', 'shop_open'],
-      pauseTime: true,
-      position: 'center',
-      needsPointerLock: true
-    },
-    // 15: Buy linen (shop visible)
-    {
-      text: '', // filled in onEnter
-      trigger: 'shop_item_bought',
-      allowed: ['shop_buy', 'shop_close'],
-      pauseTime: true,
-      position: 'left',
-      spotlight: '#shop-tab-consumables',
-      onEnter: function() {
-        textEl.innerHTML = Game.Lang.t('tutorial.step15html', [Game.Lang.t('item.linen_clean')]);
-        lockShopBuyButtonsExcept('linen_clean');
-      },
-      onExit: function() {
-        unlockShopBuyButtons();
-      }
-    },
-    // 16: Close shop
-    {
-      text: Game.Lang.t('tutorial.step16'),
-      trigger: 'shop_closed',
-      allowed: ['shop_close'],
-      pauseTime: true,
-      position: 'left',
-      spotlight: '#shop-popup',
-      onEnter: function() {
-        lockShopBuyButtons();
-      },
-      onExit: function() {
-        unlockShopBuyButtons();
-      }
-    },
-    // 17: Pick up linen from box
-    {
-      text: Game.Lang.t('tutorial.step17'),
-      trigger: 'item_picked_up',
-      allowed: ['movement', 'camera', 'pickup_item'],
-      pauseTime: true,
-      position: 'top-right',
-      needsPointerLock: true,
-      arrow3D: { x: -10.5, y: 0.5, z: -10.3 }
-    },
-    // 18: Replace linen on dirty bed
-    {
-      text: Game.Lang.t('tutorial.step18'),
-      trigger: 'linen_replaced',
-      allowed: ['movement', 'camera', 'linen_replace'],
-      pauseTime: true,
-      position: 'top-right',
-      needsPointerLock: true,
-      arrowTrackBed: true // follows dirty bed
-    },
-    // 19: Washing intro
-    {
-      text: Game.Lang.t('tutorial.step19'),
-      trigger: 'next_button',
-      allowed: [],
-      pauseTime: true,
-      position: 'center'
-    },
-    // 20: Load dirty linen into washing machine
-    {
-      text: Game.Lang.t('tutorial.step20'),
-      trigger: 'linen_loaded',
-      allowed: ['movement', 'camera', 'washing_machine'],
-      pauseTime: true,
-      position: 'top-right',
-      needsPointerLock: true,
-      arrow3D: { x: 5.5, y: 0.8, z: -10.5 }
-    },
-    // 21: Start wash (press E)
-    {
-      text: Game.Lang.t('tutorial.step21'),
-      trigger: 'wash_started',
-      allowed: ['movement', 'camera', 'washing_machine'],
-      pauseTime: true,
-      position: 'top-right',
-      needsPointerLock: true,
-      arrow3D: { x: 5.5, y: 0.8, z: -10.5 }
-    },
-    // 22: Wait for wash to finish
-    {
-      text: Game.Lang.t('tutorial.step22'),
-      trigger: 'wash_finished',
-      allowed: ['movement', 'camera'],
-      pauseTime: false, // time must pass for wash cycle
-      position: 'top-right',
-      arrow3D: { x: 5.5, y: 0.8, z: -10.5 }
-    },
-    // 23: Pick up clean linen
-    {
-      text: Game.Lang.t('tutorial.step23'),
-      trigger: 'item_picked_up',
-      allowed: ['movement', 'camera', 'pickup_item'],
-      pauseTime: true,
-      position: 'top-right',
-      needsPointerLock: true,
-      arrow3D: { x: 4.2, y: 0.5, z: -10.5 }
-    },
-    // 24: Done!
-    {
-      text: Game.Lang.t('tutorial.step24'),
       trigger: 'next_button',
       allowed: [],
       pauseTime: true,
@@ -321,24 +206,6 @@
     var c = info.color;
     var r = (c >> 16) & 255, g = (c >> 8) & 255, b = c & 255;
     return 'rgb(' + r + ',' + g + ',' + b + ')';
-  }
-
-  function getDirtyBedPos() {
-    // Check tutorial patient's bed first
-    if (tutorialPatient && tutorialPatient.destination) {
-      var slot = tutorialPatient.destination;
-      if (Game.Furniture && Game.Furniture.isBedDirty && Game.Furniture.isBedDirty(slot)) {
-        return slot.pos;
-      }
-    }
-    // Search all dirty beds
-    if (Game.Furniture && Game.Furniture.getIndoorBeds) {
-      var beds = Game.Furniture.getIndoorBeds();
-      for (var i = 0; i < beds.length; i++) {
-        if (Game.Furniture.isBedDirty(beds[i])) return beds[i].pos;
-      }
-    }
-    return null;
   }
 
   function lockPopupButtons() {
@@ -502,11 +369,6 @@
     } else if (s.arrowTrackPatient && tutorialPatient && tutorialPatient.mesh) {
       var oY = s.arrowOffsetY || 1.0;
       showArrowAt(tutorialPatient.mesh.position, oY);
-    } else if (s.arrowTrackBed) {
-      var bedPos = getDirtyBedPos();
-      if (bedPos) {
-        showArrowAt(bedPos, 1.2);
-      }
     } else {
       hideArrow();
     }
@@ -688,31 +550,15 @@
 
       // Validate correct item bought in shop
       if (s.trigger === 'shop_item_bought' && eventName === 'shop_item_bought') {
-        // Step 6: require the medication type
-        // Step 15: require linen_clean
         var requiredType = getRequiredConsumableType();
-        // Detect if this is the linen step by checking step index
-        if (step === 15) {
-          // Linen step
-          if (data === 'linen_clean') {
-            goToStep(step + 1);
-          }
-        } else {
-          if (data === requiredType) {
-            goToStep(step + 1);
-          }
+        if (data === requiredType) {
+          goToStep(step + 1);
         }
         return;
       }
 
       // Item picked up from box
       if (s.trigger === 'item_picked_up' && eventName === 'item_picked_up') {
-        goToStep(step + 1);
-        return;
-      }
-
-      // Linen replaced
-      if (s.trigger === 'linen_replaced' && eventName === 'linen_replaced') {
         goToStep(step + 1);
         return;
       }
@@ -740,15 +586,6 @@
         arrowTarget = { x: tutorialPatient.mesh.position.x, y: tutorialPatient.mesh.position.y, z: tutorialPatient.mesh.position.z, _offsetY: oY };
         arrowGroup.position.x = arrowTarget.x;
         arrowGroup.position.z = arrowTarget.z;
-      }
-
-      if (s.arrowTrackBed && arrowGroup && arrowGroup.visible) {
-        var bedPos = getDirtyBedPos();
-        if (bedPos) {
-          arrowTarget = { x: bedPos.x, y: bedPos.y, z: bedPos.z, _offsetY: 1.2 };
-          arrowGroup.position.x = bedPos.x;
-          arrowGroup.position.z = bedPos.z;
-        }
       }
 
       updateArrowAnimation(delta);

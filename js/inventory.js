@@ -218,43 +218,6 @@
       ctx.fillStyle = 'rgba(255,255,200,0.2)';
       ctx.fill();
 
-    } else if (type === 'linen_clean') {
-      // Folded clean bedsheet — light blue rectangle with fold lines
-      ctx.fillStyle = '#dde4f0';
-      ctx.beginPath();
-      ctx.roundRect(16, 28, 96, 72, 8);
-      ctx.fill();
-      ctx.strokeStyle = '#b8c4d8';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      // Fold lines
-      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(24, 52); ctx.lineTo(104, 52); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(24, 76); ctx.lineTo(104, 76); ctx.stroke();
-      // Accent stripe
-      ctx.fillStyle = '#99aacc';
-      ctx.fillRect(24, 32, 80, 10);
-
-    } else if (type === 'linen_dirty') {
-      // Folded dirty bedsheet — brownish with stain spots
-      ctx.fillStyle = '#998870';
-      ctx.beginPath();
-      ctx.roundRect(16, 28, 96, 72, 8);
-      ctx.fill();
-      ctx.strokeStyle = '#7a7060';
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      // Fold lines
-      ctx.strokeStyle = 'rgba(0,0,0,0.15)';
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(24, 52); ctx.lineTo(104, 52); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(24, 76); ctx.lineTo(104, 76); ctx.stroke();
-      // Stain spots
-      ctx.fillStyle = 'rgba(100, 80, 50, 0.5)';
-      ctx.beginPath(); ctx.arc(45, 45, 10, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(80, 70, 8, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(60, 85, 6, 0, Math.PI * 2); ctx.fill();
     }
 
     var url = c.toDataURL();
@@ -306,6 +269,11 @@
     hintShopEl.className = 'inv-hint';
     hintShopEl.textContent = Game.Lang.t('inv.shop');
     hintsEl.appendChild(hintShopEl);
+
+    var hintWrenchEl = document.createElement('span');
+    hintWrenchEl.className = 'inv-hint';
+    hintWrenchEl.textContent = Game.Lang.t('inv.wrench');
+    hintsEl.appendChild(hintWrenchEl);
 
     hintDropEl = document.createElement('span');
     hintDropEl.className = 'inv-hint';

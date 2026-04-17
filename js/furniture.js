@@ -11,12 +11,13 @@
   var carriedBoxY = 0.5; // original Y of carried collision box
   var hoveredFurniture = null;
 
+  // --- Bed HP constants ---
+  var BED_MAX_HP = 10;
+  var REPAIR_HOLD_DURATION = 3000; // ms — hold-E to fully repair a bed
+
   var FURNITURE_TYPES = {
     bed:            { name: Game.Lang.t('furniture.bed'),              price: 360, slotOffset: { x: 1, z: 0 }, boxSize: { x: 2.1, y: 1.0, z: 1.0 } },
     chair:          { name: Game.Lang.t('furniture.chair'),            price: 140, slotOffset: { x: -1, z: 0 }, boxSize: { x: 0.6, y: 1.0, z: 0.6 } },
-    washingMachine: { name: Game.Lang.t('furniture.washingMachine'),   boxSize: { x: 1.0, y: 1.1, z: 0.8 } },
-    basketClean:    { name: Game.Lang.t('furniture.basketClean'),      boxSize: { x: 0.8, y: 0.6, z: 0.6 } },
-    basketDirty:    { name: Game.Lang.t('furniture.basketDirty'),      boxSize: { x: 0.8, y: 0.6, z: 0.6 } },
     shelf:          { name: Game.Lang.t('furniture.shelf'),            boxSize: { x: 1.3, y: 1.5, z: 0.5 } },
     toolPanel:      { name: Game.Lang.t('furniture.toolPanel'),        boxSize: { x: 1.1, y: 1.3, z: 0.3 } },
     cashierDesk:    { name: Game.Lang.t('furniture.cashierDesk'),      boxSize: { x: 0.9, y: 0.8, z: 0.7 } }
@@ -27,10 +28,12 @@
   var DELIVERY_ZONE = { cx: -10.5, cz: -10.3, hw: 1.5, hd: 1.0 };
 
   // Hold-E state
-  var HOLD_DURATION = 600; // ms
+  var HOLD_DURATION = 600; // ms — default for furniture pick-up
   var eKeyHeld = false;
   var eHoldStartTime = 0;
   var eHoldTarget = null;
+  var eHoldMode = null; // 'pickup' | 'repair'
+  var eHoldDuration = HOLD_DURATION;
   var holdProgressEl = null;
   var HOLD_CIRCUMFERENCE = 100.53; // 2 * PI * 16
   var eWaitForRelease = false; // block E until key is physically released
@@ -64,7 +67,7 @@
     scene.add(box);
     collidables.push(box);
 
-    return { group: g, collisionBox: box };
+    return { group: g, collisionBox: box, frame: frame, rail: rail, frameMat: bedFrameMat };
   }
 
   function createChairMesh(x, z, rotY) {
@@ -140,31 +143,212 @@
     Game.Outline.clearHover();
   }
 
-  // --- Dirty bed overlay ---
+  // --- Bed HP visuals ---
 
-  function createDirtyOverlay(item) {
-    var overlayMat = new THREE.MeshLambertMaterial({
-      color: 0xaa8844, transparent: true, opacity: 0.5
-    });
-    var overlay = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.02, 0.8), overlayMat);
-    overlay.position.y = 0.63;
-    item.group.add(overlay);
-    item.dirtyOverlay = overlay;
+  function clearBedVisualExtras(item) {
+    if (item.cracks) {
+      for (var i = 0; i < item.cracks.length; i++) {
+        item.group.remove(item.cracks[i]);
+        item.cracks[i].geometry.dispose();
+        item.cracks[i].material.dispose();
+      }
+      item.cracks = null;
+    }
+    if (item.brokenDebris) {
+      for (var j = 0; j < item.brokenDebris.length; j++) {
+        item.group.remove(item.brokenDebris[j]);
+        item.brokenDebris[j].geometry.dispose();
+        item.brokenDebris[j].material.dispose();
+      }
+      item.brokenDebris = null;
+    }
   }
 
-  function setDirty(item, dirty) {
-    if (dirty) {
-      item.isDirty = true;
-      if (!item.dirtyOverlay) createDirtyOverlay(item);
-    } else {
-      item.isDirty = false;
-      if (item.dirtyOverlay) {
-        item.group.remove(item.dirtyOverlay);
-        item.dirtyOverlay.geometry.dispose();
-        item.dirtyOverlay.material.dispose();
-        item.dirtyOverlay = null;
-      }
+  function addCracks(item) {
+    // Dark, clearly visible cracks on the VERTICAL faces of the bed frame.
+    // Frame is BoxGeometry(2.0, 0.5, 0.9) centered at y=0.25, so its faces are at:
+    //   front: z = +0.45, back: z = -0.45, left: x = -1.0, right: x = +1.0
+    // y range of frame = 0..0.5
+    var crackMat = new THREE.MeshLambertMaterial({ color: 0x101010 });
+    var patchMat = new THREE.MeshLambertMaterial({ color: 0x3a2a22 }); // rust/grime patch
+    item.cracks = [];
+
+    // Helper to add a crack mesh
+    function addMesh(geo, px, py, pz, rx, ry, rz, mat) {
+      var m = new THREE.Mesh(geo, mat || crackMat);
+      m.position.set(px, py, pz);
+      m.rotation.set(rx || 0, ry || 0, rz || 0);
+      item.group.add(m);
+      item.cracks.push(m);
     }
+
+    // FRONT face (z = +0.45) — 3 angled cracks, slightly in front to avoid z-fight
+    var fz = 0.455;
+    addMesh(new THREE.BoxGeometry(0.9, 0.04, 0.008), -0.35, 0.32, fz, 0, 0,  0.35);
+    addMesh(new THREE.BoxGeometry(0.7, 0.035, 0.008),  0.45, 0.18, fz, 0, 0, -0.28);
+    addMesh(new THREE.BoxGeometry(0.5, 0.03, 0.008),   0.75, 0.35, fz, 0, 0,  0.6);
+    // Branching cracks
+    addMesh(new THREE.BoxGeometry(0.25, 0.025, 0.008), -0.55, 0.42, fz, 0, 0, -0.9);
+    addMesh(new THREE.BoxGeometry(0.2, 0.02, 0.008),   -0.1, 0.1, fz,   0, 0, 0.7);
+
+    // BACK face (z = -0.45)
+    var bz = -0.455;
+    addMesh(new THREE.BoxGeometry(0.8, 0.035, 0.008), -0.2, 0.28, bz, 0, 0, -0.25);
+    addMesh(new THREE.BoxGeometry(0.5, 0.03, 0.008),   0.5, 0.12, bz, 0, 0,  0.4);
+
+    // LEFT end (x = -1.0)
+    addMesh(new THREE.BoxGeometry(0.008, 0.035, 0.6), -1.005, 0.3, 0.05, 0.3, 0, 0);
+    // RIGHT end (x = +1.0)
+    addMesh(new THREE.BoxGeometry(0.008, 0.035, 0.5),  1.005, 0.22, -0.1, -0.35, 0, 0);
+
+    // Dark rust/grime patches on front face (larger, for unmistakable damage)
+    addMesh(new THREE.BoxGeometry(0.25, 0.12, 0.006),  -0.2, 0.12, fz + 0.001, 0, 0, 0.2, patchMat);
+    addMesh(new THREE.BoxGeometry(0.18, 0.09, 0.006),   0.6, 0.3, fz + 0.001, 0, 0, -0.15, patchMat);
+
+    // Chipped corners — small dark cubes protruding from the top-front edge
+    addMesh(new THREE.BoxGeometry(0.12, 0.08, 0.06), -0.85, 0.48, 0.46, 0, 0, 0.4);
+    addMesh(new THREE.BoxGeometry(0.1, 0.06, 0.05),   0.9, 0.49, 0.44, 0, 0, -0.3);
+  }
+
+  function addBrokenDebris(item) {
+    var debrisMat = new THREE.MeshLambertMaterial({ color: 0x555544 });
+    item.brokenDebris = [];
+    // Rail-like piece lying on the floor beside the bed
+    var fallen = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.05, 0.12), debrisMat);
+    fallen.position.set(0.6, 0.03, 0.55);
+    fallen.rotation.y = 0.4;
+    fallen.rotation.z = 0.15;
+    item.group.add(fallen);
+    item.brokenDebris.push(fallen);
+    // Small broken chunk
+    var chunk = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.1, 0.1), debrisMat);
+    chunk.position.set(-0.3, 0.05, 0.55);
+    chunk.rotation.y = 0.9;
+    item.group.add(chunk);
+    item.brokenDebris.push(chunk);
+  }
+
+  // --- Bed HP bar (visible when wrench is equipped) ---
+
+  function createBedHpBar(item) {
+    var canvas = document.createElement('canvas');
+    canvas.width = 220; canvas.height = 28;
+    var texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    var mat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+    var sprite = new THREE.Sprite(mat);
+    sprite.scale.set(1.1, 0.14, 1);
+    sprite.visible = false;
+    scene.add(sprite);
+    item.hpBar = sprite;
+    item.hpBarCanvas = canvas;
+    item.hpBarTexture = texture;
+    item._hpBarLastHp = -1;
+    updateBedHpBarTexture(item);
+  }
+
+  function updateBedHpBarTexture(item) {
+    if (!item.hpBar) return;
+    var hp = typeof item.hp === 'number' ? item.hp : BED_MAX_HP;
+    if (hp === item._hpBarLastHp) return;
+    item._hpBarLastHp = hp;
+
+    var canvas = item.hpBarCanvas;
+    var ctx = canvas.getContext('2d');
+    var W = canvas.width, H = canvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    // Background
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.65)';
+    ctx.beginPath();
+    ctx.roundRect(0, 0, W, H, 6);
+    ctx.fill();
+
+    // 10 segments with gaps
+    var segCount = BED_MAX_HP;
+    var pad = 4;
+    var gap = 2;
+    var totalGap = gap * (segCount - 1);
+    var segW = (W - pad * 2 - totalGap) / segCount;
+    var segY = 4;
+    var segH = H - 8;
+
+    // Colour by HP ratio
+    var ratio = hp / BED_MAX_HP;
+    var fill;
+    if (hp <= 0)        fill = 'rgb(120, 30, 30)';    // broken = dark red
+    else if (hp <= 3)   fill = 'rgb(220, 60, 40)';    // critical = red
+    else if (hp <= 5)   fill = 'rgb(240, 180, 40)';   // low = yellow
+    else                fill = 'rgb(60, 200, 90)';    // ok = green
+
+    for (var i = 0; i < segCount; i++) {
+      var sx = pad + i * (segW + gap);
+      ctx.fillStyle = (i < hp) ? fill : 'rgba(255, 255, 255, 0.10)';
+      ctx.beginPath();
+      ctx.roundRect(sx, segY, segW, segH, 3);
+      ctx.fill();
+    }
+
+    item.hpBarTexture.needsUpdate = true;
+  }
+
+  function updateBedHpBarPosition(item) {
+    if (!item.hpBar || !item.group) return;
+    item.hpBar.position.set(
+      item.group.position.x,
+      1.4,
+      item.group.position.z
+    );
+  }
+
+  function applyBedVisual(item) {
+    if (item.type !== 'bed') return;
+    if (typeof item.hp !== 'number') item.hp = BED_MAX_HP;
+
+    // Reset extras; we rebuild per-state
+    clearBedVisualExtras(item);
+
+    // Reset group tilt (always baseline)
+    if (item._baseRotX === undefined) item._baseRotX = item.group.rotation.x;
+    if (item._baseRotZ === undefined) item._baseRotZ = item.group.rotation.z;
+    item.group.rotation.x = item._baseRotX;
+    item.group.rotation.z = item._baseRotZ;
+
+    // Reset frame color from cached base
+    if (item.frameMat && item._baseFrameColor === undefined) {
+      item._baseFrameColor = item.frameMat.color.getHex();
+    }
+    if (item.frameMat && item._baseFrameColor !== undefined) {
+      item.frameMat.color.setHex(item._baseFrameColor);
+    }
+
+    // Restore rail visibility
+    if (item.rail) item.rail.visible = true;
+
+    if (item.hp >= 6) {
+      // Normal — nothing else to do
+      return;
+    }
+
+    if (item.hp >= 1) {
+      // Worn — cracks + slightly darker frame
+      addCracks(item);
+      if (item.frameMat) {
+        var darker = new THREE.Color(item._baseFrameColor).multiplyScalar(0.78);
+        item.frameMat.color.copy(darker);
+      }
+      return;
+    }
+
+    // Broken (hp === 0) — frame dark, rail gone, debris, slight tilt
+    addCracks(item);
+    addBrokenDebris(item);
+    if (item.rail) item.rail.visible = false;
+    if (item.frameMat) {
+      var veryDark = new THREE.Color(item._baseFrameColor).multiplyScalar(0.55);
+      item.frameMat.color.copy(veryDark);
+    }
+    item.group.rotation.z = item._baseRotZ + 0.06; // ~3.4° tilt
   }
 
   function getBedItemBySlot(slot) {
@@ -448,10 +632,14 @@
     }
 
     if (hoveredFurniture) {
-      if (hoveredFurniture.isDirty && Game.Inventory.countType('linen_clean') > 0) {
-        hintEl.textContent = Game.Lang.t('furniture.hint.replaceLinen');
-      } else if (hoveredFurniture.isDirty) {
-        hintEl.textContent = Game.Lang.t('furniture.hint.needCleanLinen');
+      var wrenchEquipped = Game.Wrench && Game.Wrench.isEquipped && Game.Wrench.isEquipped();
+      if (hoveredFurniture.type === 'bed' && wrenchEquipped) {
+        var hp = (typeof hoveredFurniture.hp === 'number') ? hoveredFurniture.hp : BED_MAX_HP;
+        if (hp <= 0) {
+          hintEl.textContent = Game.Lang.t('wrench.hint.broken', [hp, BED_MAX_HP]);
+        } else {
+          hintEl.textContent = Game.Lang.t('wrench.hint.bedHp', [hp, BED_MAX_HP]);
+        }
       } else {
         var typeName = FURNITURE_TYPES[hoveredFurniture.type] ? FURNITURE_TYPES[hoveredFurniture.type].name : '';
         hintEl.textContent = Game.Lang.t('furniture.hint.move', [typeName.toLowerCase()]);
@@ -527,28 +715,14 @@
     carriedFurniture = null;
   }
 
-  // --- Linen replacement (LMB on dirty bed) ---
+  // --- Bed repair ---
 
-  function tryLinenReplace() {
-    if (!hoveredFurniture || !hoveredFurniture.isDirty) return false;
-    if (!Game.Inventory.findAndActivate('linen_clean')) return false;
-    if (!controls.isLocked) return false;
-    if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return false;
-    if (Game.Cashier && Game.Cashier.isPopupOpen()) return false;
-    if (Game.Diagnostics && Game.Diagnostics.isActive()) return false;
-    if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('linen_replace')) return false;
-
-    // Remove clean linen from inventory
-    Game.Inventory.removeActive();
-    // Make bed clean
-    setDirty(hoveredFurniture, false);
-    // Add dirty linen to inventory (or drop on floor)
-    if (!Game.Inventory.addItem('linen_dirty')) {
-      Game.Consumables.dropFromPlayer('linen_dirty');
-    }
-    Game.Inventory.showNotification(Game.Lang.t('notify.linenReplaced'), 'rgba(34, 139, 34, 0.85)');
-    if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('linen_replaced');
-    return true;
+  function completeBedRepair(item) {
+    if (!item || item.type !== 'bed') return;
+    item.hp = BED_MAX_HP;
+    applyBedVisual(item);
+    updateBedHpBarTexture(item);
+    Game.Inventory.showNotification(Game.Lang.t('notify.bedRepaired'), 'rgba(34, 139, 34, 0.85)');
   }
 
   // --- Hold cancel ---
@@ -556,7 +730,9 @@
   function cancelHold() {
     eKeyHeld = false;
     eHoldTarget = null;
+    eHoldMode = null;
     eHoldStartTime = 0;
+    eHoldDuration = HOLD_DURATION;
     if (holdProgressEl) {
       holdProgressEl.parentElement.style.display = 'none';
       holdProgressEl.style.strokeDashoffset = String(HOLD_CIRCUMFERENCE);
@@ -572,7 +748,6 @@
     if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
     if (Game.Cashier && Game.Cashier.isPopupOpen()) return;
     if (Game.Diagnostics && Game.Diagnostics.isActive()) return;
-    if (Game.WashingMachine && Game.WashingMachine.hasInteraction()) return;
     if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('furniture_interact')) return;
 
     if (carriedFurniture) {
@@ -583,13 +758,29 @@
     // Don't pickup if a module-specific interaction is active
     if (Game.Shelves && Game.Shelves.hasInteraction()) return;
     if (Game.ToolPanel && Game.ToolPanel.hasInteraction()) return;
-    if (Game.Staff && Game.Staff.hasBasketInteraction && Game.Staff.hasBasketInteraction()) return;
 
     if (hoveredFurniture) {
-      // Start hold
+      // Wrench + bed → repair hold
+      var wrenchEquipped = Game.Wrench && Game.Wrench.isEquipped && Game.Wrench.isEquipped();
+      if (wrenchEquipped && hoveredFurniture.type === 'bed') {
+        eKeyHeld = true;
+        eHoldStartTime = performance.now();
+        eHoldTarget = hoveredFurniture;
+        eHoldMode = 'repair';
+        eHoldDuration = REPAIR_HOLD_DURATION;
+        if (holdProgressEl) {
+          holdProgressEl.style.strokeDashoffset = String(HOLD_CIRCUMFERENCE);
+          holdProgressEl.parentElement.style.display = 'block';
+        }
+        return;
+      }
+
+      // Default: pickup hold
       eKeyHeld = true;
       eHoldStartTime = performance.now();
       eHoldTarget = hoveredFurniture;
+      eHoldMode = 'pickup';
+      eHoldDuration = HOLD_DURATION;
       if (holdProgressEl) {
         holdProgressEl.style.strokeDashoffset = String(HOLD_CIRCUMFERENCE);
         holdProgressEl.parentElement.style.display = 'block';
@@ -619,6 +810,7 @@
 
   window.Game.Furniture = {
     TYPES: FURNITURE_TYPES,
+    BED_MAX_HP: BED_MAX_HP,
     updateCarried: updateCarriedFurniture,
 
     setup: function(_THREE, _scene, _camera, _controls, _collidables) {
@@ -662,25 +854,33 @@
           type: 'bed',
           group: bm.group,
           collisionBox: bm.collisionBox,
+          frame: bm.frame || null,
+          rail: bm.rail || null,
+          frameMat: bm.frameMat || null,
           slot: { pos: new THREE.Vector3(), occupied: false },
           isIndoors: true,
-          isDirty: false,
-          dirtyOverlay: null
+          hp: BED_MAX_HP,
+          cracks: null,
+          brokenDebris: null,
+          hpBar: null
         };
         updateSlotPosition(item);
+        applyBedVisual(item);
+        createBedHpBar(item);
+        updateBedHpBarPosition(item);
         furnitureItems.push(item);
       }
-      for (var i = 0; i < chairMeshes.length; i++) {
-        var cm = chairMeshes[i];
-        var item = {
+      for (var j = 0; j < chairMeshes.length; j++) {
+        var cm = chairMeshes[j];
+        var chairItem = {
           type: 'chair',
           group: cm.group,
           collisionBox: cm.collisionBox,
           slot: { pos: new THREE.Vector3(), occupied: false },
           isIndoors: true
         };
-        updateSlotPosition(item);
-        furnitureItems.push(item);
+        updateSlotPosition(chairItem);
+        furnitureItems.push(chairItem);
       }
     },
 
@@ -714,12 +914,22 @@
         type: type,
         group: meshData.group,
         collisionBox: meshData.collisionBox,
+        frame: meshData.frame || null,
+        rail: meshData.rail || null,
+        frameMat: meshData.frameMat || null,
         slot: { pos: new THREE.Vector3(), occupied: false },
         isIndoors: false,
-        isDirty: false,
-        dirtyOverlay: null
+        hp: type === 'bed' ? BED_MAX_HP : undefined,
+        cracks: null,
+        brokenDebris: null,
+        hpBar: null
       };
       updateSlotPosition(item);
+      if (type === 'bed') {
+        applyBedVisual(item);
+        createBedHpBar(item);
+        updateBedHpBarPosition(item);
+      }
       furnitureItems.push(item);
     },
 
@@ -731,20 +941,38 @@
             Game.Patients.isPopupOpen() || Game.Shop.isOpen()) {
           cancelHold();
         } else {
-          var progress = Math.min((performance.now() - eHoldStartTime) / HOLD_DURATION, 1.0);
+          var progress = Math.min((performance.now() - eHoldStartTime) / eHoldDuration, 1.0);
           if (holdProgressEl) {
             holdProgressEl.style.strokeDashoffset = String(HOLD_CIRCUMFERENCE * (1 - progress));
           }
           if (progress >= 1.0) {
             var target = eHoldTarget;
+            var mode = eHoldMode;
             cancelHold();
             eWaitForRelease = true;
-            pickUpFurniture(target);
+            if (mode === 'repair') {
+              completeBedRepair(target);
+            } else {
+              pickUpFurniture(target);
+            }
           }
         }
       }
 
       updateFurnitureInteraction();
+
+      // Bed HP bars: visible only when wrench is equipped and controls are locked
+      var wrenchOn = !!(Game.Wrench && Game.Wrench.isEquipped && Game.Wrench.isEquipped()) && controls.isLocked;
+      for (var bi = 0; bi < furnitureItems.length; bi++) {
+        var it = furnitureItems[bi];
+        if (it.type !== 'bed' || !it.hpBar) continue;
+        if (wrenchOn && it.isIndoors && it !== carriedFurniture) {
+          updateBedHpBarPosition(it);
+          it.hpBar.visible = true;
+        } else {
+          it.hpBar.visible = false;
+        }
+      }
 
       // Show carry hint
       if (carriedFurniture && controls.isLocked) {
@@ -816,39 +1044,54 @@
     hasInteraction: function() { return !!hoveredFurniture; },
     isCarrying: function() { return !!carriedFurniture; },
 
-    markBedDirty: function(slot) {
+    // --- Bed HP API ---
+
+    decrementBedHp: function(slot) {
       var item = getBedItemBySlot(slot);
-      if (item) setDirty(item, true);
+      if (!item) return;
+      item.hp = Math.max(0, (typeof item.hp === 'number' ? item.hp : BED_MAX_HP) - 1);
+      applyBedVisual(item);
+      updateBedHpBarTexture(item);
     },
 
-    markBedClean: function(slot) {
+    repairBed: function(slot) {
       var item = getBedItemBySlot(slot);
-      if (item) setDirty(item, false);
+      if (!item) return;
+      item.hp = BED_MAX_HP;
+      applyBedVisual(item);
+      updateBedHpBarTexture(item);
     },
 
-    isBedDirty: function(slot) {
+    isBedBroken: function(slot) {
       var item = getBedItemBySlot(slot);
-      return item ? item.isDirty : false;
+      if (!item) return false;
+      return (typeof item.hp === 'number' ? item.hp : BED_MAX_HP) <= 0;
     },
 
-    getDirtyBeds: function() {
-      var result = [];
-      for (var i = 0; i < furnitureItems.length; i++) {
-        if (furnitureItems[i].type === 'bed' && furnitureItems[i].isIndoors && furnitureItems[i].isDirty) {
-          result.push(furnitureItems[i].slot);
-        }
-      }
-      return result;
+    getBedHp: function(slot) {
+      var item = getBedItemBySlot(slot);
+      if (!item) return BED_MAX_HP;
+      return typeof item.hp === 'number' ? item.hp : BED_MAX_HP;
     },
 
-    getDirtyBedCount: function() {
+    getBrokenBedCount: function() {
       var count = 0;
       for (var i = 0; i < furnitureItems.length; i++) {
-        if (furnitureItems[i].type === 'bed' && furnitureItems[i].isIndoors && furnitureItems[i].isDirty) count++;
+        var it = furnitureItems[i];
+        if (it.type === 'bed' && it.isIndoors && typeof it.hp === 'number' && it.hp <= 0) count++;
       }
       return count;
     },
 
-    tryLinenReplace: function() { return tryLinenReplace(); }
+    getBrokenBeds: function() {
+      var result = [];
+      for (var i = 0; i < furnitureItems.length; i++) {
+        var it = furnitureItems[i];
+        if (it.type === 'bed' && it.isIndoors && typeof it.hp === 'number' && it.hp <= 0) {
+          result.push(it.slot);
+        }
+      }
+      return result;
+    }
   };
 })();

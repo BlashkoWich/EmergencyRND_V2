@@ -4,9 +4,7 @@
   var CONSUMABLE_TYPES = {
     strepsils:     { name: Game.Lang.t('item.strepsils'),        color: 0xcc3333, size: { x: 0.15, y: 0.08, z: 0.10 } },
     painkiller:    { name: Game.Lang.t('item.painkiller'),    color: 0x3366cc, size: { x: 0.18, y: 0.06, z: 0.12 } },
-    antihistamine: { name: Game.Lang.t('item.antihistamine'),   color: 0x33aa55, size: { x: 0.14, y: 0.07, z: 0.10 } },
-    linen_clean:   { name: Game.Lang.t('item.linen_clean'),  color: 0xeeeeff, size: { x: 0.20, y: 0.10, z: 0.15 } },
-    linen_dirty:   { name: Game.Lang.t('item.linen_dirty'),     color: 0x887766, size: { x: 0.20, y: 0.10, z: 0.15 } }
+    antihistamine: { name: Game.Lang.t('item.antihistamine'),   color: 0x33aa55, size: { x: 0.14, y: 0.07, z: 0.10 } }
   };
 
   var INSTRUMENT_TYPES = {
@@ -17,10 +15,6 @@
 
   function isInstrument(type) {
     return type && type.indexOf('instrument_') === 0;
-  }
-
-  function isLinen(type) {
-    return type === 'linen_clean' || type === 'linen_dirty';
   }
 
   var GRAVITY = -9.8;
@@ -291,37 +285,6 @@
       crossV.position.set(0, 0, 0.026);
       group.add(crossV);
 
-    } else if (type === 'linen_clean') {
-      // Folded clean bedsheet — light blue/white stack
-      var sheetMat = new THREE.MeshLambertMaterial({ color: 0xdde4f0 });
-      var sheet = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.08, 0.15), sheetMat);
-      sheet.castShadow = true;
-      group.add(sheet);
-      // Fold line
-      var foldMat = new THREE.MeshLambertMaterial({ color: 0xc8d0e0 });
-      var fold = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.005, 0.002), foldMat);
-      fold.position.set(0, 0.043, 0);
-      group.add(fold);
-      // Top accent stripe
-      var stripeMat = new THREE.MeshLambertMaterial({ color: 0x99aacc });
-      var stripe = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.003, 0.04), stripeMat);
-      stripe.position.set(0, 0.042, 0.03);
-      group.add(stripe);
-
-    } else if (type === 'linen_dirty') {
-      // Folded dirty bedsheet — brownish/yellow tint
-      var dirtyMat = new THREE.MeshLambertMaterial({ color: 0x998870 });
-      var dirtySheet = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.08, 0.15), dirtyMat);
-      dirtySheet.castShadow = true;
-      group.add(dirtySheet);
-      // Stain spots
-      var stainMat = new THREE.MeshLambertMaterial({ color: 0x776650 });
-      var stain1 = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.003, 0.03), stainMat);
-      stain1.position.set(-0.04, 0.042, 0.02);
-      group.add(stain1);
-      var stain2 = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.003, 0.04), stainMat);
-      stain2.position.set(0.05, 0.042, -0.03);
-      group.add(stain2);
     }
 
     group.userData.consumableType = type;
@@ -495,16 +458,6 @@
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(236, 34, 40, 12);
       ctx.fillRect(250, 28, 12, 64);
-    } else if (type === 'linen_clean') {
-      // Folded sheet icon
-      ctx.fillStyle = '#dde4f0';
-      ctx.beginPath();
-      ctx.roundRect(186, 24, 140, 72, 8);
-      ctx.fill();
-      ctx.strokeStyle = '#99aacc';
-      ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.moveTo(196, 48); ctx.lineTo(316, 48); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(196, 72); ctx.lineTo(316, 72); ctx.stroke();
     }
 
     // Drug name (large, bold)
@@ -530,7 +483,7 @@
     // Subtitle
     ctx.fillStyle = '#777';
     ctx.font = '32px Segoe UI, Arial, sans-serif';
-    ctx.fillText(isLinen(type) ? Game.Lang.t('box.label.consumables') : Game.Lang.t('box.label.medications'), 256, 410);
+    ctx.fillText(Game.Lang.t('box.label.medications'), 256, 410);
 
     var tex = new THREE.CanvasTexture(canvas);
 
@@ -904,7 +857,6 @@
     hasBoxInteraction: function() { return !!hoveredBox; },
     isHoldingBox: function() { return !!heldBox; },
     isInstrument: function(type) { return isInstrument(type); },
-    isLinen: function(type) { return isLinen(type); },
 
     createMesh: function(type) { return isInstrument(type) ? createInstrumentMesh(type) : createConsumableMesh(type); },
 
@@ -1019,8 +971,6 @@
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
         if (Game.Diagnostics && Game.Diagnostics.isActive()) return;
         if (Game.Patients.hasInteraction()) return;
-        if (Game.WashingMachine && Game.WashingMachine.hasInteraction()) return;
-        if (Game.Furniture && Game.Furniture.tryLinenReplace()) return;
         var tutorialActive = Game.Tutorial && Game.Tutorial.isActive();
         var pickupAllowed = !tutorialActive || Game.Tutorial.isAllowed('pickup_item');
 
@@ -1102,7 +1052,6 @@
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
         if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('pickup_box')) return;
         if (Game.Furniture && (Game.Furniture.isCarrying() || Game.Furniture.hasInteraction())) return;
-        if (Game.WashingMachine && Game.WashingMachine.hasInteraction()) return;
         if (heldBox) return;
         if (!hoveredBox) return;
 

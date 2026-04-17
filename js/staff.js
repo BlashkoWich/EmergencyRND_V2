@@ -10,8 +10,7 @@
     administrator: { name: Game.Lang.t('staff.administrator'), salary: 100, color: 0x2266aa, hatColor: 0x1a4a88 },
     cashier:       { name: Game.Lang.t('staff.cashier'),       salary: 100, color: 0x22aa66, hatColor: 0x188844 },
     diagnostician: { name: Game.Lang.t('staff.diagnostician'), salary: 100, color: 0x8844cc, hatColor: 0x6633aa },
-    nurse:         { name: Game.Lang.t('staff.nurse'),         salary: 100, color: 0xcc4488, hatColor: 0xaa3366 },
-    janitor:       { name: Game.Lang.t('staff.janitor'),       salary: 100, color: 0x888844, hatColor: 0x666633 }
+    nurse:         { name: Game.Lang.t('staff.nurse'),         salary: 100, color: 0xcc4488, hatColor: 0xaa3366 }
   };
 
   var STAFF_SPEED = 3.5;
@@ -24,21 +23,12 @@
     administrator: { x: 0, z: -9.5, rotY: Math.PI },
     cashier:       { x: 3.5, z: -10.0, rotY: 0 },
     diagnostician: { x: -5.0, z: -11.0, rotY: 0 },
-    nurse:         { x: -4.0, z: -11.0, rotY: 0 },
-    janitor:       { x: 6.0, z: -10.0, rotY: 0 }
+    nurse:         { x: -4.0, z: -11.0, rotY: 0 }
   };
 
   // ====== STATE ======
   var hiredStaff = [];
   var staffIdCounter = 0;
-
-  // ====== LAUNDRY BASKETS ======
-  var baskets = {
-    clean: { type: 'linen_clean', pos: null, mesh: null, items: [], countSprite: null, collisionBox: null },
-    dirty: { type: 'linen_dirty', pos: null, mesh: null, items: [], countSprite: null, collisionBox: null }
-  };
-  var hoveredBasket = null;
-  var basketMode = null; // 'place' | 'take'
 
   // ====== 3D MODEL ======
   function createStaffMesh(type) {
@@ -147,11 +137,7 @@
     returnInstrument: Game.Lang.t('staff.status.returnInstrument'),
     pickMedicine: Game.Lang.t('staff.status.pickMedicine'),
     treating: Game.Lang.t('staff.status.treating'),
-    changingLinen: Game.Lang.t('staff.status.changingLinen'),
-    cleaningTrash: Game.Lang.t('staff.status.cleaningTrash'),
-    depositDirty: Game.Lang.t('staff.status.depositDirty'),
-    loadingMachine: Game.Lang.t('staff.status.loadingMachine'),
-    collectClean: Game.Lang.t('staff.status.collectClean')
+    cleaningTrash: Game.Lang.t('staff.status.cleaningTrash')
   };
 
   function createProgressBar(staff) {
@@ -353,11 +339,7 @@
       heldItem: null,
       heldItemMesh: null,
       walkPhase: 0,
-      walkBlend: 0,
-      // Janitor specific
-      dirtyLinenCollected: 0,
-      dirtyBedQueue: [],
-      hasCleanLinen: false
+      walkBlend: 0
     };
     return member;
   }
@@ -370,7 +352,7 @@
     // Priority 1: Free clean indoor bed → patient with lowest HP from queued/waiting
     var indoorBeds = Game.Furniture.getIndoorBeds();
     for (var i = 0; i < indoorBeds.length; i++) {
-      if (!indoorBeds[i].occupied && !Game.Furniture.isBedDirty(indoorBeds[i])) {
+      if (!indoorBeds[i].occupied && !Game.Furniture.isBedBroken(indoorBeds[i])) {
         return indoorBeds[i];
       }
     }
@@ -397,7 +379,7 @@
       var indoorBeds = Game.Furniture.getIndoorBeds();
       var freeBed = null;
       for (var i = 0; i < indoorBeds.length; i++) {
-        if (!indoorBeds[i].occupied && !Game.Furniture.isBedDirty(indoorBeds[i])) {
+        if (!indoorBeds[i].occupied && !Game.Furniture.isBedBroken(indoorBeds[i])) {
           freeBed = indoorBeds[i]; break;
         }
       }
@@ -478,7 +460,7 @@
       if (staff.stateTimer <= 0) {
         // Re-check destination (could have been taken while processing)
         var dest = staff._pendingDest;
-        if (dest.occupied || (Game.Furniture.isBedSlot(dest) && Game.Furniture.isBedDirty(dest))) {
+        if (dest.occupied || (Game.Furniture.isBedSlot(dest) && Game.Furniture.isBedBroken(dest))) {
           // Original destination taken, find another
           dest = findDestinationForPatient(staff.targetPatient, Game.Patients.getPatients());
         }
@@ -924,278 +906,6 @@
     staff.state = 'returning';
   }
 
-  // ====== JANITOR LOGIC ======
-  function updateJanitor(staff, delta) {
-    var speed = STAFF_SPEED * delta;
-
-    if (staff.state === 'idle') {
-      staff.stateTimer += delta;
-      if (staff.stateTimer < 1.5) return;
-      staff.stateTimer = 0;
-
-      // Priority 1: Check for dirty beds
-      var dirtyBeds = Game.Furniture.getDirtyBeds ? Game.Furniture.getDirtyBeds() : [];
-      if (dirtyBeds.length > 0 && (staff.hasCleanLinen || baskets.clean.items.length > 0)) {
-        // Has clean linen in basket or already holding — go change beds
-        staff.dirtyBedQueue = dirtyBeds.slice();
-        if (staff.hasCleanLinen) {
-          // Already holding clean linen from a previous aborted cycle — go straight to bed
-          var nextBed = staff.dirtyBedQueue.shift();
-          staff.targetPos = new THREE.Vector3(nextBed.pos.x + 1.0, 0, nextBed.pos.z);
-          staff._currentBedSlot = nextBed;
-          staff.state = 'walkToBed';
-        } else {
-          staff.state = 'walkToCleanBasket';
-          staff.targetPos = new THREE.Vector3(baskets.clean.pos.x, 0, baskets.clean.pos.z + 0.6);
-        }
-        return;
-      }
-
-      // Priority 2: Transfer dirty basket to machine
-      if (baskets.dirty.items.length > 0 && Game.WashingMachine.canLoad && Game.WashingMachine.canLoad()) {
-        staff.state = 'walkToLoadMachine';
-        staff.targetPos = new THREE.Vector3(baskets.dirty.pos.x, 0, baskets.dirty.pos.z + 0.6);
-        return;
-      }
-
-      // Priority 3: dirty beds but no clean linen — change and collect dirty
-      if (dirtyBeds.length > 0) {
-        staff.dirtyBedQueue = dirtyBeds.slice();
-        // Go directly to change beds (will produce dirty linen)
-        var nextBed = staff.dirtyBedQueue.shift();
-        staff.targetPos = new THREE.Vector3(nextBed.pos.x + 1.0, 0, nextBed.pos.z);
-        staff._currentBedSlot = nextBed;
-        staff.state = 'walkToBed';
-        return;
-      }
-
-      // Priority 4: Pick up trash
-      var trashList = Game.Trash ? Game.Trash.getTrashItems() : [];
-      if (trashList.length > 0) {
-        var nearest = Game.Trash.findNearest(staff.mesh.position);
-        if (nearest) {
-          staff._targetTrash = nearest;
-          staff.targetPos = new THREE.Vector3(nearest.position.x, 0, nearest.position.z);
-          staff.state = 'walkToTrash';
-          return;
-        }
-      }
-    } else if (staff.state === 'walkToCleanBasket') {
-      var arrived = moveToward(staff.mesh.position, staff.targetPos, speed);
-      faceTarget(staff, staff.targetPos);
-      if (arrived) {
-        // Pick clean linen from basket
-        if (baskets.clean.items.length > 0) {
-          baskets.clean.items.pop();
-          updateBasketSprite(baskets.clean);
-          staff.hasCleanLinen = true;
-        }
-        // Go to first dirty bed
-        if (staff.dirtyBedQueue.length > 0) {
-          var nextBed = staff.dirtyBedQueue.shift();
-          staff.targetPos = new THREE.Vector3(nextBed.pos.x + 1.0, 0, nextBed.pos.z);
-          staff._currentBedSlot = nextBed;
-          staff.state = 'walkToBed';
-        } else {
-          staff.state = 'idle';
-        }
-      }
-    } else if (staff.state === 'walkToBed') {
-      // Verify bed is still dirty
-      if (staff._currentBedSlot && !Game.Furniture.isBedDirty(staff._currentBedSlot)) {
-        // Bed already cleaned
-        if (staff.dirtyBedQueue.length > 0) {
-          var nextBed = staff.dirtyBedQueue.shift();
-          staff.targetPos = new THREE.Vector3(nextBed.pos.x + 1.0, 0, nextBed.pos.z);
-          staff._currentBedSlot = nextBed;
-        } else {
-          goToDepositDirty(staff);
-        }
-        return;
-      }
-      var arrived = moveToward(staff.mesh.position, staff.targetPos, speed);
-      faceTarget(staff, staff.targetPos);
-      if (arrived) {
-        setTimedState(staff, 'changingLinen', 5.0);
-      }
-    } else if (staff.state === 'changingLinen') {
-      staff.stateTimer -= delta;
-      if (staff.stateTimer <= 0) {
-        // Change the linen
-        if (staff._currentBedSlot && Game.Furniture.isBedDirty(staff._currentBedSlot)) {
-          Game.Furniture.markBedClean(staff._currentBedSlot);
-          staff.dirtyLinenCollected++;
-          if (staff.hasCleanLinen) {
-            staff.hasCleanLinen = false;
-          }
-        }
-        staff._currentBedSlot = null;
-
-        // If more dirty beds, continue
-        if (staff.dirtyBedQueue.length > 0) {
-          // Check if we need more clean linen
-          if (!staff.hasCleanLinen && baskets.clean.items.length > 0) {
-            staff.state = 'walkToCleanBasket';
-            staff.targetPos = new THREE.Vector3(baskets.clean.pos.x, 0, baskets.clean.pos.z + 0.6);
-          } else {
-            var nextBed = staff.dirtyBedQueue.shift();
-            staff.targetPos = new THREE.Vector3(nextBed.pos.x + 1.0, 0, nextBed.pos.z);
-            staff._currentBedSlot = nextBed;
-            staff.state = 'walkToBed';
-          }
-        } else {
-          // All beds done, deposit collected dirty linen
-          goToDepositDirty(staff);
-        }
-      }
-    } else if (staff.state === 'walkToDirtyBasket') {
-      var arrived = moveToward(staff.mesh.position, staff.targetPos, speed);
-      faceTarget(staff, staff.targetPos);
-      if (arrived) {
-        setTimedState(staff, 'depositDirty', 1.0);
-      }
-    } else if (staff.state === 'depositDirty') {
-      staff.stateTimer -= delta;
-      if (staff.stateTimer <= 0) {
-        // Deposit all dirty linen into basket
-        for (var i = 0; i < staff.dirtyLinenCollected; i++) {
-          baskets.dirty.items.push('linen_dirty');
-        }
-        updateBasketSprite(baskets.dirty);
-        staff.dirtyLinenCollected = 0;
-
-        // Now try to load machine
-        if (Game.WashingMachine.canLoad && Game.WashingMachine.canLoad() && baskets.dirty.items.length > 0) {
-          staff.state = 'walkToLoadMachine';
-          staff.targetPos = new THREE.Vector3(baskets.dirty.pos.x, 0, baskets.dirty.pos.z + 0.6);
-        } else {
-          returnToWorkPos(staff);
-        }
-      }
-    } else if (staff.state === 'walkToLoadMachine') {
-      var arrived = moveToward(staff.mesh.position, staff.targetPos, speed);
-      faceTarget(staff, staff.targetPos);
-      if (arrived) {
-        setTimedState(staff, 'loadingMachine', 1.0);
-      }
-    } else if (staff.state === 'loadingMachine') {
-      staff.stateTimer -= delta;
-      if (staff.stateTimer <= 0) {
-        // Load from dirty basket into machine
-        while (baskets.dirty.items.length > 0 && Game.WashingMachine.canLoad && Game.WashingMachine.canLoad()) {
-          baskets.dirty.items.pop();
-          Game.WashingMachine.loadOne();
-        }
-        updateBasketSprite(baskets.dirty);
-
-        // Start wash only when machine is full
-        if (Game.WashingMachine.isFull && Game.WashingMachine.isFull()) {
-          Game.WashingMachine.startWashAuto();
-          staff.state = 'waitingForWash';
-        } else if (baskets.dirty.items.length > 0) {
-          // Still has dirty items but machine not full yet — wait
-          returnToWorkPos(staff);
-        } else {
-          returnToWorkPos(staff);
-        }
-      }
-    } else if (staff.state === 'waitingForWash') {
-      if (!Game.WashingMachine.isWashing || !Game.WashingMachine.isWashing()) {
-        // Wash done — collect clean linen
-        setTimedState(staff, 'collectClean', 2.0);
-      }
-    } else if (staff.state === 'collectClean') {
-      staff.stateTimer -= delta;
-      if (staff.stateTimer <= 0) {
-        // Collect clean linen from machine area and put in clean basket
-        var groundItems = Game.Consumables.getGroundItemsByType ? Game.Consumables.getGroundItemsByType('linen_clean') : [];
-        var collected = 0;
-        for (var i = groundItems.length - 1; i >= 0; i--) {
-          var item = groundItems[i];
-          // Only collect near washing machine
-          var dx = item.position.x - 5.5;
-          var dz = item.position.z - (-10.5);
-          if (dx * dx + dz * dz < 4.0) {
-            if (Game.Consumables.removeGroundItem) {
-              Game.Consumables.removeGroundItem(item);
-            }
-            baskets.clean.items.push('linen_clean');
-            collected++;
-          }
-        }
-        if (collected > 0) {
-          updateBasketSprite(baskets.clean);
-        }
-        returnToWorkPos(staff);
-      }
-    } else if (staff.state === 'walkToTrash') {
-      // Verify trash still exists (player might have picked it up)
-      if (!staff._targetTrash || !staff._targetTrash.parent) {
-        staff._targetTrash = null;
-        // Try next trash
-        var trashList = Game.Trash ? Game.Trash.getTrashItems() : [];
-        if (trashList.length > 0) {
-          var nearest = Game.Trash.findNearest(staff.mesh.position);
-          if (nearest) {
-            staff._targetTrash = nearest;
-            staff.targetPos = new THREE.Vector3(nearest.position.x, 0, nearest.position.z);
-            return;
-          }
-        }
-        returnToWorkPos(staff);
-        return;
-      }
-      var arrived = moveToward(staff.mesh.position, staff.targetPos, speed);
-      faceTarget(staff, staff.targetPos);
-      if (arrived) {
-        setTimedState(staff, 'cleaningTrash', 5.0);
-      }
-    } else if (staff.state === 'cleaningTrash') {
-      staff.stateTimer -= delta;
-      if (staff.stateTimer <= 0) {
-        if (staff._targetTrash && Game.Trash.removeTrash) {
-          Game.Trash.removeTrash(staff._targetTrash);
-        }
-        staff._targetTrash = null;
-        // Check for more trash
-        var moreTrash = Game.Trash ? Game.Trash.getTrashItems() : [];
-        if (moreTrash.length > 0) {
-          var nearest = Game.Trash.findNearest(staff.mesh.position);
-          if (nearest) {
-            staff._targetTrash = nearest;
-            staff.targetPos = new THREE.Vector3(nearest.position.x, 0, nearest.position.z);
-            staff.state = 'walkToTrash';
-            return;
-          }
-        }
-        returnToWorkPos(staff);
-      }
-    } else if (staff.state === 'returning') {
-      var arrived = moveToward(staff.mesh.position, staff.targetPos, speed);
-      faceTarget(staff, staff.targetPos);
-      if (arrived) {
-        staff.mesh.rotation.y = WORK_POSITIONS[staff.type].rotY || 0;
-        staff.state = 'idle';
-        staff.stateTimer = 0;
-      }
-    }
-  }
-
-  function goToDepositDirty(staff) {
-    // Safety net: return any unused clean linen to basket
-    if (staff.hasCleanLinen) {
-      baskets.clean.items.push('linen_clean');
-      updateBasketSprite(baskets.clean);
-      staff.hasCleanLinen = false;
-    }
-    if (staff.dirtyLinenCollected > 0) {
-      staff.state = 'walkToDirtyBasket';
-      staff.targetPos = new THREE.Vector3(baskets.dirty.pos.x, 0, baskets.dirty.pos.z + 0.6);
-    } else {
-      returnToWorkPos(staff);
-    }
-  }
-
   function returnToWorkPos(staff) {
     var workPos = WORK_POSITIONS[staff.type];
     staff.targetPos = new THREE.Vector3(workPos.x, 0, workPos.z);
@@ -1249,193 +959,6 @@
     }
   }
 
-  // ====== LAUNDRY BASKET CREATION ======
-  function createBasket(x, z, label, wallLabel) {
-    var group = new THREE.Group();
-
-    var basketMat = new THREE.MeshLambertMaterial({ color: 0x8B7355 });
-    var innerMat = new THREE.MeshLambertMaterial({ color: 0xA89070 });
-
-    // Bottom
-    var bottom = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.04, 0.5), basketMat);
-    bottom.position.y = 0.02; bottom.castShadow = true; group.add(bottom);
-
-    // Walls (4 sides, open top)
-    var wallF = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.5, 0.04), basketMat);
-    wallF.position.set(0, 0.27, 0.23); wallF.castShadow = true; group.add(wallF);
-    var wallB = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.5, 0.04), basketMat);
-    wallB.position.set(0, 0.27, -0.23); wallB.castShadow = true; group.add(wallB);
-    var wallL = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.5, 0.5), basketMat);
-    wallL.position.set(-0.33, 0.27, 0); wallL.castShadow = true; group.add(wallL);
-    var wallR = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.5, 0.5), basketMat);
-    wallR.position.set(0.33, 0.27, 0); wallR.castShadow = true; group.add(wallR);
-
-    // Inner bottom (lighter)
-    var innerBottom = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.02, 0.42), innerMat);
-    innerBottom.position.y = 0.05; group.add(innerBottom);
-
-    group.position.set(x, 0, z);
-    scene.add(group);
-
-    // Collision box
-    var box = new THREE.Mesh(
-      new THREE.BoxGeometry(0.8, 0.6, 0.6),
-      new THREE.MeshBasicMaterial({ visible: false })
-    );
-    box.position.set(x, 0.3, z);
-    scene.add(box);
-    collidables.push(box);
-
-    // Wall sign
-    Game.Helpers.createSign(THREE, scene, wallLabel, x, 2.5, -11.78, 0);
-
-    return { mesh: group, collisionBox: box };
-  }
-
-  function updateBasketSprite(basket) {
-    if (basket.countSprite) {
-      scene.remove(basket.countSprite);
-      basket.countSprite.material.map.dispose();
-      basket.countSprite.material.dispose();
-      basket.countSprite = null;
-    }
-    if (basket.items.length > 0) {
-      var canvas = document.createElement('canvas');
-      canvas.width = 64; canvas.height = 64;
-      var ctx = canvas.getContext('2d');
-      ctx.beginPath();
-      ctx.arc(32, 32, 28, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(0,0,0,0.7)';
-      ctx.fill();
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = '#fff';
-      ctx.stroke();
-      ctx.fillStyle = '#fff';
-      ctx.font = 'bold 28px Arial';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(String(basket.items.length), 32, 34);
-
-      var texture = new THREE.CanvasTexture(canvas);
-      texture.minFilter = THREE.LinearFilter;
-      var mat = new THREE.SpriteMaterial({ map: texture, depthTest: false, transparent: true });
-      var sprite = new THREE.Sprite(mat);
-      sprite.scale.set(0.2, 0.2, 1);
-      sprite.position.set(basket.pos.x, 0.8, basket.pos.z);
-      scene.add(sprite);
-      basket.countSprite = sprite;
-    }
-  }
-
-  // ====== BASKET INTERACTION ======
-  function clearBasketHover() {
-    if (hoveredBasket && hoveredBasket.mesh) unhighlightBasket(hoveredBasket);
-    hoveredBasket = null; basketMode = null;
-  }
-
-  function updateBasketInteraction() {
-    if (!controls.isLocked || Game.Patients.isPopupOpen() || Game.Shop.isOpen()) {
-      clearBasketHover();
-      return;
-    }
-    if (Game.Furniture.isCarrying()) {
-      clearBasketHover();
-      return;
-    }
-    if (Game.Diagnostics && Game.Diagnostics.isActive()) {
-      clearBasketHover();
-      return;
-    }
-    if (Game.Cashier && Game.Cashier.isPopupOpen()) {
-      clearBasketHover();
-      return;
-    }
-    if (!Game.Interaction.isActive('staff')) {
-      clearBasketHover();
-      return;
-    }
-
-    var cachedHits = Game.Interaction.getHits('staff');
-    var newHovered = null;
-    var newMode = null;
-
-    if (cachedHits) {
-      var hitObj = cachedHits[0].object;
-      var basketKeys = ['clean', 'dirty'];
-      for (var b = 0; b < basketKeys.length; b++) {
-        var basket = baskets[basketKeys[b]];
-        if (!basket.mesh) continue;
-        var current = hitObj;
-        while (current) {
-          if (current === basket.mesh) {
-            newHovered = basket;
-            var activeItem = Game.Inventory.getActive();
-            var canPlace = activeItem && activeItem === basket.type;
-            var canTake = basket.items.length > 0 && !Game.Inventory.isFull();
-            if (canPlace && canTake) {
-              newMode = 'both';
-            } else if (canPlace) {
-              newMode = 'place';
-            } else if (canTake) {
-              newMode = 'take';
-            }
-            break;
-          }
-          current = current.parent;
-        }
-        if (newHovered) break;
-      }
-    }
-
-    // Highlight/unhighlight
-    if (newHovered !== hoveredBasket) {
-      if (hoveredBasket && hoveredBasket.mesh) unhighlightBasket(hoveredBasket);
-      if (newHovered && newHovered.mesh) highlightBasket(newHovered);
-    }
-
-    hoveredBasket = newHovered;
-    basketMode = newMode;
-
-    // Show hint
-    if (hoveredBasket && basketMode) {
-      var name = hoveredBasket === baskets.clean ? Game.Lang.t('basket.cleanLinen') : Game.Lang.t('basket.dirtyLinen');
-      var hints = [];
-      if (basketMode === 'take' || basketMode === 'both') {
-        hints.push(Game.Lang.t('basket.take', [hoveredBasket.items.length]));
-      }
-      var activeItem = Game.Inventory.getActive();
-      if (activeItem === hoveredBasket.type) {
-        hints.push(Game.Lang.t('basket.put'));
-      }
-      if (hints.length > 0) {
-        hintEl.textContent = name + ': ' + hints.join('  |  ');
-        hintEl.style.display = 'block';
-      }
-    } else if (hoveredBasket) {
-      var name = hoveredBasket === baskets.clean ? Game.Lang.t('basket.cleanLinen') : Game.Lang.t('basket.dirtyLinen');
-      hintEl.textContent = name + ' (' + hoveredBasket.items.length + ')';
-      hintEl.style.display = 'block';
-    }
-  }
-
-  function highlightBasket(basket) {
-    basket.mesh.traverse(function(child) {
-      if (child.isMesh) {
-        child.material.emissive = new THREE.Color(0x00ff44);
-        child.material.emissiveIntensity = 0.35;
-      }
-    });
-  }
-
-  function unhighlightBasket(basket) {
-    basket.mesh.traverse(function(child) {
-      if (child.isMesh) {
-        child.material.emissive = new THREE.Color(0x000000);
-        child.material.emissiveIntensity = 0;
-      }
-    });
-  }
-
   // ====== MAIN UPDATE ======
   function updateAllStaff(delta) {
     for (var i = 0; i < hiredStaff.length; i++) {
@@ -1447,21 +970,17 @@
         case 'cashier':       updateCashierStaff(s, delta); break;
         case 'diagnostician': updateDiagnostician(s, delta); break;
         case 'nurse':         updateNurse(s, delta); break;
-        case 'janitor':       updateJanitor(s, delta); break;
       }
 
       // Determine if moving
       if (s.state === 'walkToShelf' || s.state === 'walkToPatient' || s.state === 'walkBackToShelf' ||
-          s.state === 'walkToBed' || s.state === 'walkToDirtyBasket' || s.state === 'walkToCleanBasket' ||
-          s.state === 'walkToLoadMachine' || s.state === 'walkToGround' || s.state === 'returning') {
+          s.state === 'walkToGround' || s.state === 'returning') {
         isMoving = true;
       }
 
       updateStaffWalkAnimation(s, delta, isMoving);
       updateProgressBar(s);
     }
-
-    updateBasketInteraction();
   }
 
   // ====== PUBLIC API ======
@@ -1480,85 +999,6 @@
       screenCenter = new THREE.Vector2(0, 0);
       hintEl = document.getElementById('interact-hint');
 
-      // Create laundry baskets
-      baskets.clean.pos = new THREE.Vector3(4.2, 0, -10.5);
-      var cleanData = createBasket(4.2, -10.5, 'clean', Game.Lang.t('sign.clean'));
-      baskets.clean.mesh = cleanData.mesh;
-      baskets.clean.collisionBox = cleanData.collisionBox;
-
-      baskets.dirty.pos = new THREE.Vector3(6.8, 0, -10.5);
-      var dirtyData = createBasket(6.8, -10.5, 'dirty', Game.Lang.t('sign.dirty'));
-      baskets.dirty.mesh = dirtyData.mesh;
-      baskets.dirty.collisionBox = dirtyData.collisionBox;
-
-      // Register baskets as draggable fixtures
-      (function() {
-        var basketKeys = ['clean', 'dirty'];
-        var basketTypes = { clean: 'basketClean', dirty: 'basketDirty' };
-        for (var b = 0; b < basketKeys.length; b++) {
-          (function(key) {
-            var basket = baskets[key];
-            Game.Furniture.registerFixture({
-              type: basketTypes[key],
-              group: basket.mesh,
-              collisionBox: basket.collisionBox,
-              onMoved: function(pos) {
-                basket.pos.set(pos.x, pos.y, pos.z);
-                // Reposition count sprite
-                if (basket.countSprite) {
-                  basket.countSprite.position.set(pos.x, 0.8, pos.z);
-                }
-              }
-            });
-          })(basketKeys[b]);
-        }
-      })();
-
-      // Basket LMB handler (take)
-      document.addEventListener('mousedown', function(e) {
-        if (e.button !== 0 || !controls.isLocked) return;
-        if (Game.Furniture.isCarrying()) return;
-        if (!hoveredBasket || (basketMode !== 'take' && basketMode !== 'both')) return;
-        if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
-        if (Game.Cashier && Game.Cashier.isPopupOpen()) return;
-        if (hoveredBasket.items.length > 0) {
-          var itemType = hoveredBasket.type;
-          var added = Game.Inventory.addItemBulk(itemType, hoveredBasket.items.length);
-          if (added > 0) {
-            hoveredBasket.items.splice(hoveredBasket.items.length - added, added);
-            updateBasketSprite(hoveredBasket);
-            if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('item_picked_up', itemType);
-          }
-        }
-      });
-
-      // Basket E handler (place)
-      document.addEventListener('keydown', function(e) {
-        if (e.code !== 'KeyE' || !controls.isLocked) return;
-        if (Game.Furniture.isCarrying()) return;
-        if (!hoveredBasket) return;
-        if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
-        if (Game.Cashier && Game.Cashier.isPopupOpen()) return;
-
-        var activeItem = Game.Inventory.getActive();
-        if (activeItem && activeItem === hoveredBasket.type) {
-          var count = Game.Inventory.getActiveCount();
-          Game.Inventory.removeActiveN(count);
-          for (var i = 0; i < count; i++) {
-            hoveredBasket.items.push(activeItem);
-          }
-          updateBasketSprite(hoveredBasket);
-          Game.Inventory.showNotification(Game.Lang.t('notify.putInBasket'), 'rgba(34, 139, 34, 0.85)');
-        }
-      });
-
-      // Register with central interaction system
-      Game.Interaction.register('staff', function() {
-        var meshes = [];
-        if (baskets.clean.mesh) meshes.push(baskets.clean.mesh);
-        if (baskets.dirty.mesh) meshes.push(baskets.dirty.mesh);
-        return meshes;
-      }, true, 5);
     },
 
     update: function(delta) {
@@ -1662,19 +1102,6 @@
 
     isPatientBeingTreated: function(patient) {
       return !!patient.staffTreating;
-    },
-
-    hasBasketInteraction: function() { return !!hoveredBasket; },
-
-    getBaskets: function() { return baskets; },
-
-    addToBasket: function(basketKey, itemType, count) {
-      var basket = baskets[basketKey];
-      if (!basket) return;
-      for (var i = 0; i < count; i++) {
-        basket.items.push(itemType);
-      }
-      updateBasketSprite(basket);
     }
   };
 })();

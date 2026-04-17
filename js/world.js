@@ -138,21 +138,22 @@
 
       var bedMeshes = [];
       function createBed(x, z, rotY) {
+        var frameMat = new THREE.MeshLambertMaterial({ color: 0xcccccc });
         var g = new THREE.Group();
-        var frame = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.5, 0.9), bedFrameMat);
+        var frame = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.5, 0.9), frameMat);
         frame.position.y = 0.25; frame.castShadow = true; g.add(frame);
         var matt = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.12, 0.8), mattressMat);
         matt.position.y = 0.56; matt.castShadow = true; g.add(matt);
         var pillow = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.1, 0.55), pillowMat);
         pillow.position.set(-0.7, 0.65, 0); g.add(pillow);
-        var rail = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.4, 0.9), bedFrameMat);
+        var rail = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.4, 0.9), frameMat);
         rail.position.set(-1.0, 0.7, 0); g.add(rail);
         g.position.set(x, 0, z);
         g.rotation.y = rotY || 0;
         scene.add(g);
         var box = new THREE.Mesh(new THREE.BoxGeometry(2.1, 1.0, 1.0), new THREE.MeshBasicMaterial({ visible: false }));
         box.position.set(x, 0.5, z); scene.add(box); collidables.push(box);
-        bedMeshes.push({ group: g, collisionBox: box });
+        bedMeshes.push({ group: g, collisionBox: box, frame: frame, rail: rail, frameMat: frameMat });
       }
 
       createBed(-5.5, -9, 0);

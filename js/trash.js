@@ -494,7 +494,6 @@
         if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('trash_interact')) return;
         if (!hoveredTrash) return;
         if (Game.Patients.hasInteraction()) return;
-        if (Game.WashingMachine && Game.WashingMachine.hasInteraction()) return;
         if (Game.Furniture && (Game.Furniture.hasInteraction() || Game.Furniture.isCarrying())) return;
         if (Game.Consumables.hasInteraction() || Game.Consumables.hasBoxInteraction() || Game.Consumables.isHoldingBox()) return;
         if (Game.Shelves && Game.Shelves.hasInteraction()) return;

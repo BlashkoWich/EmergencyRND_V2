@@ -754,7 +754,7 @@
     // Bed/chair availability (use dynamic furniture system)
     var indoorBeds = Game.Furniture.getIndoorBeds();
     var indoorChairs = Game.Furniture.getIndoorChairs();
-    var freeBeds = indoorBeds.filter(function(b) { return !b.occupied && !Game.Furniture.isBedDirty(b); }).length;
+    var freeBeds = indoorBeds.filter(function(b) { return !b.occupied && !Game.Furniture.isBedBroken(b); }).length;
     var freeChairs = indoorChairs.filter(function(c) { return !c.occupied; }).length;
     var outdoorBedCount = Game.Furniture.getOutdoorBedCount();
     var outdoorChairCount = Game.Furniture.getOutdoorChairCount();
@@ -782,14 +782,14 @@
       outdoorWarning.style.display = 'none';
     }
 
-    // Dirty linen warning
-    var dirtyWarning = document.getElementById('dirty-linen-warning');
-    var dirtyBedCount = Game.Furniture.getDirtyBedCount();
-    if (dirtyBedCount > 0) {
-      dirtyWarning.textContent = Game.Lang.t(dirtyBedCount === 1 ? 'patient.dirtyWarning1' : 'patient.dirtyWarningN', [dirtyBedCount]);
-      dirtyWarning.style.display = 'block';
+    // Broken bed warning
+    var brokenWarning = document.getElementById('broken-bed-warning');
+    var brokenBedCount = Game.Furniture.getBrokenBedCount();
+    if (brokenBedCount > 0) {
+      brokenWarning.textContent = Game.Lang.t(brokenBedCount === 1 ? 'patient.brokenWarning1' : 'patient.brokenWarningN', [brokenBedCount]);
+      brokenWarning.style.display = 'block';
     } else {
-      dirtyWarning.style.display = 'none';
+      brokenWarning.style.display = 'none';
     }
 
     // Show wait/dismiss button
@@ -1457,7 +1457,7 @@
     if (patient.destination) {
       patient.destination.occupied = false;
       if (Game.Furniture.isBedSlot(patient.destination)) {
-        Game.Furniture.markBedDirty(patient.destination);
+        Game.Furniture.decrementBedHp(patient.destination);
       }
       patient.destination = null;
     }
@@ -1500,7 +1500,7 @@
     if (patient.destination) {
       patient.destination.occupied = false;
       if (Game.Furniture.isBedSlot(patient.destination)) {
-        Game.Furniture.markBedDirty(patient.destination);
+        Game.Furniture.decrementBedHp(patient.destination);
       }
     }
     var idx = patients.indexOf(patient);
@@ -1960,7 +1960,7 @@
         var indoorBeds = Game.Furniture.getIndoorBeds();
         var slot = null;
         for (var i = 0; i < indoorBeds.length; i++) {
-          if (!indoorBeds[i].occupied && !Game.Furniture.isBedDirty(indoorBeds[i])) { slot = indoorBeds[i]; break; }
+          if (!indoorBeds[i].occupied && !Game.Furniture.isBedBroken(indoorBeds[i])) { slot = indoorBeds[i]; break; }
         }
         if (!slot) return;
         sendPatient(popupPatient, slot.pos, slot);
@@ -2045,7 +2045,7 @@
         if (p.destination) {
           p.destination.occupied = false;
           if (Game.Furniture.isBedSlot(p.destination)) {
-            Game.Furniture.markBedDirty(p.destination);
+            Game.Furniture.decrementBedHp(p.destination);
           }
         }
         scene.remove(p.mesh);

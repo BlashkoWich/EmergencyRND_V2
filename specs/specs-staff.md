@@ -1,7 +1,7 @@
 # EmergencyRND V2 — Система найма сотрудников
 
 ## Overview
-Игрок может нанимать сотрудников в магазине (Q). Сотрудники — автономные NPC, которые выполняют задачи: направление пациентов, расчёт на кассе, диагностика, лечение, смена белья. Каждый тип — максимум 1 сотрудник. Зарплата выплачивается в конце дня. Баланс может уходить в минус при нехватке средств на зарплату.
+Игрок может нанимать сотрудников в магазине (Q). Сотрудники — автономные NPC, которые выполняют задачи: направление пациентов, расчёт на кассе, диагностика, лечение. Каждый тип — максимум 1 сотрудник. Зарплата выплачивается в конце дня. Баланс может уходить в минус при нехватке средств на зарплату.
 
 ## Модуль
 `Game.Staff` — файл `js/staff.js` (IIFE). Загружается после `diagnostics.js`, перед `shift.js`.
@@ -18,8 +18,7 @@ STAFF_TYPES = {
   administrator: { name: Game.Lang.t('staff.administrator'), salary: 100, color: 0x2266aa, hatColor: 0x1a4a88 },
   cashier:       { name: Game.Lang.t('staff.cashier'),       salary: 100, color: 0x22aa66, hatColor: 0x188844 },
   diagnostician: { name: Game.Lang.t('staff.diagnostician'), salary: 100, color: 0x8844cc, hatColor: 0x6633aa },
-  nurse:         { name: Game.Lang.t('staff.nurse'),         salary: 100, color: 0xcc4488, hatColor: 0xaa3366 },
-  janitor:       { name: Game.Lang.t('staff.janitor'),       salary: 100, color: 0x888844, hatColor: 0x666633 }
+  nurse:         { name: Game.Lang.t('staff.nurse'),         salary: 100, color: 0xcc4488, hatColor: 0xaa3366 }
 }
 ```
 
@@ -30,8 +29,7 @@ WORK_POSITIONS = {
   administrator: { x: 0,    z: -9.5,  rotY: Math.PI },
   cashier:       { x: 3.5,  z: -10.0, rotY: 0 },
   diagnostician: { x: -5.0, z: -11.0, rotY: 0 },
-  nurse:         { x: -4.0, z: -11.0, rotY: 0 },
-  janitor:       { x: 6.0,  z: -10.0, rotY: 0 }
+  nurse:         { x: -4.0, z: -11.0, rotY: 0 }
 }
 ```
 
@@ -79,10 +77,6 @@ ACTION_LABELS = {
   returnInstrument: 'Возвращает',
   pickMedicine: 'Берёт лекарство',
   treating: 'Лечение',
-  changingLinen: 'Смена белья',
-  depositDirty: 'Складывает',
-  loadingMachine: 'Загрузка',
-  collectClean: 'Собирает бельё',
   cleaningTrash: 'Уборка мусора'
 }
 ```
@@ -171,44 +165,6 @@ returning → idle
 
 **Предупреждение**: красный HUD-блок (`#nurse-warning-hud`) с перечнем недостающих препаратов на стеллаже. Пульсирующая анимация. Исчезает при появлении лекарства на стеллаже или увольнении медсестры.
 
-### Уборщик
-
-```
-idle (каждые 1.5 сек):
-  → Приоритет 1: грязные кровати + чистое бельё в корзине → walkToCleanBasket → walkToBed
-  → Приоритет 2: грязное в корзине + стиралка свободна → walkToLoadMachine
-  → Приоритет 3: грязные кровати без чистого → walkToBed (только снять)
-  → Приоритет 4: мусор на полу (Game.Trash.getCount() > 0) → walkToTrash
-
-walkToCleanBasket → берёт чистое бельё из корзины
-walkToBed → changingLinen (5 сек) → markBedClean, dirtyLinenCollected++
-  → если есть ещё грязные — продолжает цикл
-walkToDirtyBasket → depositDirty (1 сек) → складывает грязное в корзину
-walkToLoadMachine → loadingMachine (1 сек) → перекладывает из грязной корзины в стиралку
-  → запускает стирку ТОЛЬКО когда стиралка полная (5 шт)
-waitingForWash → ждёт окончания стирки
-collectClean (2 сек) → чистое бельё уже в корзине после стирки (стиралка кладёт напрямую)
-walkToTrash → идёт к ближайшему мусору (Game.Trash.findNearest)
-cleaningTrash (5 сек) → Game.Trash.removeTrash(mesh), ищет следующий мусор или returning
-returning → idle
-```
-
-## Корзины для белья
-
-Два 3D объекта рядом со стиральной машиной:
-
-| Корзина | Позиция | Тип предмета | Подпись на стене |
-|---------|---------|--------------|-----------------|
-| Чистая | `(4.2, 0, -10.5)` | `linen_clean` | ЧИСТОЕ |
-| Грязная | `(6.8, 0, -10.5)` | `linen_dirty` | ГРЯЗНОЕ |
-
-- **Ёмкость**: бесконечная
-- **Модель**: открытый ящик (BoxGeometry стены + дно, деревянный цвет `0x8B7355`)
-- **Collision box**: 0.8×0.6×0.6
-- **Спрайт-счётчик**: показывает количество предметов в корзине (аналогично стеллажу)
-- **Взаимодействие игрока**: E — положить (если в руках подходящий тип), ЛКМ — взять. Оба действия доступны одновременно (если в руках подходящий тип И в корзине есть предметы — режим `'both'`)
-- **Используются уборщиком** для промежуточного хранения белья
-
 ## Предупреждения (Staff Warning HUDs)
 
 Контейнер `#staff-warnings-container` (fixed, top:60px, right:20px, z-index:6, flex-column, gap:8px):
@@ -248,7 +204,6 @@ returning → idle
 | Кассир | Терминал полностью заблокирован → `Game.Lang.t('staff.status.cashierWorking')` |
 | Диагност | Мини-игра на конкретном пациенте → `Game.Lang.t('staff.status.diagnosing')` |
 | Медсестра | Лечение конкретного пациента → `Game.Lang.t('staff.status.treating')` |
-| Уборщик | Ничего не блокирует |
 
 ## Новые флаги на объекте пациента
 
@@ -272,9 +227,6 @@ isStaffCashierHired()   // bool
 isTypeHired(type)       // bool
 isPatientBeingDiagnosed(patient) // bool
 isPatientBeingTreated(patient)   // bool
-hasBasketInteraction()  // bool
-getBaskets()            // { clean, dirty }
-addToBasket(basketKey, itemType, count) // добавить предметы в корзину + обновить спрайт-счётчик
 ```
 
 ### Game.Patients (новые)
@@ -308,24 +260,11 @@ getCurrentPatient()     // текущий пациент у кассы
 processPaymentAuto()    // автоматическая оплата
 ```
 
-### Game.WashingMachine (новые)
-```js
-canLoad()               // можно ли загрузить
-loadOne()               // загрузить 1 шт грязного белья
-isFull()                // полная ли машинка (5/5)
-startWashAuto()         // запустить стирку
-```
-
 ### Game.Trash (новые)
 ```js
 getCount()              // количество мусора на полу
 findNearest(fromPos)    // ближайший мусор (mesh) или null
 removeTrash(mesh)       // удалить мусор → boolean
-```
-
-### Game.Furniture (новые)
-```js
-getDirtyBeds()          // массив слотов грязных кроватей
 ```
 
 ### Game.Consumables (новые)

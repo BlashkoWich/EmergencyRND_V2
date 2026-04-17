@@ -137,18 +137,18 @@ CSS-класс `.lang-btn` — идентичен `.quality-btn` (полупро
 | `furniture.*` | Мебель | `furniture.bed`, `furniture.hint.move` |
 | `staff.*` | Сотрудники | `staff.administrator`, `staff.status.treating` |
 | `sign.*` | 3D надписи | `sign.delivery`, `sign.deliveryZone`, `sign.instruments`, `sign.clinic`, `sign.cashier` |
-| `inv.*` | Инвентарь | `inv.shop`, `inv.drop` |
+| `inv.*` | Инвентарь | `inv.shop`, `inv.wrench`, `inv.drop` |
 | `notify.*` | Уведомления | `notify.inventoryFull`, `notify.treatmentStarted` |
 | `levels.*` | Уровни/разблокировки | `levels.unlock2.0`, `levels.xp.treatment` |
 | `diag.*` | Диагностика | `diag.steth.title`, `diag.bodyPart.heart` |
 | `box.*` | Коробки доставки | `box.hover.full`, `box.held.take` |
 | `patient.*` | Хинты пациентов | `patient.hint.treat`, `patient.age` |
 | `severity.*` | Тяжесть заболевания | `severity.severe`, `severity.mild` |
-| `wash.*` | Стиральная машина | `wash.started`, `wash.hint.load` |
+| `wrench.*` | Ремонтный ключ | `wrench.equipped`, `wrench.hint.bedHp` |
+| `controls.*` | Подсказки управления | `controls.wrench` |
 | `trash.*` | Мусор | `trash.hint` |
 | `shelf.*` | Стеллажи | `shelf.hint.take` |
 | `panel.*` | Панель инструментов | `panel.hint.take` |
-| `basket.*` | Корзины белья | `basket.cleanLinen`, `basket.take` |
 | `tutorial.*` | Туториал | `tutorial.step0`, `tutorial.stepOf` |
 | `patients.*` | Данные пациентов (массивы/объекты) | `patients.names.male`, `patients.medical.painkiller` |
 
