@@ -497,7 +497,6 @@
         if (Game.Furniture && (Game.Furniture.hasInteraction() || Game.Furniture.isCarrying())) return;
         if (Game.Consumables.hasInteraction() || Game.Consumables.hasBoxInteraction() || Game.Consumables.isHoldingBox()) return;
         if (Game.Shelves && Game.Shelves.hasInteraction()) return;
-        if (Game.ToolPanel && Game.ToolPanel.hasInteraction()) return;
 
         removeTrashItem(hoveredTrash);
       });

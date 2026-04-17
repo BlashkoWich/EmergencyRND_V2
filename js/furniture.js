@@ -597,9 +597,7 @@
     var activeModName = Game.Interaction.getActive();
     var shelfPanelFallback = !isFurnitureActive && (
       ((activeModName === 'shelvesPlace' || activeModName === 'shelvesItems') &&
-       !(Game.Shelves && Game.Shelves.hasInteraction())) ||
-      ((activeModName === 'toolPanelPlace' || activeModName === 'toolPanelItems') &&
-       !(Game.ToolPanel && Game.ToolPanel.hasInteraction()))
+       !(Game.Shelves && Game.Shelves.hasInteraction()))
     );
 
     if (!isFurnitureActive && !shelfPanelFallback) {
@@ -757,7 +755,6 @@
 
     // Don't pickup if a module-specific interaction is active
     if (Game.Shelves && Game.Shelves.hasInteraction()) return;
-    if (Game.ToolPanel && Game.ToolPanel.hasInteraction()) return;
 
     if (hoveredFurniture) {
       // Wrench + bed → repair hold

@@ -510,46 +510,6 @@
   }
 
   // ====== DIAGNOSTICIAN LOGIC ======
-  var diagWarningEl = null;
-  var missingInstruments = {}; // type -> true
-
-  var INSTRUMENT_NAMES = {
-    instrument_stethoscope: Game.Lang.t('item.instrument_stethoscope'),
-    instrument_hammer: Game.Lang.t('item.instrument_hammer'),
-    instrument_rhinoscope: Game.Lang.t('item.instrument_rhinoscope')
-  };
-  var INSTRUMENT_COLORS = {
-    instrument_stethoscope: '#8866cc',
-    instrument_hammer: '#cc8844',
-    instrument_rhinoscope: '#44aacc'
-  };
-
-  function updateDiagWarningHUD() {
-    if (!diagWarningEl) {
-      diagWarningEl = document.getElementById('diag-warning-hud');
-    }
-    if (!diagWarningEl) return;
-
-    var hasDiag = false;
-    for (var i = 0; i < hiredStaff.length; i++) {
-      if (hiredStaff[i].type === 'diagnostician') { hasDiag = true; break; }
-    }
-
-    if (!hasDiag || Object.keys(missingInstruments).length === 0) {
-      diagWarningEl.style.display = 'none';
-      return;
-    }
-
-    var html = '<div class="diag-warn-title">' + Game.Lang.t('staff.diagWarning') + '</div>';
-    for (var type in missingInstruments) {
-      var name = INSTRUMENT_NAMES[type] || type;
-      var color = INSTRUMENT_COLORS[type] || '#888';
-      html += '<div class="diag-warn-item"><span class="diag-warn-dot" style="background:' + color + '"></span>' + name + '</div>';
-    }
-    diagWarningEl.innerHTML = html;
-    diagWarningEl.style.display = 'block';
-  }
-
   function updateDiagnostician(staff, delta) {
     var speed = STAFF_SPEED * delta;
 
@@ -558,7 +518,6 @@
       if (staff.stateTimer < 1.0) return;
       staff.stateTimer = 0;
 
-      var newMissing = {};
       var patients = Game.Patients.getPatients ? Game.Patients.getPatients() : [];
       for (var i = 0; i < patients.length; i++) {
         var p = patients[i];
@@ -566,90 +525,16 @@
           // Check if player is already diagnosing this patient
           if (Game.Diagnostics && Game.Diagnostics.isActive() && Game.Diagnostics.getPatient() === p) continue;
 
-          // Find required instrument on panel, shelf, or floor
-          var requiredInstr = p.requiredInstrument;
-          var panelSlot = Game.ToolPanel && Game.ToolPanel.findSlot ? Game.ToolPanel.findSlot(requiredInstr) : null;
-          var slot = null;
-          if (!panelSlot) {
-            slot = Game.Shelves.findSlotWithItem ? Game.Shelves.findSlotWithItem(requiredInstr) : null;
-          }
-          var groundItem = null;
-          if (!panelSlot && !slot) {
-            groundItem = Game.Consumables.findNearestGroundItem ? Game.Consumables.findNearestGroundItem(requiredInstr, staff.mesh.position) : null;
-          }
-
-          if (panelSlot || slot || groundItem) {
-            missingInstruments = newMissing;
-            updateDiagWarningHUD();
-            staff.targetPatient = p;
-            p.staffDiagnosing = true;
-            staff.heldItem = requiredInstr;
-
-            if (panelSlot) {
-              staff.targetSlot = panelSlot;
-              staff._sourceIsPanel = true;
-              var panelPos = Game.ToolPanel.getPosition();
-              staff.targetPos = new THREE.Vector3(panelPos.x, 0, panelPos.z + 0.8);
-              staff.state = 'walkToShelf';
-            } else if (slot) {
-              staff.targetSlot = slot;
-              staff._sourceIsPanel = false;
-              staff.targetPos = new THREE.Vector3(slot.pos.x, 0, slot.pos.z + 0.8);
-              staff.state = 'walkToShelf';
-            } else {
-              staff._sourceIsPanel = false;
-              staff.targetPos = new THREE.Vector3(groundItem.position.x, 0, groundItem.position.z);
-              staff._groundItem = groundItem;
-              staff.state = 'walkToGround';
-            }
-            return;
-          } else {
-            newMissing[requiredInstr] = true;
-          }
+          // Walk directly to patient — no instrument fetching
+          staff.targetPatient = p;
+          p.staffDiagnosing = true;
+          var patientPos = p.destination ? p.destination.pos : p.mesh.position;
+          staff.targetPos = new THREE.Vector3(patientPos.x + 1.0, 0, patientPos.z);
+          staff.state = 'walkToPatient';
+          return;
         }
-      }
-      missingInstruments = newMissing;
-      updateDiagWarningHUD();
-    } else if (staff.state === 'walkToShelf') {
-      var arrived = moveToward(staff.mesh.position, staff.targetPos, speed);
-      faceTarget(staff, staff.targetPos);
-      if (arrived) {
-        setTimedState(staff, 'pickInstrument', 1.0);
-      }
-    } else if (staff.state === 'walkToGround') {
-      var arrived = moveToward(staff.mesh.position, staff.targetPos, speed);
-      faceTarget(staff, staff.targetPos);
-      if (arrived) {
-        // Pick up ground item
-        if (staff._groundItem && Game.Consumables.removeGroundItem) {
-          Game.Consumables.removeGroundItem(staff._groundItem);
-        }
-        staff._groundItem = null;
-        attachHeldItem(staff);
-        // Go to patient
-        var patientPos = staff.targetPatient.destination ? staff.targetPatient.destination.pos : staff.targetPatient.mesh.position;
-        staff.targetPos = new THREE.Vector3(patientPos.x + 1.0, 0, patientPos.z);
-        staff.state = 'walkToPatient';
-      }
-    } else if (staff.state === 'pickInstrument') {
-      staff.stateTimer -= delta;
-      if (staff.stateTimer <= 0) {
-        if (staff.targetSlot) {
-          if (staff._sourceIsPanel && Game.ToolPanel && Game.ToolPanel.takeFromSlot) {
-            Game.ToolPanel.takeFromSlot(staff.targetSlot);
-          } else if (Game.Shelves.takeFromSlot) {
-            Game.Shelves.takeFromSlot(staff.targetSlot);
-          }
-        }
-        attachHeldItem(staff);
-        staff.targetSlot = null;
-        // Navigate to patient
-        var patientPos = staff.targetPatient.destination ? staff.targetPatient.destination.pos : staff.targetPatient.mesh.position;
-        staff.targetPos = new THREE.Vector3(patientPos.x + 1.0, 0, patientPos.z);
-        staff.state = 'walkToPatient';
       }
     } else if (staff.state === 'walkToPatient') {
-      // Check if patient still valid
       if (!staff.targetPatient || staff.targetPatient.hp <= 0 || staff.targetPatient.state !== 'atBed') {
         cancelDiagnosticianTask(staff);
         return;
@@ -672,42 +557,6 @@
         }
         staff.targetPatient.staffDiagnosing = false;
         staff.targetPatient = null;
-        // Return instrument to panel (or shelf as fallback)
-        staff.state = 'walkBackToShelf';
-        if (Game.Consumables.isInstrument(staff.heldItem) && Game.ToolPanel) {
-          var panelPos = Game.ToolPanel.getPosition();
-          staff.targetPos = new THREE.Vector3(panelPos.x, 0, panelPos.z + 0.8);
-        } else {
-          var shelfPos = findNearestShelfPos(staff.mesh.position);
-          staff.targetPos = new THREE.Vector3(shelfPos.x, 0, shelfPos.z + 0.8);
-        }
-      }
-    } else if (staff.state === 'walkBackToShelf') {
-      var arrived = moveToward(staff.mesh.position, staff.targetPos, speed);
-      faceTarget(staff, staff.targetPos);
-      if (arrived) {
-        setTimedState(staff, 'returnInstrument', 1.0);
-      }
-    } else if (staff.state === 'returnInstrument') {
-      staff.stateTimer -= delta;
-      if (staff.stateTimer <= 0) {
-        // Try to place on panel first (for instruments), then shelf
-        var placed = false;
-        if (Game.Consumables.isInstrument(staff.heldItem) && Game.ToolPanel && Game.ToolPanel.placeItem) {
-          placed = Game.ToolPanel.placeItem(staff.heldItem);
-        }
-        if (!placed && Game.Shelves.placeOnAnyShelf) {
-          placed = Game.Shelves.placeOnAnyShelf(staff.heldItem);
-        }
-        if (!placed) {
-          // Drop near shelf
-          var dropPos = new THREE.Vector3(staff.mesh.position.x, 0.1, staff.mesh.position.z + 0.3);
-          if (Game.Consumables.spawnAtPosition) {
-            Game.Consumables.spawnAtPosition(staff.heldItem, dropPos);
-          }
-        }
-        removeHeldItem(staff);
-        staff.heldItem = null;
         // Return to work position
         var workPos = WORK_POSITIONS[staff.type];
         staff.targetPos = new THREE.Vector3(workPos.x, 0, workPos.z);
@@ -729,20 +578,8 @@
       staff.targetPatient.staffDiagnosing = false;
       staff.targetPatient = null;
     }
-    // If holding instrument, return it to panel (or shelf)
-    if (staff.heldItem) {
-      staff.state = 'walkBackToShelf';
-      if (Game.Consumables.isInstrument(staff.heldItem) && Game.ToolPanel) {
-        var panelPos = Game.ToolPanel.getPosition();
-        staff.targetPos = new THREE.Vector3(panelPos.x, 0, panelPos.z + 0.8);
-      } else {
-        var shelfPos = findNearestShelfPos(staff.mesh.position);
-        staff.targetPos = new THREE.Vector3(shelfPos.x, 0, shelfPos.z + 0.8);
-      }
-    } else {
-      staff.state = 'idle';
-      staff.stateTimer = 0;
-    }
+    staff.state = 'idle';
+    staff.stateTimer = 0;
   }
 
   // ====== NURSE LOGIC ======
@@ -1045,15 +882,8 @@
           // Remove progress bar and held item
           removeProgressBar(s);
           removeHeldItem(s);
-          if (s.heldItem) {
-            // Return held item — instruments to panel, rest to shelf
-            var firedPlaced = false;
-            if (Game.Consumables.isInstrument(s.heldItem) && Game.ToolPanel && Game.ToolPanel.placeItem) {
-              firedPlaced = Game.ToolPanel.placeItem(s.heldItem);
-            }
-            if (!firedPlaced && Game.Shelves.placeOnAnyShelf) {
-              Game.Shelves.placeOnAnyShelf(s.heldItem);
-            }
+          if (s.heldItem && Game.Shelves.placeOnAnyShelf) {
+            Game.Shelves.placeOnAnyShelf(s.heldItem);
           }
 
           // Remove 3D model
@@ -1067,10 +897,6 @@
           if (s.type === 'nurse') {
             missingMeds = {};
             updateNurseWarningHUD();
-          }
-          if (s.type === 'diagnostician') {
-            missingInstruments = {};
-            updateDiagWarningHUD();
           }
           Game.Inventory.showNotification(Game.Lang.t('notify.fired', [STAFF_TYPES[s.type].name, salary]), 'rgba(200, 150, 50, 0.85)');
           return true;

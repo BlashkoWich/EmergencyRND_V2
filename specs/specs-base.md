@@ -25,9 +25,8 @@
 - `Game.Shop` — магазин расходников (попап, покупка)
 - `Game.Furniture` — система мебели (покупка, перемещение, indoor/outdoor, динамические слоты, HP кроватей, ремонт)
 - `Game.Wrench` — ремонтный ключ (переключение клавишей R, first-person модель, подсказка HP кровати)
-- `Game.Shelves` — стеллажи (создание, размещение расходников; инструменты отклоняются)
-- `Game.ToolPanel` — настенная панель для инструментов (3 типизированных слота)
-- `Game.Diagnostics` — мини-игры диагностики (фонендоскоп, рефлекс-молоток, риноскоп)
+- `Game.Shelves` — стеллажи (создание, размещение расходников)
+- `Game.Diagnostics` — мини-игры диагностики (фонендоскоп, рефлекс-молоток, риноскоп; инструменты не физические, применяются неявно)
 - `Game.Staff` — система найма сотрудников (NPC-помощники, зарплата)
 - `Game.Trash` — система мусора (спавн внутри больницы с уровня 3, модели, партиклы вони, мухи, уборка)
 - `Game.Shift` — система смен и дней (время, табличка Open/Closed, задачи, итоги дня)
@@ -37,7 +36,7 @@
 
 - `Game.Lang` — система локализации (переводы ru/en, функция t(), переключение языка)
 
-Порядок загрузки: lang → helpers → world → patients → controls → consumables → inventory → shop → ads → wrench → furniture → shelves → tool-panel → diagnostics → staff → trash → shift → cashier → tutorial → inline module (оркестратор).
+Порядок загрузки: lang → helpers → world → patients → controls → consumables → inventory → shop → ads → wrench → furniture → shelves → diagnostics → staff → trash → shift → cashier → tutorial → inline module (оркестратор).
 
 ## IMPORTANT: Локализация (i18n)
 **Все тексты в игре ОБЯЗАНЫ быть на всех доступных языках (ru, en).** При разработке любой новой фичи или изменении текста:
@@ -73,9 +72,8 @@ js/
   ads.js                — реклама за деньги (попап предложения, фиктивный ролик 20с, награда $200)
   wrench.js             — ремонтный ключ (R — взять/убрать, first-person модель, hold-E для ремонта кровати)
   furniture.js          — система мебели (покупка, перемещение, indoor/outdoor, динамические слоты, HP кроватей, ремонт)
-  shelves.js            — стеллажи (создание, размещение расходников; инструменты отклоняются)
-  tool-panel.js         — настенная панель для инструментов (3 типизированных слота, крюки)
-  diagnostics.js        — диагностика (мини-игры: фонендоскоп, рефлекс-молоток, риноскоп)
+  shelves.js            — стеллажи (создание, размещение расходников)
+  diagnostics.js        — диагностика (мини-игры: фонендоскоп, рефлекс-молоток, риноскоп; запуск напрямую с прицела)
   staff.js              — система найма сотрудников (NPC, зарплата)
   trash.js              — система мусора (спавн, модели, партиклы вони, мухи, уборка игроком)
   shift.js              — система смен (время, табличка, задачи, маскот, итоги дня)
@@ -139,7 +137,6 @@ specs/
 Каждый 2-й кадр (30fps, `delta * 2`):
 8. `Game.Furniture.update(delta)` — interaction мебели (hover, hold progress E, подсказки)
 9. `Game.Shelves.update(delta)` — interaction стеллажей
-11. `Game.ToolPanel.update(delta)` — interaction панели инструментов
 12. `Game.Trash.update(delta)` — мусор
 13. `Game.Shift.update(delta)` — время смены, hover таблички, задачи
 
@@ -149,7 +146,7 @@ specs/
 Рендер: `composer.render()` или `renderer.render(scene, camera)` (зависит от `useComposer`)
 
 ## Оркестратор (`index.html` inline module)
-Создаёт renderer, scene, camera, collidables[], composer (EffectComposer с RenderPass + OutlinePass + OutputPass). Вызывает `Game.World.setup()` (возвращает `sunLight`), `Game.Controls.setup()`, `Game.Furniture.setup()` + `registerExisting()`, `Game.Wrench.setup()`, `Game.Patients.setup()`, `Game.Consumables.setup()`, `Game.Inventory.setup()`, `Game.Shop.setup()`, `Game.Ads.setup()`, `Game.Shelves.setup()`, `Game.ToolPanel.setup()`, `Game.Diagnostics.setup()`, `Game.Cashier.setup()`, `Game.Shift.setup()`, `Game.Tutorial.setup()`. Экспортирует `Game.Outline`, `Game.FPS`. Настраивает Quality Settings и FPS counter. Запускает animation loop с 60fps лимитом.
+Создаёт renderer, scene, camera, collidables[], composer (EffectComposer с RenderPass + OutlinePass + OutputPass). Вызывает `Game.World.setup()` (возвращает `sunLight`), `Game.Controls.setup()`, `Game.Furniture.setup()` + `registerExisting()`, `Game.Wrench.setup()`, `Game.Patients.setup()`, `Game.Consumables.setup()`, `Game.Inventory.setup()`, `Game.Shop.setup()`, `Game.Ads.setup()`, `Game.Shelves.setup()`, `Game.Diagnostics.setup()`, `Game.Cashier.setup()`, `Game.Shift.setup()`, `Game.Tutorial.setup()`. Экспортирует `Game.Outline`, `Game.FPS`. Настраивает Quality Settings и FPS counter. Запускает animation loop с 60fps лимитом.
 
 ## Global State
 
@@ -183,13 +180,12 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 | `bed-count` | span | Счётчик свободных кроватей "(X/2)" внутри btn-bed |
 | `btn-wait` | button | Кнопка "В зону ожидания" |
 | `chair-count` | span | Счётчик свободных стульев "(X/3)" внутри btn-wait |
-| `popup-instrument-hint` | div | Подсказка инструмента в попапе (при needsDiagnosis) |
+| `popup-instrument-hint` | div | Подсказка "Требуется диагностика" в попапе (при needsDiagnosis) |
 | `outdoor-warning` | div | Предупреждение о мебели на улице (в попапе пациента) |
 | `broken-bed-warning` | div | Предупреждение о сломанных кроватях (в попапе пациента) |
-| `shop-popup` | div | Попап магазина (табы: препараты + инструменты + мебель) |
+| `shop-popup` | div | Попап магазина (табы: препараты + мебель + прокачка + сотрудники) |
 | `shop-tabs` | div | Контейнер табов магазина |
 | `shop-tab-consumables` | div | Секция препаратов |
-| `shop-tab-instruments` | div | Секция инструментов |
 | `shop-tab-furniture` | div | Секция мебели (кровать, стул) |
 | `shop-close` | button | Кнопка закрытия магазина |
 | `ad-offer-popup` | div | Попап предложения посмотреть рекламу |
@@ -409,24 +405,12 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 - `getShelves()` → shelf[] — массив стеллажей
 - `findSlotWithItem(type)` → slot|null — найти слот с предметом данного типа
 - `takeFromSlot(slot)` → type|null — забрать предмет из слота
-- `placeOnAnyShelf(type)` → boolean — положить на первый свободный стеллаж (**инструменты отклоняются**, возвращает false)
-- При попытке положить инструмент (E) — уведомление "Инструменты вешайте на панель"
-
-### `Game.ToolPanel` (`js/tool-panel.js`)
-Настенная панель для инструментов. Деревянная доска с рамкой и металлическими крюками, висит на стене рядом со стеллажами (x=-3.0, z=-11.85). 3 типизированных слота — каждый под конкретный инструмент. Табличка "ИНСТРУМЕНТЫ" на стене.
-- `setup(THREE, scene, camera, controls, collidables)` — создание панели, крюков, подписей
-- `update(delta)` — interaction raycast
-- `hasInteraction()` → boolean
-- `findSlot(type)` → slot|null — найти слот с инструментом данного типа
-- `takeFromSlot(slot)` → type|null — снять инструмент с крюка
-- `placeItem(type)` → boolean — повесить инструмент на его крюк
-- `getPosition()` → {x, z} — координаты панели (для навигации персонала)
-- `getSlots()` → slot[] — массив слотов
+- `placeOnAnyShelf(type)` → boolean — положить на первый свободный стеллаж
 
 ### `Game.Diagnostics` (`js/diagnostics.js`)
-Мини-игры диагностики: фонендоскоп, рефлекс-молоток, риноскоп.
+Мини-игры диагностики: фонендоскоп, рефлекс-молоток, риноскоп. Инструменты не физические — применяются неявно при ЛКМ на пациента.
 - `setup(controls)` — инициализация overlay, привязка событий
-- `startMinigame(patient, instrumentType)` — запуск мини-игры, unlock controls, показ overlay
+- `startMinigame(patient, instrumentType)` — запуск мини-игры (instrumentType только выбирает тип мини-игры), unlock controls, показ overlay
 - `isActive()` → boolean — активна ли мини-игра
 - `update(delta)` — обновление (мини-игра использует свой RAF loop)
 

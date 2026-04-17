@@ -252,7 +252,7 @@
         btn.classList.add('tutorial-locked');
       }
     }
-    var otherBtns = document.querySelectorAll('#shop-tab-instruments .shop-buy-btn, #shop-tab-furniture .shop-buy-btn, #shop-tab-upgrades .shop-buy-btn, .staff-hire-btn');
+    var otherBtns = document.querySelectorAll('#shop-tab-furniture .shop-buy-btn, #shop-tab-upgrades .shop-buy-btn, .staff-hire-btn');
     for (var j = 0; j < otherBtns.length; j++) {
       otherBtns[j].classList.add('tutorial-locked');
     }

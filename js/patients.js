@@ -631,13 +631,7 @@
       if (hoveredPatient.treated) {
         hintEl.textContent = Game.Lang.t('patient.hint.treating');
       } else if (hoveredPatient.needsDiagnosis) {
-        var neededInstr = Game.Consumables.INSTRUMENT_TYPES[hoveredPatient.requiredInstrument];
-        var hasInstr = Game.Inventory.countType(hoveredPatient.requiredInstrument) > 0;
-        if (hasInstr) {
-          hintEl.textContent = Game.Lang.t('patient.hint.diagnose', [neededInstr.name]);
-        } else {
-          hintEl.textContent = Game.Lang.t('patient.hint.needInstrument', [neededInstr.name]);
-        }
+        hintEl.textContent = Game.Lang.t('patient.hint.diagnose');
       } else {
         var pendingNames = [];
         var hasAny = false;
@@ -711,10 +705,9 @@
       popupSupply.style.color = '#ff4444';
       popupSupplyIcon.style.display = 'none';
 
-      // Show required instrument
+      // Show diagnosis prompt
       if (popupInstrumentHint) {
-        var instrInfo = Game.Consumables.INSTRUMENT_TYPES[patient.requiredInstrument];
-        popupInstrumentHint.textContent = Game.Lang.t('patient.needInstrument', [instrInfo.name]);
+        popupInstrumentHint.textContent = Game.Lang.t('patient.needDiagnosis');
         popupInstrumentHint.style.display = 'block';
         popupInstrumentHint.style.color = '#ffaa44';
       }
@@ -1905,21 +1898,14 @@
         if (hoveredPatient.state === 'atBed') {
           if (hoveredPatient.treated) return;
 
-          // Undiagnosed patient — need instrument first
+          // Undiagnosed patient — instrument is implicit, minigame starts directly
           if (hoveredPatient.needsDiagnosis) {
             // Check if staff diagnostician is already working
             if (hoveredPatient.staffDiagnosing) {
               Game.Inventory.showNotification(Game.Lang.t('notify.diagAlreadyWorking'));
               return;
             }
-            // Auto-find required instrument in inventory
-            if (!Game.Inventory.findAndActivate(hoveredPatient.requiredInstrument)) {
-              var instrInfo = Game.Consumables.INSTRUMENT_TYPES[hoveredPatient.requiredInstrument];
-              var instrName = instrInfo ? instrInfo.name : Game.Lang.t('item.default');
-              Game.Inventory.showNotification(Game.Lang.t('notify.needInstrument', [instrName]));
-              return;
-            }
-            // Start mini-game (instrument NOT consumed)
+            // Start mini-game directly (no inventory check)
             Game.Diagnostics.startMinigame(hoveredPatient, hoveredPatient.requiredInstrument);
             return;
           }

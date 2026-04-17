@@ -265,8 +265,7 @@
 
       // Patient hints
       'patient.hint.treating': 'Пациент лечится...',
-      'patient.hint.diagnose': 'ЛКМ — Диагностика ({0})',
-      'patient.hint.needInstrument': 'Нужен инструмент ({0})',
+      'patient.hint.diagnose': 'ЛКМ — Диагностика',
       'patient.hint.treat': 'ЛКМ — Лечить',
       'patient.hint.needMedicines': 'Нужны препараты: {0}',
       'patient.hint.needMedicine': 'Нужен препарат ({0})',
@@ -274,7 +273,7 @@
       'patient.hint.interact': 'Нажмите ЛКМ для взаимодействия',
       'patient.age': '{0} лет',
       'patient.pulse': '{0} уд/м',
-      'patient.needInstrument': 'Необходим: {0}',
+      'patient.needDiagnosis': 'Требуется диагностика',
       'patient.outdoorWarning': 'Пока кровать/стул на улице — их нельзя использовать',
       'patient.brokenWarning1': '{0} кровать сломана — почините ремонтным ключом',
       'patient.brokenWarningN': '{0} кроватей сломано — почините ремонтным ключом',
@@ -695,8 +694,7 @@
 
       // Patient hints
       'patient.hint.treating': 'Patient is being treated...',
-      'patient.hint.diagnose': 'LMB — Diagnose ({0})',
-      'patient.hint.needInstrument': 'Need instrument ({0})',
+      'patient.hint.diagnose': 'LMB — Diagnose',
       'patient.hint.treat': 'LMB — Treat',
       'patient.hint.needMedicines': 'Need medications: {0}',
       'patient.hint.needMedicine': 'Need medication ({0})',
@@ -704,7 +702,7 @@
       'patient.hint.interact': 'Press LMB to interact',
       'patient.age': '{0} y.o.',
       'patient.pulse': '{0} bpm',
-      'patient.needInstrument': 'Required: {0}',
+      'patient.needDiagnosis': 'Diagnosis required',
       'patient.outdoorWarning': 'Beds/chairs cannot be used while outside',
       'patient.brokenWarning1': '{0} bed is broken — repair with the wrench',
       'patient.brokenWarningN': '{0} beds are broken — repair with the wrench',

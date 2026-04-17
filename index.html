@@ -75,7 +75,6 @@
     <h2 data-lang-key="shop.title"></h2>
     <div id="shop-tabs">
       <button class="shop-tab active" data-tab="consumables" data-lang-key="shop.tab.consumables"></button>
-      <button class="shop-tab" data-tab="instruments" data-lang-key="shop.tab.instruments"></button>
       <button class="shop-tab" data-tab="furniture" data-lang-key="shop.tab.furniture"></button>
       <button class="shop-tab" data-tab="upgrades" data-lang-key="shop.tab.upgrades"></button>
       <button class="shop-tab" data-tab="staff" data-lang-key="shop.tab.staff"></button>
@@ -95,23 +94,6 @@
         <span class="shop-item-icon" style="background:#33aa55"></span>
         <span class="shop-item-name" data-lang-key="item.antihistamine"></span>
         <button class="shop-buy-btn"></button>
-      </div>
-    </div>
-    <div id="shop-tab-instruments" class="shop-tab-content" style="display:none">
-      <div class="shop-item shop-instrument-item" data-type="instrument_stethoscope">
-        <span class="shop-item-icon" style="background:#8866cc"></span>
-        <span class="shop-item-name" data-lang-key="item.instrument_stethoscope"></span>
-        <button class="shop-buy-btn" style="background:#2a8a5a"></button>
-      </div>
-      <div class="shop-item shop-instrument-item" data-type="instrument_hammer">
-        <span class="shop-item-icon" style="background:#cc8844"></span>
-        <span class="shop-item-name" data-lang-key="item.instrument_hammer"></span>
-        <button class="shop-buy-btn" style="background:#2a8a5a"></button>
-      </div>
-      <div class="shop-item shop-instrument-item" data-type="instrument_rhinoscope">
-        <span class="shop-item-icon" style="background:#44aacc"></span>
-        <span class="shop-item-name" data-lang-key="item.instrument_rhinoscope"></span>
-        <button class="shop-buy-btn" style="background:#2a8a5a"></button>
       </div>
     </div>
     <div id="shop-tab-furniture" class="shop-tab-content" style="display:none">
@@ -178,7 +160,6 @@
     <button id="shop-close">✕</button>
   </div>
   <div id="staff-warnings-container">
-    <div id="diag-warning-hud"></div>
     <div id="nurse-warning-hud"></div>
   </div>
   <div id="balance-hud"><span data-lang-key="hud.balance"></span> <span id="balance-value">$350</span></div>
@@ -410,7 +391,6 @@
   <script src="js/wrench.js?v=2"></script>
   <script src="js/furniture.js?v=2"></script>
   <script src="js/shelves.js?v=2"></script>
-  <script src="js/tool-panel.js?v=2"></script>
   <script src="js/diagnostics.js?v=2"></script>
   <script src="js/staff.js?v=2"></script>
   <script src="js/trash.js?v=2"></script>
@@ -516,7 +496,6 @@
     Game.Ads.setup();
     Game.Wrench.setup(THREE, scene, camera, controls);
     Game.Shelves.setup(THREE, scene, camera, controls, collidables);
-    Game.ToolPanel.setup(THREE, scene, camera, controls, collidables);
     Game.Diagnostics.setup(controls);
     Game.Cashier.setup(THREE, scene, camera, controls, cashierDesk);
     Game.Staff.setup(THREE, scene, camera, controls, collidables);
@@ -616,7 +595,6 @@
       if (frameCount % 2 === 0) {
         Game.Furniture.update(delta * 2);
         Game.Shelves.update(delta * 2);
-        Game.ToolPanel.update(delta * 2);
         Game.Trash.update(delta * 2);
         Game.Shift.update(delta * 2);
       }

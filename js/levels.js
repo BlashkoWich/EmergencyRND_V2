@@ -8,9 +8,7 @@
 
   var UNLOCK_DESCRIPTIONS = {
     2: [
-      Game.Lang.t('levels.unlock2.0'),
-      Game.Lang.t('levels.unlock2.1'),
-      Game.Lang.t('levels.unlock2.2')
+      Game.Lang.t('levels.unlock2.1')
     ],
     3: [
       Game.Lang.t('levels.unlock3.0'),
@@ -25,7 +23,6 @@
 
   var UNLOCK_LEVELS = {
     consumables: 1,
-    instruments: 2,
     furniture: 3,
     upgrades: 3,
     staff: 4

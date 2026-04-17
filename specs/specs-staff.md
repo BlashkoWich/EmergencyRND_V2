@@ -72,9 +72,7 @@ WORK_POSITIONS = {
 ```js
 ACTION_LABELS = {
   processing: 'Оформление',
-  pickInstrument: 'Берёт инструмент',
   diagnosing: 'Диагностика',
-  returnInstrument: 'Возвращает',
   pickMedicine: 'Берёт лекарство',
   treating: 'Лечение',
   cleaningTrash: 'Уборка мусора'
@@ -126,21 +124,13 @@ processing (5 сек) → processPaymentAuto() → idle
 ```
 idle → ищет atBed + needsDiagnosis + !staffDiagnosing
   → patient.staffDiagnosing = true
-  → ищет инструмент: панель → стеллаж → пол
-walkToShelf → pickInstrument (1 сек) → берёт инструмент (с панели или стеллажа)
-  ИЛИ walkToGround → подбирает с пола
 walkToPatient → diagnosing (15 сек) → revealDiagnosis()
-walkBackToShelf → returnInstrument (1 сек) → ToolPanel.placeItem или placeOnAnyShelf или бросает рядом
 returning → idle
 ```
 
-**Поиск инструментов**: диагност сначала проверяет панель инструментов (`Game.ToolPanel.findSlot`), затем стеллажи (`Game.Shelves.findSlotWithItem`), затем пол. При возврате инструмента — сначала пытается повесить на панель, затем fallback на стеллаж.
-
-**Навигация**: если инструмент на панели — идёт к `ToolPanel.getPosition()` + z+0.8; если на стеллаже — к позиции слота.
+Инструменты больше не предметы — диагност не ищет их, не носит, не кладёт обратно. Он просто идёт к пациенту и проводит обследование.
 
 **Блокировка**: `patient.staffDiagnosing` → игрок видит "Диагност уже проводит обследование"
-
-**Предупреждение**: если инструментов нет ни на панели, ни на стеллаже, ни на полу — фиолетовый HUD-блок (`#diag-warning-hud`) с перечнем недостающих инструментов. Пульсирующая анимация. Исчезает при появлении инструмента или увольнении диагноста.
 
 ### Медсестра
 
@@ -168,13 +158,6 @@ returning → idle
 ## Предупреждения (Staff Warning HUDs)
 
 Контейнер `#staff-warnings-container` (fixed, top:60px, right:20px, z-index:6, flex-column, gap:8px):
-
-### Диагност — `#diag-warning-hud`
-- Фон: `rgba(100, 40, 160, 0.92)`, рамка `rgba(160, 100, 255, 0.6)`
-- Заголовок: "ДИАГНОСТУ НЕ ХВАТАЕТ ИНСТРУМЕНТОВ:"
-- Список: цветная точка + название инструмента
-- Пульсация: `diag-warn-pulse` (фиолетовый box-shadow)
-- Показывается когда диагност нанят И есть пациенты, нуждающиеся в диагностике, но инструментов нет
 
 ### Медсестра — `#nurse-warning-hud`
 - Фон: `rgba(180, 30, 30, 0.92)`, рамка `rgba(255, 80, 80, 0.6)`
@@ -243,15 +226,7 @@ treatPatientByStaff(patient, consumableType) // лечить без инвент
 getShelves()            // массив стеллажей
 findSlotWithItem(type)  // слот с предметом или null
 takeFromSlot(slot)      // забрать 1 шт
-placeOnAnyShelf(type)   // положить на первый подходящий стеллаж (инструменты отклоняются → false)
-```
-
-### Game.ToolPanel (новые)
-```js
-findSlot(type)          // слот с инструментом данного типа или null
-takeFromSlot(slot)      // снять инструмент с крюка
-placeItem(type)         // повесить инструмент на его крюк → boolean
-getPosition()           // {x, z} координаты панели для навигации
+placeOnAnyShelf(type)   // положить на первый подходящий стеллаж
 ```
 
 ### Game.Cashier (новые)
@@ -284,7 +259,6 @@ getGroundItemsByType(type)           // все предметы типа на п
 .staff-hired-item           — строка нанятого
 .staff-fire-btn             — кнопка "Уволить" (data-id)
 #staff-warnings-container   — контейнер предупреждений (fixed)
-#diag-warning-hud           — предупреждение диагноста
 #nurse-warning-hud          — предупреждение медсестры
 #stat-salary                — строка зарплаты в попапе конца дня
 ```

@@ -17,7 +17,6 @@
   var upgradeButtons = []; // [{btn, item}]
 
   var UNLOCK_LEVELS_MAP = {
-    instruments: 2,
     furniture: 3,
     upgrades: 3,
     staff: 4
@@ -87,15 +86,6 @@
       var total = inInventory + onGround + inBoxes;
       countEls[type].textContent = total > 0 ? Game.Lang.t('shop.count', [total]) : '';
     }
-    // Instruments
-    var instrTypes = Game.Consumables.INSTRUMENT_TYPES;
-    for (var type in instrTypes) {
-      if (!countEls[type]) continue;
-      var inInventory = Game.Inventory.countType(type);
-      var onGround = Game.Consumables.countGroundItems(type);
-      var total = inInventory + onGround;
-      countEls[type].textContent = total > 0 ? Game.Lang.t('shop.count', [total]) : '';
-    }
   }
 
   function refreshFreeLabels() {
@@ -111,23 +101,6 @@
         btn.style.background = '#2a8a5a';
       } else {
         btn.textContent = Game.Lang.t('shop.buy', [basePrice]);
-        btn.style.background = '';
-      }
-    }
-  }
-
-  function refreshInstrumentFreeLabels() {
-    var instrumentItems = document.querySelectorAll('#shop-tab-instruments .shop-item');
-    for (var i = 0; i < instrumentItems.length; i++) {
-      var itemEl = instrumentItems[i];
-      var type = itemEl.dataset.type;
-      var btn = itemEl.querySelector('.shop-buy-btn');
-      if (!btn) continue;
-      if (!firstOrderUsed[type]) {
-        btn.textContent = Game.Lang.t('shop.order.free');
-        btn.style.background = '#2a8a5a';
-      } else {
-        btn.textContent = Game.Lang.t('shop.buy', [220]);
         btn.style.background = '';
       }
     }
@@ -166,7 +139,6 @@
       var tabs = shopEl.querySelectorAll('.shop-tab');
       var tabContents = {
         consumables: document.getElementById('shop-tab-consumables'),
-        instruments: document.getElementById('shop-tab-instruments'),
         furniture: document.getElementById('shop-tab-furniture'),
         upgrades: document.getElementById('shop-tab-upgrades'),
         staff: document.getElementById('shop-tab-staff')
@@ -227,42 +199,6 @@
             Game.Consumables.spawnBoxInDeliveryZone(t);
             updateCounts();
             if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('shop_item_bought', t);
-          });
-        })(itemEl.querySelector('.shop-buy-btn'), type);
-      }
-
-      // --- Instrument buy buttons + count spans ---
-      var instrumentItems = document.querySelectorAll('#shop-tab-instruments .shop-item');
-      for (var i = 0; i < instrumentItems.length; i++) {
-        var itemEl = instrumentItems[i];
-        var type = itemEl.dataset.type;
-
-        // Create count span
-        var countSpan = document.createElement('span');
-        countSpan.className = 'shop-item-count';
-        itemEl.insertBefore(countSpan, itemEl.querySelector('.shop-buy-btn'));
-        countEls[type] = countSpan;
-
-        // Buy button handler (first order of each instrument is free)
-        (function(btn, t) {
-          btn.addEventListener('click', function() {
-            var isFree = !firstOrderUsed[t];
-            var price = isFree ? 0 : 220;
-            if (!isFree) {
-              var balance = Game.Cashier.getBalance();
-              if (balance < price) {
-                Game.Ads.show();
-                return;
-              }
-            }
-            if (price > 0) Game.Cashier.spend(price);
-            if (isFree) {
-              firstOrderUsed[t] = true;
-              Game.Inventory.showNotification(Game.Lang.t('notify.firstOrderFree'), 'rgba(34, 139, 34, 0.85)');
-              refreshInstrumentFreeLabels();
-            }
-            Game.Consumables.spawnInstrumentInDeliveryZone(t);
-            updateCounts();
           });
         })(itemEl.querySelector('.shop-buy-btn'), type);
       }
@@ -340,7 +276,6 @@
 
       refreshTabLocks();
       refreshFreeLabels();
-      refreshInstrumentFreeLabels();
 
       // KeyQ to toggle shop
       document.addEventListener('keydown', function(e) {
@@ -366,7 +301,6 @@
           refreshStaffList();
           refreshTabLocks();
           refreshFreeLabels();
-          refreshInstrumentFreeLabels();
           if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('shop_opened');
         }
       });
