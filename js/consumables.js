@@ -150,15 +150,6 @@
     scene.add(group);
     trashBinMesh = group;
 
-    // Collision box (matches new bin footprint)
-    var colBox = new THREE.Mesh(
-      new THREE.BoxGeometry(1.55, BIN_HEIGHT + 0.1, 1.55),
-      new THREE.MeshBasicMaterial({ visible: false })
-    );
-    colBox.position.set(TRASH_ZONE.cx, (BIN_HEIGHT + 0.1) / 2, TRASH_ZONE.cz);
-    scene.add(colBox);
-    collidables.push(colBox);
-
     // Ground zone indicator (marks the drop zone)
     var canvas = document.createElement('canvas');
     canvas.width = 128; canvas.height = 128;
@@ -700,7 +691,7 @@
       if (it.pickedUp) continue;
       var p = it.mesh.position;
       var dx = p.x - TRASH_ZONE.cx, dz = p.z - TRASH_ZONE.cz;
-      if (dx * dx + dz * dz < tr && p.y < 1.0) {
+      if (dx * dx + dz * dz < tr) {
         scene.remove(it.mesh);
         groundItems.splice(i, 1);
       }
@@ -710,7 +701,7 @@
       if (bx.pickedUp) continue;
       var p = bx.mesh.position;
       var dx = p.x - TRASH_ZONE.cx, dz = p.z - TRASH_ZONE.cz;
-      if (dx * dx + dz * dz < tr && p.y < 1.0) {
+      if (dx * dx + dz * dz < tr) {
         scene.remove(bx.mesh);
         groundBoxes.splice(i, 1);
         if (hoveredBox === bx) { hoveredBox = null; hintEl.style.display = 'none'; }
