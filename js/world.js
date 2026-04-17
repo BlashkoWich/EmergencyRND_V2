@@ -36,6 +36,21 @@
       grassL.position.set(-20, -0.04, 20); grassL.receiveShadow = true; scene.add(grassL); collidables.push(grassL);
       var grassR = new THREE.Mesh(new THREE.BoxGeometry(20, 0.1, 40), grassMat);
       grassR.position.set(20, -0.04, 20); grassR.receiveShadow = true; scene.add(grassR); collidables.push(grassR);
+      // Back of the building (z < -12)
+      var grassBack = new THREE.Mesh(new THREE.BoxGeometry(60, 0.1, 24), grassMat);
+      grassBack.position.set(0, -0.04, -24); grassBack.receiveShadow = true; scene.add(grassBack); collidables.push(grassBack);
+      // Strip along west side of building (between entrance and delivery pad south edge)
+      var grassWestSide = new THREE.Mesh(new THREE.BoxGeometry(8, 0.1, 7.3), grassMat);
+      grassWestSide.position.set(-12, -0.04, -3.65); grassWestSide.receiveShadow = true; scene.add(grassWestSide); collidables.push(grassWestSide);
+      // Strip along east side of building
+      var grassEastSide = new THREE.Mesh(new THREE.BoxGeometry(2, 0.1, 12), grassMat);
+      grassEastSide.position.set(9, -0.04, -6); grassEastSide.receiveShadow = true; scene.add(grassEastSide); collidables.push(grassEastSide);
+      // Fill west gap between grassL and delivery zone (avoids overlap with delivery pad at x=-16..-8)
+      var grassWestMid = new THREE.Mesh(new THREE.BoxGeometry(14, 0.1, 12), grassMat);
+      grassWestMid.position.set(-23, -0.04, -6); grassWestMid.receiveShadow = true; scene.add(grassWestMid); collidables.push(grassWestMid);
+      // Fill east gap between grassR and building strip
+      var grassEastMid = new THREE.Mesh(new THREE.BoxGeometry(20, 0.1, 12), grassMat);
+      grassEastMid.position.set(20, -0.04, -6); grassEastMid.receiveShadow = true; scene.add(grassEastMid); collidables.push(grassEastMid);
 
       // --- Ceiling (only over building) ---
       var ceilMesh = new THREE.Mesh(
@@ -47,27 +62,84 @@
       scene.add(ceilMesh);
       collidables.push(ceilMesh);
 
-      // --- Building walls ---
+      // --- Building walls (with window openings cut out) ---
       var T = 0.2;
-      H.createWall(THREE, scene, collidables, 0, BZ1, BW + T, T);           // North
-      // West wall — with side door gap at north corner (z: -12 .. -9.6)
-      var westDoorZ2 = -9.6; // south edge of gap
-      var westWallLen = BZ2 - westDoorZ2; // remaining wall length: 0 - (-9.6) = 9.6
-      H.createWall(THREE, scene, collidables, BX1, westDoorZ2 + westWallLen / 2, T, westWallLen); // West (south of door)
+      var WIN_W = 1.4, WIN_H = 1.0, WIN_Y = 1.7; // window dims (centered at y=1.7)
+      var winBottomH = WIN_Y - WIN_H / 2;        // 1.2
+      var winTopH = 3.0 - (WIN_Y + WIN_H / 2);    // 0.8
+      // isHorizontal: wall runs along x (constant z = axisVal); else runs along z (constant x = axisVal)
+      // windows: [{center, width}] along the running axis
+      function createWallSegments(isHorizontal, axisVal, min, max, windows) {
+        var fullLen = max - min;
+        var fullCenter = (min + max) / 2;
+        // Bottom strip (full length, h=1.2)
+        if (isHorizontal) {
+          H.createWall(THREE, scene, collidables, fullCenter, axisVal, fullLen, T, { h: winBottomH, y: winBottomH / 2 });
+        } else {
+          H.createWall(THREE, scene, collidables, axisVal, fullCenter, T, fullLen, { h: winBottomH, y: winBottomH / 2 });
+        }
+        // Top strip (full length, h=0.8)
+        if (isHorizontal) {
+          H.createWall(THREE, scene, collidables, fullCenter, axisVal, fullLen, T, { h: winTopH, y: 3.0 - winTopH / 2 });
+        } else {
+          H.createWall(THREE, scene, collidables, axisVal, fullCenter, T, fullLen, { h: winTopH, y: 3.0 - winTopH / 2 });
+        }
+        // Middle band (h=1.0 at y=1.7) — broken into segments between windows
+        var sorted = windows.slice().sort(function(a, b) { return a.center - b.center; });
+        var cursor = min;
+        for (var i = 0; i < sorted.length; i++) {
+          var wStart = sorted[i].center - sorted[i].width / 2;
+          var wEnd = sorted[i].center + sorted[i].width / 2;
+          if (wStart > cursor + 0.001) {
+            var segLen = wStart - cursor;
+            var segCenter = (cursor + wStart) / 2;
+            if (isHorizontal) {
+              H.createWall(THREE, scene, collidables, segCenter, axisVal, segLen, T, { h: WIN_H, y: WIN_Y });
+            } else {
+              H.createWall(THREE, scene, collidables, axisVal, segCenter, T, segLen, { h: WIN_H, y: WIN_Y });
+            }
+          }
+          cursor = wEnd;
+        }
+        if (max > cursor + 0.001) {
+          var tailLen = max - cursor;
+          var tailCenter = (cursor + max) / 2;
+          if (isHorizontal) {
+            H.createWall(THREE, scene, collidables, tailCenter, axisVal, tailLen, T, { h: WIN_H, y: WIN_Y });
+          } else {
+            H.createWall(THREE, scene, collidables, axisVal, tailCenter, T, tailLen, { h: WIN_H, y: WIN_Y });
+          }
+        }
+      }
+      // North wall (z=-12, x: -8.1..8.1) — 2 windows
+      createWallSegments(true, BZ1, BX1 - T / 2, BX2 + T / 2, [
+        { center: -2.5, width: WIN_W },
+        { center: 3.5, width: WIN_W }
+      ]);
+      // West wall (x=-8, z: -9.6..0) — 2 windows (south of side door gap)
+      var westDoorZ2 = -9.6;
+      var westWallLen = BZ2 - westDoorZ2; // 9.6
+      createWallSegments(false, BX1, westDoorZ2, BZ2, [
+        { center: -8, width: WIN_W },
+        { center: -4, width: WIN_W }
+      ]);
       // Lintel above side door
-      var westDoorWidth = BZ1 - westDoorZ2; // -12 - (-9.6) = -2.4, abs = 2.4
+      var westDoorWidth = BZ1 - westDoorZ2; // abs 2.4
       H.createWall(THREE, scene, collidables, BX1, (BZ1 + westDoorZ2) / 2, T, Math.abs(westDoorWidth), { h: 0.5, y: 2.75 });
       // Side door frame post (south side of gap)
       var westFrameMat = new THREE.MeshLambertMaterial({ color: 0x99a8b8 });
       var westPost = new THREE.Mesh(new THREE.BoxGeometry(0.25, 3, 0.08), westFrameMat);
       westPost.position.set(BX1, 1.5, westDoorZ2); scene.add(westPost); collidables.push(westPost);
-      H.createWall(THREE, scene, collidables, BX2, -BD / 2, T, BD);         // East
-      // South wall — two segments with entrance gap (x: -1.2..1.2)
+      // East wall (x=8, z: -12..0) — 2 windows
+      createWallSegments(false, BX2, BZ1, BZ2, [
+        { center: -10, width: WIN_W },
+        { center: -7, width: WIN_W }
+      ]);
+      // South wall — two segments with entrance gap (x: -1.2..1.2), each with 1 window
       var doorHalf = 1.2;
-      var segW = (BW / 2 - doorHalf);
-      H.createWall(THREE, scene, collidables, BX1 + segW / 2, BZ2, segW, T);
-      H.createWall(THREE, scene, collidables, BX2 - segW / 2, BZ2, segW, T);
-      H.createWall(THREE, scene, collidables, 0, BZ2, doorHalf * 2, T, { h: 0.5, y: 2.75 }); // Lintel
+      createWallSegments(true, BZ2, BX1, -doorHalf, [{ center: -6, width: WIN_W }]);
+      createWallSegments(true, BZ2, doorHalf, BX2, [{ center: 6, width: WIN_W }]);
+      H.createWall(THREE, scene, collidables, 0, BZ2, doorHalf * 2, T, { h: 0.5, y: 2.75 }); // Entrance lintel
 
       // Door frame posts
       var frameMat = new THREE.MeshLambertMaterial({ color: 0x99a8b8 });
@@ -193,6 +265,16 @@
       createTree(12, 8);
       createTree(-8, 15);
       createTree(8, 15);
+      // Behind the building
+      createTree(-6, -18);
+      createTree(6, -18);
+      createTree(-14, -20);
+      createTree(14, -20);
+      // East side
+      createTree(13, -2);
+      createTree(14, -10);
+      // West side (past delivery zone)
+      createTree(-18, -4);
 
       // --- Benches ---
       var benchMat = new THREE.MeshLambertMaterial({ color: 0x8B6F47 });
@@ -217,6 +299,56 @@
       createBench(4, 2, 0);
       createBench(-4, 2, 0);
 
+      // --- Windows (decorative, do not cut walls; not in collidables) ---
+      var windowFrameMat = new THREE.MeshLambertMaterial({ color: 0x556677 });
+      var windowGlassMat = new THREE.MeshLambertMaterial({
+        color: 0xaaccee,
+        emissive: 0x334466,
+        emissiveIntensity: 0.15,
+        transparent: true,
+        opacity: 0.25,
+        side: THREE.DoubleSide
+      });
+      function createWindow(x, y, z, rotY) {
+        var w = 1.4, h = 1.0;
+        var g = new THREE.Group();
+        // Frame: top, bottom (sill), left, right
+        var top = new THREE.Mesh(new THREE.BoxGeometry(w + 0.08, 0.08, 0.28), windowFrameMat);
+        top.position.set(0, h / 2, 0); g.add(top);
+        var sill = new THREE.Mesh(new THREE.BoxGeometry(w + 0.12, 0.06, 0.30), windowFrameMat);
+        sill.position.set(0, -h / 2, 0); g.add(sill);
+        var left = new THREE.Mesh(new THREE.BoxGeometry(0.08, h, 0.28), windowFrameMat);
+        left.position.set(-w / 2, 0, 0); g.add(left);
+        var right = new THREE.Mesh(new THREE.BoxGeometry(0.08, h, 0.28), windowFrameMat);
+        right.position.set(w / 2, 0, 0); g.add(right);
+        // Mullions (cross)
+        var horiz = new THREE.Mesh(new THREE.BoxGeometry(w - 0.08, 0.05, 0.22), windowFrameMat);
+        horiz.position.set(0, 0, 0); g.add(horiz);
+        var vert = new THREE.Mesh(new THREE.BoxGeometry(0.05, h - 0.08, 0.22), windowFrameMat);
+        vert.position.set(0, 0, 0); g.add(vert);
+        // Glass panes (outer + inner, perpendicular to wall via group rotation)
+        var glassGeo = new THREE.PlaneGeometry(w - 0.1, h - 0.1);
+        var glassOuter = new THREE.Mesh(glassGeo, windowGlassMat);
+        glassOuter.position.set(0, 0, 0.12); g.add(glassOuter);
+        var glassInner = new THREE.Mesh(glassGeo, windowGlassMat);
+        glassInner.position.set(0, 0, -0.12); g.add(glassInner);
+        g.position.set(x, y, z);
+        g.rotation.y = rotY || 0;
+        scene.add(g);
+      }
+      // North wall (z=-12) — flanking sign.reception (x=0)
+      createWindow(-2.5, 1.7, -12, 0);
+      createWindow(3.5, 1.7, -12, 0);
+      // East wall (x=8) — outside chair zone / sign at z=-3.2
+      createWindow(8, 1.7, -7, -Math.PI / 2);
+      createWindow(8, 1.7, -10, -Math.PI / 2);
+      // West wall (x=-8) — between beds, avoiding sign.examination (z=-6)
+      createWindow(-8, 1.7, -4, Math.PI / 2);
+      createWindow(-8, 1.7, -8, Math.PI / 2);
+      // South wall (z=0) — flanking entrance, avoiding cashier (x=-3.5)
+      createWindow(-6, 1.7, 0, Math.PI);
+      createWindow(6, 1.7, 0, Math.PI);
+
       // === LIGHTING ===
 
       // Hemisphere light (sky + ground)
@@ -229,10 +361,10 @@
       sunLight.castShadow = true;
       sunLight.shadow.mapSize.width = 1024;
       sunLight.shadow.mapSize.height = 1024;
-      sunLight.shadow.camera.left = -10;
-      sunLight.shadow.camera.right = 10;
+      sunLight.shadow.camera.left = -14;
+      sunLight.shadow.camera.right = 14;
       sunLight.shadow.camera.top = 2;
-      sunLight.shadow.camera.bottom = -12;
+      sunLight.shadow.camera.bottom = -16;
       sunLight.shadow.camera.near = 1;
       sunLight.shadow.camera.far = 40;
       scene.add(sunLight);
