@@ -24,14 +24,38 @@
       'popup.temp': 'ТЕМП',
       'popup.pulse': 'ПУЛЬС',
       'popup.bp': 'АД',
-      'popup.condition': 'Состояние',
       'popup.complaint': 'Жалоба',
       'popup.diagnosis': 'Диагноз',
       'popup.prescription': 'Назначение',
       'popup.btn.bed': 'На кровать',
       'popup.btn.wait': 'В зону ожидания',
-      'popup.btn.dismiss': 'Подождать',
+      'popup.btn.diag': 'В диагностику',
+      'popup.btn.reject': 'Отказать',
+      'popup.btn.defer': 'Отложить',
+      'popup.err.needsDiagnosis': 'Этого пациента нельзя направить на кровать — сначала нужна диагностика',
+      'popup.err.noDiagnosisNeeded': 'Этому пациенту диагностика не нужна — направьте его на кровать',
+      'patient.hint.resumeDiag': 'ЛКМ — Открыть результат',
+      'patient.hint.resumeDischarge': 'ЛКМ — Выписка',
+      'popup.btn.sendBed': 'На лечение — кровать ({0}/{1})',
+      'popup.btn.sendWait': 'В зону ожидания ({0}/{1})',
+      'popup.btn.sendHome': 'Отпустить домой',
       'popup.btn.ok': 'Понятно',
+
+      // Diagnostics result popup
+      'diag.result.title': 'Результат диагностики',
+      'diag.result.diseaseFound': 'Обнаружено: {0}',
+      'diag.result.healthy': 'Пациент здоров, болезнь не обнаружена',
+      'diag.result.price': 'Стоимость приёма: ${0}',
+
+      // Discharge popup
+      'discharge.title': 'Выписка',
+      'discharge.diagnosis': 'Диагноз: {0}',
+      'discharge.applied': 'Применено',
+      'discharge.cost': 'К оплате: ${0}',
+      'discharge.btn': 'Выписать',
+
+      // Signs
+      'sign.diagnostics': 'ДИАГНОСТИКА',
 
       // Shop
       'shop.title': 'Магазин',
@@ -197,6 +221,7 @@
       'notify.wrongMedicine': 'Неправильный препарат!',
       'notify.patientDischarged': 'Пациент выписан! Направлен на оплату.',
       'notify.patientLeft': 'Пациент ушел, не дождавшись помощи',
+      'notify.patientRejected': 'Пациент отклонён и ушёл',
       'notify.diagnosisSet': 'Диагноз установлен!',
       'notify.adminProcessing': 'Администратор оформляет пациента',
       'notify.diagAlreadyWorking': 'Диагност уже проводит обследование',
@@ -448,14 +473,38 @@
       'popup.temp': 'TEMP',
       'popup.pulse': 'PULSE',
       'popup.bp': 'BP',
-      'popup.condition': 'Condition',
       'popup.complaint': 'Complaint',
       'popup.diagnosis': 'Diagnosis',
       'popup.prescription': 'Prescription',
       'popup.btn.bed': 'To bed',
       'popup.btn.wait': 'To waiting area',
-      'popup.btn.dismiss': 'Wait',
+      'popup.btn.diag': 'To diagnostics',
+      'popup.btn.reject': 'Reject',
+      'popup.btn.defer': 'Defer',
+      'popup.err.needsDiagnosis': 'This patient cannot go to a bed — diagnosis is required first',
+      'popup.err.noDiagnosisNeeded': 'This patient does not need diagnosis — send them to a bed',
+      'patient.hint.resumeDiag': 'LMB — Open result',
+      'patient.hint.resumeDischarge': 'LMB — Discharge',
+      'popup.btn.sendBed': 'To treatment — bed ({0}/{1})',
+      'popup.btn.sendWait': 'To waiting area ({0}/{1})',
+      'popup.btn.sendHome': 'Send home',
       'popup.btn.ok': 'OK',
+
+      // Diagnostics result popup
+      'diag.result.title': 'Diagnosis result',
+      'diag.result.diseaseFound': 'Found: {0}',
+      'diag.result.healthy': 'Patient is healthy, no disease detected',
+      'diag.result.price': 'Visit cost: ${0}',
+
+      // Discharge popup
+      'discharge.title': 'Discharge',
+      'discharge.diagnosis': 'Diagnosis: {0}',
+      'discharge.applied': 'Applied',
+      'discharge.cost': 'Total: ${0}',
+      'discharge.btn': 'Discharge',
+
+      // Signs
+      'sign.diagnostics': 'DIAGNOSTICS',
 
       // Shop
       'shop.title': 'Shop',
@@ -621,6 +670,7 @@
       'notify.wrongMedicine': 'Wrong medication!',
       'notify.patientDischarged': 'Patient discharged! Sent to payment.',
       'notify.patientLeft': 'Patient left without receiving help',
+      'notify.patientRejected': 'Patient rejected and left',
       'notify.diagnosisSet': 'Diagnosis confirmed!',
       'notify.adminProcessing': 'Administrator is processing the patient',
       'notify.diagAlreadyWorking': 'Diagnostician is already examining',

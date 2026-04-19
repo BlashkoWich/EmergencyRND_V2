@@ -23,7 +23,7 @@
     cashierDesk:    { name: Game.Lang.t('furniture.cashierDesk'),      boxSize: { x: 0.9, y: 0.8, z: 0.7 } }
   };
 
-  var INDOOR_BOUNDS = { xMin: -7.8, xMax: 7.8, zMin: -11.8, zMax: -0.2 };
+  var INDOOR_BOUNDS = { xMin: -7.8, xMax: 7.8, zMin: -17.8, zMax: -0.2 };
 
   var DELIVERY_ZONE = { cx: -10.5, cz: -10.3, hw: 1.5, hd: 1.0 };
 
@@ -376,11 +376,17 @@
   // --- Wall segments for 2D line intersection (axis-aligned) ---
   // type: 'h' = horizontal (constant z, x range), 'v' = vertical (constant x, z range)
   var WALL_SEGMENTS = [
-    { type: 'h', val: -12, min: -8.1, max: 8.1 },   // North wall
-    { type: 'v', val: -8,  min: -9.6,  max: 0 },      // West wall (south of side door)
-    { type: 'v', val:  8,  min: -12,  max: 0 },      // East wall
-    { type: 'h', val:  0,  min: -8.1, max: -1.2 },   // South wall left
-    { type: 'h', val:  0,  min:  1.2, max:  8.1 }    // South wall right
+    { type: 'h', val: -18, min: -8.1, max: 8.1 },   // North wall (extended building)
+    { type: 'v', val: -8,  min: -18,  max: -12 },   // West wall (north of side door)
+    { type: 'v', val: -8,  min: -9.6, max: 0 },     // West wall (south of side door)
+    { type: 'v', val:  8,  min: -18,  max: 0 },     // East wall (extended)
+    { type: 'h', val:  0,  min: -8.1, max: -1.2 },  // South wall left
+    { type: 'h', val:  0,  min:  1.2, max:  8.1 }, // South wall right
+    // Diagnostics room interior walls (NW corner, past shelves).
+    // Door is on the EAST (side) wall, z: -15..-14.
+    { type: 'h', val: -13, min: -8, max: -3 },      // Diag room south wall (solid)
+    { type: 'v', val: -3,  min: -18, max: -15 },    // Diag room east wall, north of doorway
+    { type: 'v', val: -3,  min: -14, max: -13 }     // Diag room east wall, south of doorway
   ];
   var WALL_HALF_THICKNESS = 0.1;
 

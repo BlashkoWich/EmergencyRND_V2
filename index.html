@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Частная Клиника</title>
-  <link rel="stylesheet" href="styles.css?v=2">
+  <link rel="stylesheet" href="styles.css?v=3">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -23,6 +23,7 @@
   <div id="held-box-hint"></div>
   <div id="patient-popup">
     <div id="popup-severity-band"></div>
+    <button id="popup-close" type="button" aria-label="Close">&times;</button>
     <div class="popup-header">
       <h2 id="popup-name"></h2>
       <div class="popup-meta">
@@ -44,10 +45,6 @@
         <div class="vital-value" id="popup-bp"></div>
       </div>
     </div>
-    <div class="popup-hp-container">
-      <div class="popup-hp-label"><span data-lang-key="popup.condition"></span> <span id="popup-hp-text"></span></div>
-      <div class="popup-hp-track"><div class="popup-hp-fill" id="popup-hp-fill"></div></div>
-    </div>
     <div class="popup-clinical">
       <div class="clinical-block complaint-block">
         <div class="clinical-label" data-lang-key="popup.complaint"></div>
@@ -65,10 +62,40 @@
     </div>
     <div id="outdoor-warning" style="display:none; color:#ff8844; font-size:0.85rem; padding:4px 12px; border-left:2px solid rgba(255,136,68,0.4);"></div>
     <div id="broken-bed-warning" style="display:none; color:#cc4444; font-size:0.85rem; padding:4px 12px; border-left:2px solid rgba(204,68,68,0.4);"></div>
+    <div id="popup-error" style="display:none; color:#ff5555; font-size:0.88rem; padding:6px 12px; border-left:2px solid rgba(255,85,85,0.5);"></div>
     <div class="buttons">
-      <button id="btn-bed"><span data-lang-key="popup.btn.bed"></span> <span id="bed-count" style="opacity:0.7"></span></button>
-      <button id="btn-wait"><span data-lang-key="popup.btn.wait"></span> <span id="chair-count" style="opacity:0.7"></span></button>
-      <button id="btn-dismiss" data-lang-key="popup.btn.dismiss"></button>
+      <div class="buttons-row">
+        <button id="btn-bed"><span data-lang-key="popup.btn.bed"></span> <span id="bed-count" style="opacity:0.7"></span></button>
+        <button id="btn-diag"><span data-lang-key="popup.btn.diag"></span> <span id="diag-count" style="opacity:0.7"></span></button>
+      </div>
+      <div class="buttons-row">
+        <button id="btn-wait"><span data-lang-key="popup.btn.wait"></span> <span id="chair-count" style="opacity:0.7"></span></button>
+        <button id="btn-reject" data-lang-key="popup.btn.sendHome"></button>
+      </div>
+    </div>
+  </div>
+  <div id="diag-result-popup" style="display:none">
+    <h2 data-lang-key="diag.result.title"></h2>
+    <div id="diag-result-name" style="font-weight:600; margin-bottom:8px;"></div>
+    <div id="diag-result-outcome" style="font-size:1rem; margin-bottom:8px;"></div>
+    <div id="diag-result-prescription" style="color:#ccc; margin-bottom:10px;"></div>
+    <div id="diag-result-price" style="font-weight:600; color:#44cc44; margin-bottom:12px;"></div>
+    <div class="buttons">
+      <button id="diag-send-bed"></button>
+      <button id="diag-send-wait"></button>
+      <button id="diag-send-home"></button>
+      <button id="diag-defer" class="btn-defer" data-lang-key="popup.btn.defer"></button>
+    </div>
+  </div>
+  <div id="discharge-popup" style="display:none">
+    <h2 data-lang-key="discharge.title"></h2>
+    <div id="discharge-name" style="font-weight:600; margin-bottom:8px;"></div>
+    <div id="discharge-diagnosis" style="margin-bottom:6px;"></div>
+    <div id="discharge-applied" style="color:#ccc; margin-bottom:10px;"></div>
+    <div id="discharge-cost" style="font-weight:600; color:#44cc44; margin-bottom:12px;"></div>
+    <div class="buttons">
+      <button id="discharge-confirm" data-lang-key="discharge.btn"></button>
+      <button id="discharge-defer" class="btn-defer" data-lang-key="popup.btn.defer"></button>
     </div>
   </div>
   <div id="shop-popup">
@@ -344,7 +371,7 @@
   <script src="js/helpers.js?v=2"></script>
   <script src="js/levels.js?v=2"></script>
   <script src="js/world.js?v=2"></script>
-  <script src="js/patients.js?v=2"></script>
+  <script src="js/patients.js?v=7"></script>
   <script src="js/controls.js?v=2"></script>
   <script src="js/consumables.js?v=2"></script>
   <script src="js/inventory.js?v=2"></script>
@@ -440,13 +467,13 @@
     const collidables = [];
 
     // --- Build world ---
-    const { beds, waitingChairs, cashierDesk, bedMeshes, chairMeshes, sunLight } = Game.World.setup(THREE, scene, collidables);
+    const { beds, waitingChairs, cashierDesk, bedMeshes, chairMeshes, diagQueueSlots, diagExamSlot, sunLight } = Game.World.setup(THREE, scene, collidables);
 
     // --- Setup controls ---
     const controls = Game.Controls.setup(THREE, camera, collidables, PointerLockControls);
 
     // --- Setup patients ---
-    Game.Patients.setup(THREE, scene, camera, controls, beds, waitingChairs);
+    Game.Patients.setup(THREE, scene, camera, controls, beds, waitingChairs, diagQueueSlots, diagExamSlot);
 
     // --- Setup consumables, inventory, shop, shelves ---
     Game.Furniture.setup(THREE, scene, camera, controls, collidables);

@@ -1,7 +1,13 @@
 # EmergencyRND V2 — Касса самообслуживания
 
 ## Overview
-После выписки (HP = 100) пациент идёт к кассе самообслуживания, стоит рядом с ней 10 секунд (имитирует самостоятельную оплату), после чего его оплата зачисляется в **банк кассы** (не в баланс игрока). Игрок должен периодически подходить к кассе и снимать накопленные деньги удержанием клавиши E — в процессе касса трясётся, и из неё летят зелёные частицы с символом `$` к камере. Над кассой отображается 3-уровневый индикатор (стопка монет / мешочек / большой мешок), показывающий примерный объём денег.
+Пациент идёт к кассе самообслуживания после одного из трёх сценариев:
+1. **Выписка после лечения** — игрок нажимает «Выписать» в `#discharge-popup`
+2. **Отпустить домой после диагностики** — «Отпустить домой» в `#diag-result-popup` (здоровый или больной, не прошедший лечение)
+
+Пациент стоит у кассы 10 сек (имитация самостоятельной оплаты), после чего `paymentInfo.total` зачисляется в **банк кассы** (не в баланс игрока). Игрок периодически подходит к кассе и снимает накопленные деньги удержанием E — касса трясётся, летят зелёные частицы с `$` к камере. Над кассой — 3-уровневый индикатор (монеты / мешочек / большой мешок).
+
+Пациенты, отклонённые через кнопку «Отказать» в первичном попапе, **не проходят через кассу** — идут сразу к выходу.
 
 ## Player Balance
 - Стартовый баланс: `$350`
@@ -10,17 +16,27 @@
 - Баланс увеличивается только при **снятии** денег с кассы (tickWithdraw)
 - Баланс уменьшается при покупках в магазине и выплате зарплат
 
-## Pricing (по тяжести заболевания)
+## Pricing (вычисляется в `patients.js`, НЕ в `cashier.js`)
 ```js
+// patients.js
 BASE_PRICES = { mild: 35, medium: 50, severe: 70 }
-DIAGNOSIS_BONUS = 15              // бонус если wasDiagnosed
 PRICE_VARIANCE = 5                // ±5 от базы
+DIAGNOSIS_FEE = 15                // доплата за подтверждённый диагноз
 ```
-- Лёгкое (mild, startHp=80) → $30–$40 (+$15 если диагностирован)
-- Среднее (medium, startHp=50) → $45–$55 (+$15)
-- Тяжёлое (severe, startHp=30) → $65–$75 (+$15)
+- Лёгкое (mild) → `procedureFee = $30–$40`
+- Среднее (medium) → `procedureFee = $45–$55`
+- Тяжёлое (severe) → `procedureFee = $65–$75`
 
-`paymentInfo = { treatment, diagnosis, total }` рассчитывается однократно при постановке в очередь (`addPatientToQueue`).
+`procedureFee` устанавливается при спавне (`spawnPatient`).
+`treatmentFee` = 15 после подтверждённого диагноза (не healthy) — устанавливается в `showDiagResultPopup`.
+
+### paymentInfo contract
+`patient.paymentInfo = { procedure, treatment, total, reason }` формируется в `patients.js` перед вызовом `Game.Cashier.addPatientToQueue(patient)`:
+- `reason: 'home-after-diag'` → `total = procedureFee` (больной, отпущенный домой после диагностики)
+- `reason: 'home-healthy'` → `total = procedureFee` (здоровый)
+- `reason: 'discharged'` → `total = procedureFee + treatmentFee` (лечение завершено)
+
+Cashier **не** вычисляет цену — только читает `paymentInfo.total`. При отсутствии `paymentInfo` предполагается `total = 0`.
 
 ## Shop Cost
 - При покупке вызывается `Game.Cashier.spend(price)` — списание с баланса
@@ -56,11 +72,11 @@ Canvas-based Sprite над кассой на высоте y=1.95, следует
 ## Patient States
 
 ### `discharged`
-- Переход из `atBed` когда HP >= 100
-- Освобождает кровать (`destination.occupied = false`)
-- Удаляет indicator и healthBar
+- Переход из `awaitingDischargeDecision` (после «Выписать»), из `awaitingDiagDecision` (после «Отпустить домой»)
+- Освобождает кровать/exam-slot (`destination.occupied = false`)
+- Удаляет индикаторы
 - Идёт к позиции кассы (или очереди)
-- Скорость: `PATIENT_SPEED = 2.0`
+- Скорость: `PATIENT_SPEED = 3.5`
 
 ### `atRegister`
 - Пациент стоит у кассы, `targetPos = null`, не двигается
@@ -160,15 +176,13 @@ firedAtRegister = false            // чтобы не спамить tutorial с
 CHECKOUT_TIME = 10.0               // секунд на одного пациента
 WITHDRAW_RATE = 25                 // $/сек = 4 сек / $100
 SUCTION_SPAWN_INTERVAL = 0.08      // сек между частицами
-BASE_PRICES = { mild: 35, medium: 50, severe: 70 }
-DIAGNOSIS_BONUS = 15
-PRICE_VARIANCE = 5
 XP_BY_SEVERITY = { mild: 10, medium: 15, severe: 20 }
 XP_DIAGNOSIS_BONUS = 5
+// Price constants (BASE_PRICES, PRICE_VARIANCE, DIAGNOSIS_FEE) live в patients.js
 ```
 
 ## Integration Points
-- `patients.js`: при HP >= 100 вызывает `Game.Cashier.addPatientToQueue(patient)`; получает `onPatientPaid()` колбек после 10-сек чекаута
+- `patients.js`: формирует `patient.paymentInfo` и вызывает `Game.Cashier.addPatientToQueue(patient)` при выписке (через discharge-popup) или при отправке домой (через diag-result-popup); получает `onPatientPaid()` колбек после 10-сек чекаута
 - `shop.js`: `Game.Cashier.getBalance()` / `.spend(price)` для покупок; `.isPopupOpen()` стаб (всегда false)
 - `shift.js`: `spend(salary)` в конце дня; `trackEarning(amount)` вызывается из cashier при начислении в кассу (не при снятии)
 - `ads.js`: `earn(AD_REWARD)` после просмотра рекламы

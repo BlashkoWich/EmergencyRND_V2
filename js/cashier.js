@@ -47,10 +47,7 @@
   // Tutorial fired flags
   var firedAtRegister = false;
 
-  // Pricing (unchanged)
-  var BASE_PRICES = { mild: 35, medium: 50, severe: 70 };
-  var DIAGNOSIS_BONUS = 15;
-  var PRICE_VARIANCE = 5;
+  // Pricing is now computed in patients.js and passed via patient.paymentInfo
   var XP_BY_SEVERITY = { mild: 10, medium: 15, severe: 20 };
   var XP_DIAGNOSIS_BONUS = 5;
 
@@ -60,13 +57,6 @@
 
   var balanceEl;
 
-  function getPatientPrice(patient) {
-    var base = BASE_PRICES[patient.severity.key] || 35;
-    var variance = Math.floor(Math.random() * (PRICE_VARIANCE * 2 + 1)) - PRICE_VARIANCE;
-    var treatment = base + variance;
-    var diagBonus = patient.wasDiagnosed ? DIAGNOSIS_BONUS : 0;
-    return { treatment: treatment, diagnosis: diagBonus, total: treatment + diagBonus };
-  }
 
   function getQueuePosition(index) {
     // Queue extends backwards into the building (more negative z)
@@ -467,7 +457,10 @@
     },
 
     addPatientToQueue: function(patient) {
-      patient.paymentInfo = getPatientPrice(patient);
+      // paymentInfo must be set by patients.js prior to this call
+      if (!patient.paymentInfo) {
+        patient.paymentInfo = { procedure: 0, treatment: 0, total: 0, reason: 'unknown' };
+      }
       if (!currentPatient) {
         currentPatient = patient;
         patient.targetPos = patientPos.clone();

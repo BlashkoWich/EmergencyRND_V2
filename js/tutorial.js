@@ -71,10 +71,12 @@
       onEnter: function() {
         var btnBed = document.getElementById('btn-bed');
         var btnWait = document.getElementById('btn-wait');
-        var btnDismiss = document.getElementById('btn-dismiss');
+        var btnDiag = document.getElementById('btn-diag');
+        var btnReject = document.getElementById('btn-reject');
         if (btnBed) { btnBed.classList.remove('tutorial-locked'); btnBed.disabled = false; btnBed.style.opacity = '1'; }
         if (btnWait) { btnWait.classList.add('tutorial-locked'); }
-        if (btnDismiss) { btnDismiss.classList.add('tutorial-locked'); }
+        if (btnDiag) { btnDiag.classList.add('tutorial-locked'); }
+        if (btnReject) { btnReject.classList.add('tutorial-locked'); }
       }
     },
     // 5: Open shop
@@ -210,21 +212,19 @@
   }
 
   function lockPopupButtons() {
-    var btnBed = document.getElementById('btn-bed');
-    var btnWait = document.getElementById('btn-wait');
-    var btnDismiss = document.getElementById('btn-dismiss');
-    if (btnBed) btnBed.classList.add('tutorial-locked');
-    if (btnWait) btnWait.classList.add('tutorial-locked');
-    if (btnDismiss) btnDismiss.classList.add('tutorial-locked');
+    var ids = ['btn-bed', 'btn-wait', 'btn-diag', 'btn-reject'];
+    for (var i = 0; i < ids.length; i++) {
+      var el = document.getElementById(ids[i]);
+      if (el) el.classList.add('tutorial-locked');
+    }
   }
 
   function unlockPopupButtons() {
-    var btnBed = document.getElementById('btn-bed');
-    var btnWait = document.getElementById('btn-wait');
-    var btnDismiss = document.getElementById('btn-dismiss');
-    if (btnBed) btnBed.classList.remove('tutorial-locked');
-    if (btnWait) btnWait.classList.remove('tutorial-locked');
-    if (btnDismiss) btnDismiss.classList.remove('tutorial-locked');
+    var ids = ['btn-bed', 'btn-wait', 'btn-diag', 'btn-reject'];
+    for (var i = 0; i < ids.length; i++) {
+      var el = document.getElementById(ids[i]);
+      if (el) el.classList.remove('tutorial-locked');
+    }
   }
 
   function lockShopBuyButtons() {

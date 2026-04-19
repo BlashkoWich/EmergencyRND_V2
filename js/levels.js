@@ -236,9 +236,8 @@
     },
 
     getDiagnosisChance: function() {
-      if (level >= 4) return 0.30;
-      if (level >= 3) return 0.25;
-      return 0.20;
+      if (level < 2) return 0;
+      return 0.30;
     },
 
     getSpawnInterval: function() {

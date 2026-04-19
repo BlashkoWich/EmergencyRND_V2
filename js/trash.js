@@ -14,7 +14,9 @@
   var nextSpawnTime = 0;
   var MAX_TRASH = 10;
 
-  var INDOOR_BOUNDS = { xMin: -7.0, xMax: 7.0, zMin: -11.0, zMax: -1.0 };
+  // Main hall (excluding diag room in NW: x<-3 AND z<-13). Bounds cover whole building; the
+  // diag-room exclusion is enforced in the spawn position check below.
+  var INDOOR_BOUNDS = { xMin: -7.0, xMax: 7.0, zMin: -17.0, zMax: -1.0 };
 
   // ====== STINK PARTICLE TEXTURE ======
 
@@ -349,6 +351,9 @@
     for (var attempt = 0; attempt < 10; attempt++) {
       var x = INDOOR_BOUNDS.xMin + Math.random() * (INDOOR_BOUNDS.xMax - INDOOR_BOUNDS.xMin);
       var z = INDOOR_BOUNDS.zMin + Math.random() * (INDOOR_BOUNDS.zMax - INDOOR_BOUNDS.zMin);
+
+      // Exclude diagnostic room footprint (x<-3 AND z<-13)
+      if (x < -3 && z < -13) continue;
 
       var tooClose = false;
       for (var i = 0; i < collidables.length; i++) {

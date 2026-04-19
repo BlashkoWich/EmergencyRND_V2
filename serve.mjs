@@ -5,7 +5,8 @@ import { join, extname } from 'path';
 const MIME = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json' };
 
 createServer(async (req, res) => {
-  const file = req.url === '/' ? '/index.html' : req.url;
+  const path = req.url.split('?')[0];
+  const file = path === '/' ? '/index.html' : path;
   try {
     const data = await readFile(join(process.cwd(), file));
     res.writeHead(200, {

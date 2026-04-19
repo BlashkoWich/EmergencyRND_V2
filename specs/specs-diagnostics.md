@@ -1,15 +1,25 @@
 # EmergencyRND V2 — Диагностика пациентов
 
 ## Overview
-20% пациентов приходят без диагноза — только с жалобой. Игрок прицеливается на пациента и жмёт ЛКМ — мини-игра запускается автоматически (инструмент применяется неявно, не требует покупки или подбора). При успехе раскрывается диагноз и назначение. Жалобы тематически связаны с типом диагностической мини-игры.
+30% пациентов (уровни 2+) приходят без диагноза — только с жалобой (`needsDiagnosis = true`). Они направляются в **отдельный кабинет диагностики** (см. `specs-scene.md`), где сидят на кушетке, а игрок запускает мини-игру кликом. Среди диагностируемых **50% оказываются здоровыми** (болезнь не обнаружена) и **50% — больными** (болезнь скрыта, раскрывается после успешной мини-игры). После мини-игры открывается **попап результата** с опциями: на кровать / в зону ожидания / отпустить домой. Инструмент применяется неявно — не покупается, не подбирается.
 
-## Undiagnosed Patients (20%)
-- При спавне: `Math.random() < 0.2` → `needsDiagnosis = true`
+## Undiagnosed Patients (30%)
+- При спавне: `Math.random() < 0.30` → `needsDiagnosis = true`
+- Среди этих: `isHealthy = Math.random() < 0.5`
 - Скрытые поля: `hiddenDiagnosis`, `hiddenConsumable`
 - Видимые: `diagnosis = null`, `requiredConsumable = null`
 - Жалоба (`complaint`) всегда видна
-- `requiredInstrument` определяется по `INSTRUMENT_MAP[consumableType]`
+- `requiredInstrument` определяется по `INSTRUMENT_MAP[consumableType]` (даже у healthy-пациентов — мини-игра всё равно выбирается из 3 типов)
 - Травма (`injuryType`) определяется по реальному типу препарата (для анимации)
+
+## Diagnostic Room
+- Изолированный кабинет в СВ-углу здания (x:3..8, z:-12..-7)
+- Стены: west interior wall (x=3), south interior wall (z=-7) с дверным проёмом шириной 1.0 (x:4.7..5.7)
+- Мебель внутри: стол с монитором (5.5, 0, -11.4), стул врача (5.5, 0, -10.7) rotY=π, кушетка/стул пациента (5.5, 0, -9.5) rotY=0
+- 3 стула-очередь перед дверью (x=5.2, z=-6.3/-5.1/-3.9 — index 0 ближе к двери), rotY=π (лицом на север)
+- Exam slot: (5.5, 0, -9.5), 1 место
+- Табличка `sign.diagnostics` над входом снаружи
+- Внутренние стены добавлены в `furniture.js::WALL_SEGMENTS` для wall-clamping мебели
 
 ## Instrument Mapping (тип мини-игры)
 ```js
@@ -38,12 +48,14 @@ INSTRUMENT_TYPES = {
 - **strepsils** (20 кейсов): горло, кашель, хрипы, свист при дыхании, боль в груди — жалобы намекают на необходимость аускультации
 
 ## Patient Popup Changes
-- **Удалена графа "Симптом"** — в попапе только: жалоба, диагноз, назначение
+- **Удалена графа "Симптом"** — в попапе только: жалоба, диагноз, назначение (HP-бар удалён вместе со всей HP-системой)
 - При `needsDiagnosis`:
   - Диагноз и назначение → "????" красным (`#ff4444`)
   - Иконка назначения скрыта
   - Показан `#popup-instrument-hint`: "Требуется диагностика" (оранжевый)
-- После диагностики: анимированное раскрытие (см. ниже)
+  - Кнопки: «В диагностику (X/4)», «Отказать» (bed/wait кнопки скрыты)
+- При отсутствии `needsDiagnosis`: кнопки «На кровать», «В зону ожидания», «Отказать»
+- После мини-игры: открывается **отдельный попап `#diag-result-popup`** (не анимированный reveal)
 
 ## Bed Indicator
 - Иконка конкретного предмета (не абстрактные символы):
@@ -60,15 +72,18 @@ INSTRUMENT_TYPES = {
 - Диагностированный + нет нужного препарата → "Нужен препарат ([нужный])"
 
 ## Diagnosis Flow
-1. ЛКМ на atBed пациента с `needsDiagnosis` → сразу вызывается `Game.Diagnostics.startMinigame(patient, patient.requiredInstrument)`. Никаких проверок инвентаря, никакого подбора — инструмент применяется неявно.
-2. controls.unlock(), показ overlay мини-игры (z-index: 25)
-3. Мини-игра выбирается по `patient.requiredInstrument` (тип мини-игры)
-4. При успехе → `revealDiagnosisAnimated(patient)`:
-   - Открывается попап с "????" (кнопки скрыты)
-   - Через 0.4с: "????" плавно исчезают (opacity → 0)
-   - Через 0.9с: появляются реальные данные зелёным цветом (opacity → 1)
-   - Через 2с: применяется `revealDiagnosis()`, появляется кнопка "Понятно"
-   - Клик "Понятно" → закрытие попапа, возврат управления
+1. Игрок в первичном попапе жмёт «В диагностику» → пациент идёт на exam-slot (или в очередь, если exam занят)
+2. Пациент садится на кушетку (state `atDiagExam`)
+3. Игрок прицеливается и кликает ЛКМ → `Game.Diagnostics.startMinigame(patient, patient.requiredInstrument)`. Никаких проверок инвентаря — инструмент применяется неявно.
+4. `controls.unlock()`, показ overlay мини-игры (z-index: 25)
+5. Мини-игра выбирается по `patient.requiredInstrument` (тип мини-игры)
+6. При успехе → `Game.Patients.showDiagResultPopup(patient)`:
+   - Устанавливается `patient.wasDiagnosed = true`, `patient.needsDiagnosis = false`
+   - `patient.treatmentFee = isHealthy ? 0 : 15`
+   - Для `isHealthy`: показывается «Пациент здоров, болезнь не обнаружена» + только кнопка «Отпустить домой ($procedureFee)»
+   - Для больных: вызывается `revealDiagnosis(patient)` (устанавливает `diagnosis`, `requiredConsumables`, `pendingConsumables`) и показываются 3 кнопки: «На лечение — кровать», «В зону ожидания», «Отпустить домой»
+   - Стоимость отображается в строке `diag-result-price`
+7. Выбор игрока освобождает exam-slot и вызывает `advanceDiagQueue()` — первый пациент из очереди `diagQueueSlots` идёт на exam-slot
 
 ## Mini-Games
 
@@ -145,6 +160,7 @@ currentGame = null  // 'stethoscope' | 'hammer' | 'rhinoscope'
 
 ## Integration Points
 - `controls.js`: unlock handler проверяет `Game.Diagnostics.isActive()` (не показывать overlay)
-- `patients.js`: raycasting и клик проверяют `Game.Diagnostics.isActive()`
+- `patients.js`: raycasting и клик проверяют `Game.Diagnostics.isActive()`; `showDiagResultPopup` вызывается из `diagnostics.js::onSuccess`
 - `consumables.js`: mousedown проверяет `Game.Diagnostics.isActive()`
 - `shop.js`: KeyQ блокирован при `Game.Diagnostics.isActive()`
+- `Game.Patients.isPopupOpen()` возвращает `true` если открыт любой из: primary popup, diag-result popup, discharge popup — это используется `controls.js` unlock handler для подавления pause-screen

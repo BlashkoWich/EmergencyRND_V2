@@ -22,7 +22,8 @@
       "Bash(node -e \"const fs=require\\(''fs''\\); const buf=fs.readFileSync\\(''A:/EmergencyRND_V2/specs/specs-patient.md''\\); const d=buf.toString\\(''utf8''\\); const lines=d.split\\(''\\\\n''\\); console.log\\(''line8 hex:'', Buffer.from\\(lines[8]\\).toString\\(''hex''\\).match\\(/../g\\).join\\('' ''\\)\\)\")",
       "Bash(xxd)",
       "Bash(python -c ':*)",
-      "Bash(node -e ':*)"
+      "Bash(node -e ':*)",
+      "Bash(node -c A:/EmergencyRND_V2/js/patients.js)"
     ]
   }
 }

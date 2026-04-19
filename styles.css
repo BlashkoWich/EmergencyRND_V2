@@ -146,34 +146,6 @@ canvas { display: block; }
 .vital-value.vital-warning { color: #ffcc00; }
 .vital-value.vital-critical { color: #ff4444; }
 
-/* HP bar */
-.popup-hp-container { padding: 10px 24px 6px; }
-.popup-hp-label {
-  font-size: 0.72rem; opacity: 0.6; margin-bottom: 5px;
-  display: flex; justify-content: space-between;
-}
-#popup-hp-text { font-family: 'Courier New', monospace; font-weight: 700; opacity: 1; }
-.popup-hp-track {
-  height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden;
-  position: relative;
-}
-.popup-hp-track::after {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-  background: repeating-linear-gradient(
-    90deg,
-    transparent 0,
-    transparent calc(20% - 1px),
-    rgba(0, 0, 0, 0.6) calc(20% - 1px),
-    rgba(0, 0, 0, 0.6) 20%
-  );
-  pointer-events: none;
-  z-index: 1;
-}
-.popup-hp-fill {
-  height: 100%; border-radius: 3px; transition: width 0.3s ease;
-}
-
 /* Clinical section */
 .popup-clinical { padding: 8px 24px 4px; }
 .clinical-block {
@@ -193,7 +165,11 @@ canvas { display: block; }
 }
 
 /* Buttons */
-#patient-popup .buttons { display: flex; gap: 8px; padding: 12px 24px 18px; }
+#patient-popup .buttons {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 12px 24px 18px;
+}
+#patient-popup .buttons-row { display: flex; gap: 8px; }
 #patient-popup .buttons button {
   flex: 1; padding: 10px 0; border: none; border-radius: 6px;
   font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: background 0.2s;
@@ -202,8 +178,78 @@ canvas { display: block; }
 #btn-bed:hover { background: #228b55; }
 #btn-wait { background: #2a4a6a; color: #fff; }
 #btn-wait:hover { background: #3a5a7a; }
-#btn-dismiss { background: #3a3a4a; color: #ccc; }
-#btn-dismiss:hover { background: #4a4a5a; }
+#btn-diag { background: #5a3a8a; color: #fff; }
+#btn-diag:hover { background: #6a4a9a; }
+#btn-reject { background: #b33232; color: #fff; }
+#btn-reject:hover { background: #c94646; }
+
+#popup-close {
+  position: absolute; top: 8px; right: 8px;
+  width: 28px; height: 28px; padding: 0;
+  background: transparent; color: #ff5555;
+  border: none; border-radius: 4px;
+  font-size: 1.5rem; font-weight: 700; line-height: 1;
+  cursor: pointer; transition: background 0.15s, color 0.15s;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1;
+}
+#popup-close:hover { background: rgba(255,85,85,0.15); color: #ff7777; }
+
+/* Diag-result popup */
+#diag-result-popup {
+  position: fixed; top: 50%; left: 50%; z-index: 20;
+  transform: translate(-50%, -50%);
+  background: #1a2a3a; color: #e0e8f0;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  padding: 22px 26px; border-radius: 12px;
+  min-width: 380px; max-width: 460px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.55);
+  border: 1px solid rgba(122,191,255,0.12);
+}
+#diag-result-popup h2 {
+  margin: 0 0 12px; font-size: 1.1rem; letter-spacing: 0.04em;
+  color: #9cc0e8; text-align: center;
+}
+#diag-result-popup .buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+#diag-result-popup .buttons button {
+  flex: 1 1 auto; padding: 10px 12px; border: none; border-radius: 6px;
+  font-size: 0.85rem; font-weight: 600; cursor: pointer;
+  color: #fff; transition: background 0.2s;
+  min-width: 140px;
+}
+#diag-result-popup .buttons button:hover { filter: brightness(1.15); }
+/* Per-button colors — must beat the generic rule above (same specificity, so rely on order) */
+#diag-result-popup #diag-send-bed  { background: #1a6b42; } /* green */
+#diag-result-popup #diag-send-wait { background: #2a6aaa; } /* blue */
+#diag-result-popup #diag-send-home { background: #b33232; } /* red */
+#diag-result-popup #diag-defer,
+#discharge-popup   #discharge-defer { background: #4a4a4a; color: #ccc; } /* gray */
+#diag-result-popup #diag-defer:hover,
+#discharge-popup   #discharge-defer:hover { background: #5a5a5a; }
+
+/* Discharge popup */
+#discharge-popup {
+  position: fixed; top: 50%; left: 50%; z-index: 20;
+  transform: translate(-50%, -50%);
+  background: #1a2a3a; color: #e0e8f0;
+  font-family: 'Segoe UI', Arial, sans-serif;
+  padding: 22px 26px; border-radius: 12px;
+  min-width: 380px; max-width: 460px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.55);
+  border: 1px solid rgba(80,200,130,0.2);
+}
+#discharge-popup h2 {
+  margin: 0 0 12px; font-size: 1.1rem; letter-spacing: 0.04em;
+  color: #7bdfa2; text-align: center;
+}
+#discharge-popup .buttons { display: flex; gap: 8px; }
+#discharge-popup .buttons button {
+  flex: 1 1 auto; padding: 12px 0; border: none; border-radius: 6px;
+  font-size: 0.95rem; font-weight: 600; cursor: pointer;
+  transition: background 0.2s;
+}
+#discharge-confirm { background: #1a6b42; color: #fff; }
+#discharge-confirm:hover { background: #228b55; }
 
 /* --- Shop popup --- */
 #shop-popup {

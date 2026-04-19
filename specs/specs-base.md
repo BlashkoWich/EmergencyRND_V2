@@ -177,9 +177,26 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 | `popup-supply-icon` | span | Цветная иконка расходника (круг 14px) |
 | `popup-supply` | span | Название расходника |
 | `btn-bed` | button | Кнопка "На кровать" |
-| `bed-count` | span | Счётчик свободных кроватей "(X/2)" внутри btn-bed |
+| `bed-count` | span | Счётчик свободных кроватей "(X/N)" внутри btn-bed |
 | `btn-wait` | button | Кнопка "В зону ожидания" |
-| `chair-count` | span | Счётчик свободных стульев "(X/3)" внутри btn-wait |
+| `chair-count` | span | Счётчик свободных стульев "(X/N)" внутри btn-wait |
+| `btn-diag` | button | Кнопка "В диагностику" (для needsDiagnosis пациентов) |
+| `diag-count` | span | Счётчик свободных слотов диагностики "(X/4)" внутри btn-diag |
+| `btn-reject` | button | Кнопка "Отказать" — пациент уходит без оплаты |
+| `diag-result-popup` | div | Попап результата диагностики (после мини-игры) |
+| `diag-result-name` | div | Имя пациента |
+| `diag-result-outcome` | div | "Обнаружено: ..." или "Пациент здоров..." |
+| `diag-result-prescription` | div | Список назначенных препаратов |
+| `diag-result-price` | div | Отображение стоимости приёма |
+| `diag-send-bed` | button | "На лечение — кровать (X/N)" |
+| `diag-send-wait` | button | "В зону ожидания (X/N)" |
+| `diag-send-home` | button | "Отпустить домой ($X)" |
+| `discharge-popup` | div | Попап выписки после применения всех препаратов |
+| `discharge-name` | div | Имя пациента |
+| `discharge-diagnosis` | div | Диагноз |
+| `discharge-applied` | div | Список применённых препаратов |
+| `discharge-cost` | div | К оплате: $X |
+| `discharge-confirm` | button | "Выписать" — направляет к кассе |
 | `popup-instrument-hint` | div | Подсказка "Требуется диагностика" в попапе (при needsDiagnosis) |
 | `outdoor-warning` | div | Предупреждение о мебели на улице (в попапе пациента) |
 | `broken-bed-warning` | div | Предупреждение о сломанных кроватях (в попапе пациента) |
@@ -233,7 +250,7 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 | 5 | `#crosshair`, `#interact-hint`, `#inventory-container` |
 | 10 | `#overlay`, `#pause-screen`, `#level-select-screen` |
 | 15 | `#notification` |
-| 20 | `#patient-popup`, `#shop-popup`, `#day-end-popup` |
+| 20 | `#patient-popup`, `#shop-popup`, `#day-end-popup`, `#diag-result-popup`, `#discharge-popup` |
 | 22 | `#ad-offer-popup` |
 | 25 | `#diagnostics-overlay` |
 | 50 | `#ad-overlay`, `#ad-reward-animation` |
@@ -477,7 +494,6 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 - `clearAll()` — удаление всех пациентов и частиц со сцены
 - `getHoveredPatient()` → patient|null — текущий пациент под прицелом
 - `revealDiagnosis(patient)` — раскрытие диагноза после успешной мини-игры
-- Внутренние функции: `createPatientMesh`, `spawnPatient`, `getQueuePosition`, `updateQueueTargets`, `removeFromQueue`, `highlightPatient`/`unhighlightPatient`, `getPatientFromMesh`, `updateInteraction`, `openPopup`/`closePopup`, `sendPatient`, `updatePatients`, `moveToward`, `randomFrom`, `createBedIndicator`, `updateIndicators`, `treatPatient`, `wrongTreatment`, `removePatient`, `updateAnimations`, `createHealthBar`, `updateHealthBarTexture`, `getHealthColor`, `updateHealthTimers`, `initParticlePool`, `spawnHealParticle`, `updateHealParticles`
-- **Частицы лечения**: пул из 30 спрайтов (`PARTICLE_POOL_SIZE=30`), пре-аллоцируются в `initParticlePool()`. Swap-with-last removal (O(1)). Спрайты скрываются (`visible=false`) вместо удаления из сцены
+- Внутренние функции: `createPatientMesh`, `spawnPatient`, `getQueuePosition`, `updateQueueTargets`, `removeFromQueue`, `highlightPatient`/`unhighlightPatient`, `getPatientFromMesh`, `updateInteraction`, `openPopup`/`closePopup`, `sendPatient`, `sendPatientToDiagnostics`, `rejectPatient`, `advanceDiagQueue`, `showDiagResultPopup`/`closeDiagResultPopup`, `sendFromDiagToSlot`, `sendDiagPatientHome`, `showDischargePopup`/`confirmDischarge`, `updatePatients`, `moveToward`, `randomFrom`, `createBedIndicator`, `updateIndicators`, `treatPatient`, `wrongTreatment`, `removePatient`, `updateAnimations`, `dischargePatient`
 - **Анимации**: emissive меняется напрямую на материале (без `.clone()`), сбрасывается после завершения анимации. Типы: `'heal'`, `'shake'`, `'smiley'` (спрайт-реакция над пациентом после применения препарата — подробнее в specs-treatment.md).
 - **Hold-to-treat**: ЛКМ по пациенту `atBed` с подходящим препаратом запускает удержание 0.75с (`TREAT_HOLD_DURATION`), тик в `updateTreatHold(delta)` из `update()`. SVG-кольцо прогресса — DOM `#treat-hold-progress` в центре экрана.
