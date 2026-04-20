@@ -43,8 +43,7 @@ dayEndPopupOpen = false // попап итогов дня показан
 
 ### 2. Открытие смены (клик по табличке)
 - `shiftOpen = true`, `gameTime = 0`, `dayStats` сброшен
-- Level 1: Спавн первого пациента через `Game.Patients.spawnFirstPatient()`
-- Level 2+: Запуск волновой системы через `Game.Patients.startWaveSystem()`
+- Запуск слот-авто-спавна через `Game.Patients.startWaveSystem()`
 - Уведомление "Смена началась! День N"
 - Табличка меняется на "ОТКРЫТО" (зелёная)
 
@@ -110,8 +109,8 @@ dayEndPopupOpen = false // попап итогов дня показан
 
 ## Попап итогов дня
 - z-index 20, тёмно-синий фон
-- Статистика: вылечено, потеряно, заработано, потрачено, зарплата
-- Зарплата платится всегда (баланс может уйти в минус)
+- Статистика: вылечено, потеряно, заработано, потрачено
+- Зарплата **удалена** (зарплаты отключены — строка `#stat-salary` отсутствует в DOM)
 - Кнопка "Следующий день"
 
 ## Module: Game.Shift
@@ -135,8 +134,7 @@ Game.Shift.trackPatientLost()
 
 ### patients.js
 - Spawn guard: `Game.Shift.isOpen()` перед спавном
-- `startWaveSystem()` — запуск slot-based auto-spawn при открытии смены (Level 2+). Имя функции сохранено как совместимое API; внутренне запускает последовательный спавн по мере освобождения мест
-- `spawnFirstPatient()` — для Level 1 (sequential)
+- `startWaveSystem()` — единственный режим (Level 1/sequential удалён вместе с туториалом)
 - `clearAll()` — очистка, сброс авто-спавна
 
 ### cashier.js
@@ -160,6 +158,8 @@ Game.Shift.trackPatientLost()
 | `stat-earned` | span | Заработано |
 | `stat-spent` | span | Потрачено |
 | `day-end-next` | button | Кнопка следующего дня |
+| `lost-patients-hud` | div | HUD: счётчик потерянных пациентов (красный, под balance) |
+| `lost-patients-value` | span | Значение счётчика |
 
 ## No Session Persistence
 - Никаких данных не сохраняется между сессиями

@@ -1,30 +1,21 @@
-# EmergencyRND V2 — Система найма сотрудников
+# EmergencyRND V2 — Сотрудники
 
 ## Overview
-Игрок может нанимать сотрудников в магазине (Q). Сотрудники — автономные NPC, которые выполняют задачи: направление пациентов, диагностика, лечение. Каждый тип — максимум 1 сотрудник. Зарплата выплачивается в конце дня. Баланс может уходить в минус при нехватке средств на зарплату.
-
-**Примечание:** тип `cashier` удалён — теперь действует касса самообслуживания (см. `specs-cashier.md`). Деньги с кассы снимает только игрок.
+На старте игры **автоматически наняты диагност и медсестра** (бесплатно, зарплата отключена). Игрок может дополнительно нанять администратора (также бесплатно) через магазин (Q). Сотрудники — автономные NPC.
 
 ## Модуль
-`Game.Staff` — файл `js/staff.js` (IIFE). Загружается после `diagnostics.js`, перед `shift.js`.
+`Game.Staff` — файл `js/staff.js` (IIFE). Загружается после `diagnostics.js`, перед `trash.js`/`shift.js`.
 
-Порядок загрузки:
-```
-... shelves.js → diagnostics.js → staff.js → shift.js → cashier.js
-```
-
-## Типы сотрудников
-
+## Типы сотрудников (все бесплатные, зарплата = 0)
 ```js
 STAFF_TYPES = {
-  administrator: { name: Game.Lang.t('staff.administrator'), salary: 100, color: 0x2266aa, hatColor: 0x1a4a88 },
-  diagnostician: { name: Game.Lang.t('staff.diagnostician'), salary: 100, color: 0x8844cc, hatColor: 0x6633aa },
-  nurse:         { name: Game.Lang.t('staff.nurse'),         salary: 100, color: 0xcc4488, hatColor: 0xaa3366 }
+  administrator: { name: t('staff.administrator'), salary: 0, color: 0x2266aa, hatColor: 0x1a4a88 },
+  diagnostician: { name: t('staff.diagnostician'), salary: 0, color: 0x8844cc, hatColor: 0x6633aa },
+  nurse:         { name: t('staff.nurse'),         salary: 0, color: 0xcc4488, hatColor: 0xaa3366 }
 }
 ```
 
 ## Рабочие позиции
-
 ```js
 WORK_POSITIONS = {
   administrator: { x: 0,    z: -9.5,  rotY: Math.PI },
@@ -33,238 +24,205 @@ WORK_POSITIONS = {
 }
 ```
 
-## Магазин — вкладка "Сотрудники"
+## Pre-hire на старте
+В `index.html` после `Game.Staff.setup(...)`:
+```js
+Game.Staff.hire('nurse');
+Game.Staff.hire('diagnostician');
+```
+Оба типа появляются уже нанятыми на экране магазина (в блоке «Нанятые», с кнопкой «Уволить»). Админ остаётся доступным для найма через магазин.
 
-- Новая вкладка `data-tab="staff"` в `#shop-popup`, контент `#shop-tab-staff`
-- Делится на два блока:
-  - **Доступные** (`.staff-hire-item`): иконка, название, `$100/день`, кнопка "Нанять"
-  - Найм бесплатный, зарплата $100/день для всех типов сотрудников
-  - **Нанятые** (`#staff-hired-list`): название, кнопка "Уволить — $X"
-- При найме тип скрывается из "Доступные" и появляется в "Нанятые" (максимум 1 на тип)
-- При увольнении — обратно
-- Обновление списка: `refreshStaffList()` в `shop.js`, вызывается при открытии магазина и после найма/увольнения
+## Random Work Duration
+```js
+function randWorkDuration() { return 30 + Math.random() * 15; }  // 30–45 секунд
+```
+Используется в диагносте (`diagnosing`) и медсестре (`treating`). `processing` админа — 5с. `pickMedicine` медсестры — 1с.
+
+## Магазин — вкладка «Сотрудники»
+- Вкладка `data-tab="staff"` в `#shop-popup`
+- Делится на блоки:
+  - **Доступные** — иконка, имя, кнопка «Нанять»
+  - **Нанятые** — имя, кнопка «Уволить»
+- Цена зарплаты **не показывается** (salary-строки удалены из HTML/CSS)
+- При найме: тип переходит в «Нанятые», max 1 на тип
+- При увольнении: возврат в «Доступные»
 
 ## 3D модель сотрудника
-
-Процедурная, аналогична пациентам, но с отличиями:
-- **Белый халат** (`color: 0xffffff`) — тело
-- **Цветной воротник** по `STAFF_TYPES[type].color`
-- **Бейджик** на груди (маленький plane, цвет по типу)
-- **Шапочка** на голове (CylinderGeometry + brim, цвет `hatColor`)
-- **Масштаб 1.1** (крупнее пациентов)
-- `mesh.userData.isStaff = true`, `mesh.userData.staffType = type`
-- Та же скелетная структура: `poseContainer`, `bodyContainer`, `leftArm`, `rightArm`, `leftLegPivot`, `rightLegPivot`
-- Анимация ходьбы: stride-based (как у пациентов), скорость `STAFF_SPEED = 3.5`
+- Процедурная (аналогична пациенту): **белый халат**, **цветной воротник** (`STAFF_TYPES.color`), **бейджик** (plane), **шапочка** (CylinderGeometry + brim, `hatColor`), scale 1.1
+- `mesh.userData.isStaff = true`, `staffType = type`
+- Та же скелетная структура + анимация ходьбы
 
 ## Прогресс-бар работы
-
-3D спрайт над головой сотрудника (Canvas 192×28):
-- Появляется при выполнении действий с таймером (`ACTION_LABELS`)
-- **Отличие от HP-бара пациентов**:
-  - Размер: `scale(0.85, 0.12, 1)`, позиция `y = 2.1 * 1.1`
-  - Тёмный фон с цветной рамкой (цвет по типу сотрудника)
-  - Градиентная заливка: от цвета сотрудника до `#55ccff`
-  - Текст действия слева, процент справа
-  - Трек прогресса в нижней части
-- Автоматически скрывается при ходьбе/idle
-- Удаляется при увольнении
-
+3D спрайт над головой (Canvas 192×28):
 ```js
 ACTION_LABELS = {
-  processing: 'Оформление',
-  diagnosing: 'Диагностика',
-  pickMedicine: 'Берёт лекарство',
-  treating: 'Лечение',
-  cleaningTrash: 'Уборка мусора'
+  processing: t('staff.status.processing'),
+  diagnosing: t('staff.status.diagnosing'),
+  pickMedicine: t('staff.status.pickMedicine'),
+  treating: t('staff.status.treating'),
+  cleaningTrash: t('staff.status.cleaningTrash')
 }
 ```
+- scale `(0.85, 0.12, 1)`, `y = 2.1 * 1.1`
+- Тёмный фон с цветной рамкой (цвет по типу)
+- Градиентная заливка (staff color → `#55ccff`)
+- Текст слева, процент справа
+- Перерисовка canvas только при смене целочисленного процента
 
 ## Движение
-
-- `moveToward(pos, target, maxDist)` — прямолинейное движение к цели
-- `faceTarget(staff, target)` — поворот лицом к цели через `Math.atan2`
-- Скорость: `STAFF_SPEED = 3.5` (как у здоровых пациентов)
-- Перемещение определяется стейт-машиной: walk-состояния (`walkToShelf`, `walkToPatient`, и т.д.)
+- `moveToward(pos, target, maxDist)`
+- `faceTarget(staff, target)`
+- `STAFF_SPEED = 3.5`
+- Состояния walk-*: автоматически помечают `isMoving = true`
 
 ## Стейт-машины
 
-### Администратор
-
-Позиция обслуживания: `ADMIN_DESK_POS = { x: 0, z: -8.5 }`
-
+### Диагност (обновлённая логика)
 ```
-idle (каждые 2 сек):
-  → Приоритет 1: свободная кровать + пациент из ожидания → sendPatientByStaff (мгновенно)
-  → Приоритет 2: свободное место + пациент из очереди → summonToDesk
-      → patient.staffProcessing = true
-      → пациент идет к ADMIN_DESK_POS
-
-waitingForPatient:
-  → ждет пока пациент дойдет до столика (расстояние < 0.15)
-
-processing (5 сек):
-  → по окончании: sendPatientByStaff или release если место занято
-
-→ idle
-```
-
-**Блокировка**: `patient.staffProcessing = true` → игрок видит "Администратор оформляет пациента"
-
-### Диагност
-
-```
-idle → ищет atBed + needsDiagnosis + !staffDiagnosing
+idle (каждые 1с):
+  → находит сикейшего (min HP) пациента в state 'atDiagExam'
+    с needsDiagnosis=true, !staffDiagnosing, !lost
   → patient.staffDiagnosing = true
-walkToPatient → diagnosing (15 сек) → revealDiagnosis()
+  → targetPos = (examSlot.pos.x + 1.0, 0, examSlot.pos.z)  // рядом с кушеткой
+  → state = 'walkToPatient'
+
+walkToPatient → diagnosing (randWorkDuration ≈ 30-45с) → Game.Patients.autoRouteAfterDiag(patient)
 returning → idle
 ```
+Отмена при: нет targetPatient, patient.lost, patient.state !== 'atDiagExam'.
 
-Инструменты больше не предметы — диагност не ищет их, не носит, не кладёт обратно. Он просто идёт к пациенту и проводит обследование.
-
-**Блокировка**: `patient.staffDiagnosing` → игрок видит "Диагност уже проводит обследование"
-
-### Медсестра
-
-Медсестра поддерживает мульти-препаратное лечение: делает **несколько ходок** (по одному препарату за раз). После доставки одного препарата возвращается в idle, затем снова находит того же пациента (если `pendingConsumables` не пуст) и несёт следующий.
-
+### Медсестра (min HP триаж)
 ```
-idle (каждые 1 сек) → ищет atBed + !needsDiagnosis + !treated + !staffTreating + pendingConsumables.length > 0
-  → requiredMed = patient.pendingConsumables[0]  // берёт ПЕРВЫЙ из оставшихся
-  → patient.staffTreating = true
-  → ищет лекарство ТОЛЬКО на стеллаже
-walkToShelf → pickMedicine (1 сек) → берёт лекарство
-  → если нет: красное предупреждение HUD
-walkToPatient → treating (5 сек) → treatPatientByStaff(patient, heldItem)
-  → проверка: если pendingConsumables.indexOf(heldItem) === -1 → cancelNurseTask (игрок уже применил)
+idle (каждую 1с) → строит список кандидатов:
+  state === 'atBed' + !needsDiagnosis + !treated + !lost
+  + !staffTreating + !staffDiagnosing + pendingConsumables.length > 0
+  → sort по hp (asc)
+  → перебирает, ищет первого, у кого есть нужный препарат на стеллаже
+
+  Для выбранного:
+    → patient.staffTreating = true
+    → heldItem = pendingConsumables[0]
+    → targetSlot = slot на стеллаже
+    → state = 'walkToShelf'
+
+  Препарат недоступен → добавляет в missingMeds → HUD-предупреждение
+
+walkToShelf → pickMedicine (1с) → takeFromSlot → walkToPatient
+walkToPatient → treating (randWorkDuration ≈ 30-45с) → treatPatientByStaff(patient, heldItem)
 returning → idle
-  → если у пациента ещё есть pendingConsumables → на следующем цикле idle снова подберёт его
+  (если у пациента ещё есть pendingConsumables, idle подберёт снова)
+```
+**Cancel**: `patient.lost`, `patient.state !== 'atBed'`, `patient.treated`, препарат уже применён игроком/другим путём.
+
+### Администратор (опционально — не пре-хайрен)
+```
+idle (каждые 2с):
+  → если есть свободная кровать и patient в 'waiting' с min HP
+    → sendPatientByStaff сразу
+  → иначе если есть свободный dest и patient в очереди с min HP (при свободной кровати)
+    или FIFO (при только свободном стуле)
+    → summonToDesk (patient.staffProcessing = true)
+    → state = 'waitingForPatient'
+
+waitingForPatient → patient дошёл до ADMIN_DESK_POS (dist<0.15)
+  → processing (5с)
+  → sendPatientByStaff в pending dest
 ```
 
-**Защита от дублирования**: при walkToPatient и treating проверяется `pendingConsumables.indexOf(staff.heldItem)`. Если игрок уже применил этот препарат пока медсестра шла — задача отменяется (`cancelNurseTask`), лекарство возвращается на стеллаж.
+## Блокировка для игрока
+- `patient.staffProcessing` → игрок видит "Администратор оформляет пациента" при попытке клика
+- `patient.staffDiagnosing` / `patient.staffTreating` — используются только внутри staff-логики (игрок не кликает пациентов на кровати/экзаме)
 
-**Блокировка**: `patient.staffTreating` → игрок видит "Медсестра уже лечит этого пациента". Действует с момента начала (даже пока идёт за лекарством). Снимается после каждой доставки.
+## HP-пауза во время работы
+Пока `staffDiagnosing === true` или `staffTreating === true`, HP пациента **не убывает** (см. `patients.js::updatePatients` — HP decay gated by these flags).
 
-**Предупреждение**: красный HUD-блок (`#nurse-warning-hud`) с перечнем недостающих препаратов на стеллаже. Пульсирующая анимация. Исчезает при появлении лекарства на стеллаже или увольнении медсестры.
-
-## Предупреждения (Staff Warning HUDs)
-
-Контейнер `#staff-warnings-container` (fixed, top:60px, right:20px, z-index:6, flex-column, gap:8px):
+## Предупреждения
 
 ### Медсестра — `#nurse-warning-hud`
-- Фон: `rgba(180, 30, 30, 0.92)`, рамка `rgba(255, 80, 80, 0.6)`
-- Заголовок: "МЕДСЕСТРЕ НЕ ХВАТАЕТ НА СТЕЛЛАЖЕ:"
-- Список: цветная точка + название препарата
-- Пульсация: `nurse-warn-pulse` (красный box-shadow)
-- Показывается когда медсестра нанята И есть пациенты для лечения, но лекарств нет на стеллаже
+- Фон `rgba(180, 30, 30, 0.92)`, рамка `rgba(255, 80, 80, 0.6)`
+- Заголовок: `staff.nurseWarning`
+- Список отсутствующих препаратов с цветной точкой
+- Пульсация `nurse-warn-pulse`
+- Показывается когда медсестра нанята И есть пациент для лечения И препарата нет на стеллаже
 
-## Зарплата и конец дня
-
-- Зарплата платится **в конце дня** автоматически в `showDayEndPopup()` (`shift.js`)
-- `Game.Staff.getDailySalary()` → сумма зарплат всех нанятых
-- `Game.Cashier.spend(salary)` — списание (баланс может уйти в минус)
-- В попапе конца дня: строка "Зарплата сотрудников: $X" (`#stat-salary`)
-- При увольнении — выплачивается зарплата за один день немедленно
-
-### Отрицательный баланс
-- `updateBalanceHUD()` в `cashier.js`: если `balance < 0`, цвет `#ff4444` (красный), рамка красная
-- Магазин по-прежнему блокирует покупки при нехватке средств
-- Только зарплата сотрудников может увести баланс в минус
+## Зарплата — ОТКЛЮЧЕНА
+- `STAFF_TYPES[*].salary = 0`
+- `getDailySalary()` всегда возвращает `0`
+- Ежедневный вычет в `shift.js::showDayEndPopup` удалён
+- Строка `#stat-salary` в попапе конца дня **удалена**
+- `fire()` не выплачивает единоразово (салари = 0)
+- `notify.fired` текст упрощён (без `{1}` с суммой)
 
 ## Координация с игроком
 
-| Сотрудник | Блокировка для игрока |
-|-----------|----------------------|
-| Администратор | Пациент с `staffProcessing=true` → `Game.Lang.t('staff.status.processing')` |
-| Диагност | Мини-игра на конкретном пациенте → `Game.Lang.t('staff.status.diagnosing')` |
-| Медсестра | Лечение конкретного пациента → `Game.Lang.t('staff.status.treating')` |
+| Сотрудник | Блокировка игрока |
+|-----------|-------------------|
+| Администратор | При попытке ЛКМ по head of queue: `Game.Lang.t('notify.adminProcessing')` если `staffProcessing` |
+| Диагност | — (игрок не кликает пациентов на exam-slot) |
+| Медсестра | — (игрок не кликает пациентов на кровати) |
 
-## Новые флаги на объекте пациента
-
+## Флаги на объекте пациента
 ```js
-patient.staffProcessing = false  // администратор оформляет
-patient.staffDiagnosing = false  // диагност работает
-patient.staffTreating = false    // медсестра лечит
+patient.staffProcessing = false
+patient.staffDiagnosing = false
+patient.staffTreating = false
 ```
 
-## API модулей — новые публичные функции
+## API — публичные функции
 
 ### Game.Staff
 ```js
 setup(THREE, scene, camera, controls, collidables)
 update(delta)
-hire(type)              // создаёт и добавляет, max 1 на тип
-fire(staffId)           // удаляет, платит зарплату за день
+hire(type)              // max 1 на тип; бесплатно
+fire(staffId)           // без выплат
 getHiredStaff()         // массив нанятых
-getDailySalary()        // сумма всех зарплат
+getDailySalary()        // всегда 0 (заглушка для shift.js)
 isTypeHired(type)       // bool
-isPatientBeingDiagnosed(patient) // bool
-isPatientBeingTreated(patient)   // bool
+isPatientBeingDiagnosed(patient)
+isPatientBeingTreated(patient)
 ```
 
-### Game.Patients (новые)
+### Game.Patients (используются staff)
 ```js
-getPatients()           // массив всех пациентов
-getQueue()              // массив очереди
-sendPatientByStaff(patient, dest, slot)  // направить без попапа
-summonToDesk(patient, deskPos)           // вызвать к стойке
-treatPatientByStaff(patient, consumableType) // лечить без инвентаря
-```
-
-### Game.Shelves (новые)
-```js
-getShelves()            // массив стеллажей
-findSlotWithItem(type)  // слот с предметом или null
-takeFromSlot(slot)      // забрать 1 шт
-placeOnAnyShelf(type)   // положить на первый подходящий стеллаж
-```
-
-### Game.Trash (новые)
-```js
-getCount()              // количество мусора на полу
-findNearest(fromPos)    // ближайший мусор (mesh) или null
-removeTrash(mesh)       // удалить мусор → boolean
-```
-
-### Game.Consumables (новые)
-```js
-findNearestGroundItem(type, fromPos) // ближайший предмет на полу
-removeGroundItem(mesh)               // убрать предмет с пола
-getGroundItemsByType(type)           // все предметы типа на полу
+getPatients()
+getQueue()
+sendPatientByStaff(patient, dest, slot)
+summonToDesk(patient, deskPos)
+treatPatientByStaff(patient, consumableType)
+autoRouteAfterDiag(patient)  // новое: вызывается диагностом
+revealDiagnosis(patient)
 ```
 
 ## DOM-элементы
-
 ```
-#shop-tab-staff             — контент вкладки сотрудников
+#shop-tab-staff             — вкладка сотрудников
 .staff-hire-item            — строка найма (data-type)
-.staff-hire-btn             — кнопка "Нанять"
+.staff-hire-btn             — кнопка «Нанять»
 #staff-hired-list           — блок нанятых
 .staff-hired-item           — строка нанятого
-.staff-fire-btn             — кнопка "Уволить" (data-id)
-#staff-warnings-container   — контейнер предупреждений (fixed)
+.staff-fire-btn             — кнопка «Уволить» (data-id)
+#staff-warnings-container   — контейнер предупреждений (fixed, top:60px, right:20px)
 #nurse-warning-hud          — предупреждение медсестры
-#stat-salary                — строка зарплаты в попапе конца дня
 ```
 
-## Integration
+Удалено: `.staff-salary`, `#stat-salary`, `shop.perDay`, `shop.salary`, параметр `{1}` в `shop.fire`/`notify.fired`.
 
+## Integration
 ### index.html
-- `<script src="js/staff.js">` между diagnostics.js и shift.js
-- `Game.Staff.setup(...)` в блоке инициализации
-- `Game.Staff.update(delta)` в animation loop (после Cashier, перед Shift)
+- `<script src="js/staff.js">` между diagnostics.js и trash.js
+- `Game.Staff.setup(...)` и затем `Game.Staff.hire('nurse'); Game.Staff.hire('diagnostician');`
+- `Game.Staff.update(delta)` в animation loop
 
 ### shop.js
-- Новая вкладка `staff` в `tabContents`
-- `refreshStaffList()` — обновление списка нанятых и видимости кнопок найма
+- Вкладка `staff` в `tabContents`
+- `refreshStaffList()` — обновление списка и видимости кнопок найма
 
 ### shift.js
-- В `showDayEndPopup()`: вычет зарплаты через `Game.Cashier.spend()`
-- Отображение в `#stat-salary`
+- `#stat-salary` удалён; logic `getDailySalary()` больше не вызывается (возвращает 0)
 
 ### cashier.js
-- `updateBalanceHUD()`: красный цвет при отрицательном балансе, округление вниз (`Math.floor(balance)`)
+- `updateBalanceHUD()` — красный цвет при отрицательном балансе (практически недостижимо после удаления зарплат)
 
 ### patients.js
 - Проверка `staffProcessing` перед открытием попапа
-- Проверка `staffDiagnosing` перед диагностикой
-- Проверка `staffTreating` перед лечением

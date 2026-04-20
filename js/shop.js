@@ -60,7 +60,7 @@
       row.className = 'staff-hired-item';
       row.innerHTML = '<span class="shop-item-icon" style="background:#' + info.color.toString(16).padStart(6, '0') + '"></span>' +
         '<span class="staff-hired-name">' + info.name + '</span>' +
-        '<button class="staff-fire-btn" data-id="' + s.id + '">' + Game.Lang.t('shop.fire', [info.salary]) + '</button>';
+        '<button class="staff-fire-btn" data-id="' + s.id + '">' + Game.Lang.t('shop.fire') + '</button>';
       listEl.appendChild(row);
     }
     // Attach fire handlers
@@ -179,8 +179,6 @@
         (function(btn, t) {
           var basePrice = 80;
           btn.addEventListener('click', function() {
-            if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('shop_buy')) return;
-            // First order of each type is free
             var isFree = !firstOrderUsed[t];
             var price = isFree ? 0 : basePrice;
             if (!isFree) {
@@ -198,7 +196,6 @@
             }
             Game.Consumables.spawnBoxInDeliveryZone(t);
             updateCounts();
-            if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('shop_item_bought', t);
           });
         })(itemEl.querySelector('.shop-buy-btn'), type);
       }
@@ -267,11 +264,9 @@
 
       // Close button
       closeBtn.addEventListener('click', function() {
-        if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('shop_close')) return;
         shopEl.style.display = 'none';
         isShopOpen = false;
         controls.lock();
-        if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('shop_closed');
       });
 
       refreshTabLocks();
@@ -282,17 +277,13 @@
         if (e.code !== 'KeyQ') return;
         if (Game.Patients.isPopupOpen()) return;
         if (Game.Cashier.isPopupOpen()) return;
-        if (Game.Diagnostics && Game.Diagnostics.isActive()) return;
         if (Game.Levels && Game.Levels.isPopupOpen()) return;
 
         if (isShopOpen) {
-          if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('shop_close')) return;
           shopEl.style.display = 'none';
           isShopOpen = false;
           controls.lock();
-          if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('shop_closed');
         } else if (controls.isLocked) {
-          if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('shop_open')) return;
           isShopOpen = true;
           shopEl.style.display = 'block';
           controls.unlock();
@@ -301,7 +292,6 @@
           refreshStaffList();
           refreshTabLocks();
           refreshFreeLabels();
-          if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('shop_opened');
         }
       });
     },

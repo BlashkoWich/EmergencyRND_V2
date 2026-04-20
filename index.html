@@ -21,6 +21,7 @@
   </svg>
   <div id="interact-hint" data-lang-key="hint.interact"></div>
   <div id="held-box-hint"></div>
+  <div id="lost-patients-hud"><span data-lang-key="hud.lost"></span> <span id="lost-patients-value">0</span></div>
   <div id="patient-popup">
     <div id="popup-severity-band"></div>
     <button id="popup-close" type="button" aria-label="Close">&times;</button>
@@ -72,30 +73,6 @@
         <button id="btn-wait"><span data-lang-key="popup.btn.wait"></span> <span id="chair-count" style="opacity:0.7"></span></button>
         <button id="btn-reject" data-lang-key="popup.btn.sendHome"></button>
       </div>
-    </div>
-  </div>
-  <div id="diag-result-popup" style="display:none">
-    <h2 data-lang-key="diag.result.title"></h2>
-    <div id="diag-result-name" style="font-weight:600; margin-bottom:8px;"></div>
-    <div id="diag-result-outcome" style="font-size:1rem; margin-bottom:8px;"></div>
-    <div id="diag-result-prescription" style="color:#ccc; margin-bottom:10px;"></div>
-    <div id="diag-result-price" style="font-weight:600; color:#44cc44; margin-bottom:12px;"></div>
-    <div class="buttons">
-      <button id="diag-send-bed"></button>
-      <button id="diag-send-wait"></button>
-      <button id="diag-send-home"></button>
-      <button id="diag-defer" class="btn-defer" data-lang-key="popup.btn.defer"></button>
-    </div>
-  </div>
-  <div id="discharge-popup" style="display:none">
-    <h2 data-lang-key="discharge.title"></h2>
-    <div id="discharge-name" style="font-weight:600; margin-bottom:8px;"></div>
-    <div id="discharge-diagnosis" style="margin-bottom:6px;"></div>
-    <div id="discharge-applied" style="color:#ccc; margin-bottom:10px;"></div>
-    <div id="discharge-cost" style="font-weight:600; color:#44cc44; margin-bottom:12px;"></div>
-    <div class="buttons">
-      <button id="discharge-confirm" data-lang-key="discharge.btn"></button>
-      <button id="discharge-defer" class="btn-defer" data-lang-key="popup.btn.defer"></button>
     </div>
   </div>
   <div id="shop-popup">
@@ -160,19 +137,16 @@
       <div class="staff-hire-item" data-type="administrator">
         <span class="shop-item-icon" style="background:#2266aa"></span>
         <span class="shop-item-name" data-lang-key="staff.administrator"></span>
-        <span class="staff-salary">$100/<span data-lang-key="shop.perDay"></span></span>
         <button class="shop-buy-btn staff-hire-btn" data-lang-key="shop.hire"></button>
       </div>
       <div class="staff-hire-item" data-type="diagnostician">
         <span class="shop-item-icon" style="background:#8844cc"></span>
         <span class="shop-item-name" data-lang-key="staff.diagnostician"></span>
-        <span class="staff-salary">$100/<span data-lang-key="shop.perDay"></span></span>
         <button class="shop-buy-btn staff-hire-btn" data-lang-key="shop.hire"></button>
       </div>
       <div class="staff-hire-item" data-type="nurse">
         <span class="shop-item-icon" style="background:#cc4488"></span>
         <span class="shop-item-name" data-lang-key="staff.nurse"></span>
-        <span class="staff-salary">$100/<span data-lang-key="shop.perDay"></span></span>
         <button class="shop-buy-btn staff-hire-btn" data-lang-key="shop.hire"></button>
       </div>
       <div class="staff-section-header" data-lang-key="shop.staffSection.hired"></div>
@@ -206,7 +180,6 @@
       <div class="stat-row"><span data-lang-key="dayEnd.lost"></span><span id="stat-lost">0</span></div>
       <div class="stat-row"><span data-lang-key="dayEnd.earned"></span><span id="stat-earned">$0</span></div>
       <div class="stat-row"><span data-lang-key="dayEnd.spent"></span><span id="stat-spent">$0</span></div>
-      <div class="stat-row"><span data-lang-key="dayEnd.salary"></span><span id="stat-salary">$0</span></div>
     </div>
     <button id="day-end-next" data-lang-key="dayEnd.next"></button>
   </div>
@@ -216,53 +189,6 @@
     <button id="level-up-close" data-lang-key="levelUp.close"></button>
   </div>
   <div id="xp-animation-container"></div>
-  <div id="level-select-screen" style="display:none">
-    <h1 data-lang-key="levelSelect.title"></h1>
-    <p class="level-select-subtitle" data-lang-key="levelSelect.subtitle"></p>
-    <div id="level-select-cards">
-      <div class="level-card" data-level="1">
-        <div class="level-card-header" data-lang-key="levelSelect.l1.header"></div>
-        <ul class="level-card-features">
-          <li data-lang-key="levelSelect.l1f1"></li>
-          <li data-lang-key="levelSelect.l1f2"></li>
-          <li data-lang-key="levelSelect.l1f3"></li>
-          <li data-lang-key="levelSelect.l1f4"></li>
-        </ul>
-        <button class="level-card-btn" data-level="1" data-lang-key="levelSelect.start"></button>
-      </div>
-      <div class="level-card" data-level="2">
-        <div class="level-card-header" data-lang-key="levelSelect.l2.header"></div>
-        <ul class="level-card-features">
-          <li data-lang-key="levelSelect.l2f1"></li>
-          <li data-lang-key="levelSelect.l2f2"></li>
-          <li data-lang-key="levelSelect.l2f3"></li>
-          <li data-lang-key="levelSelect.l2f4"></li>
-        </ul>
-        <button class="level-card-btn" data-level="2" data-lang-key="levelSelect.start"></button>
-      </div>
-      <div class="level-card" data-level="3">
-        <div class="level-card-header" data-lang-key="levelSelect.l3.header"></div>
-        <ul class="level-card-features">
-          <li data-lang-key="levelSelect.l3f1"></li>
-          <li data-lang-key="levelSelect.l3f2"></li>
-          <li data-lang-key="levelSelect.l3f3"></li>
-          <li data-lang-key="levelSelect.l3f4"></li>
-          <li data-lang-key="levelSelect.l3f5"></li>
-        </ul>
-        <button class="level-card-btn" data-level="3" data-lang-key="levelSelect.start"></button>
-      </div>
-      <div class="level-card" data-level="4">
-        <div class="level-card-header" data-lang-key="levelSelect.l4.header"></div>
-        <ul class="level-card-features">
-          <li data-lang-key="levelSelect.l4f1"></li>
-          <li data-lang-key="levelSelect.l4f2"></li>
-          <li data-lang-key="levelSelect.l4f3"></li>
-          <li data-lang-key="levelSelect.l4f4"></li>
-        </ul>
-        <button class="level-card-btn" data-level="4" data-lang-key="levelSelect.start"></button>
-      </div>
-    </div>
-  </div>
   <div id="pause-screen" style="display:none;">
     <div class="pause-title" data-lang-key="pause.title"></div>
     <div class="pause-subtitle" data-lang-key="pause.subtitle"></div>
@@ -292,15 +218,6 @@
       <span style="opacity:0.7; font-size:0.85rem;" data-lang-key="overlay.language"></span>
       <button class="lang-btn" data-lang="ru">Русский</button>
       <button class="lang-btn" data-lang="en">English</button>
-    </div>
-  </div>
-
-  <div id="tutorial-overlay" style="display:none">
-    <div id="tutorial-spotlight"></div>
-    <div id="tutorial-panel">
-      <div id="tutorial-step-num"></div>
-      <div id="tutorial-text"></div>
-      <button id="tutorial-next" style="display:none" data-lang-key="tutorial.next"></button>
     </div>
   </div>
 
@@ -358,14 +275,6 @@
     <div class="ad-reward-label" data-lang-key="ad.reward"></div>
   </div>
 
-  <div id="diagnostics-overlay" style="display:none">
-    <button id="diagnostics-close">&#10005;</button>
-    <div id="diagnostics-title"></div>
-    <canvas id="diagnostics-canvas"></canvas>
-    <div id="diagnostics-controls"></div>
-    <div id="diagnostics-status"></div>
-  </div>
-
   <script src="js/lang.js?v=2"></script>
   <script src="js/interaction.js?v=2"></script>
   <script src="js/helpers.js?v=2"></script>
@@ -385,7 +294,6 @@
   <script src="js/trash.js?v=2"></script>
   <script src="js/shift.js?v=2"></script>
   <script src="js/cashier.js?v=2"></script>
-  <script src="js/tutorial.js?v=2"></script>
 
   <script type="importmap">
   {
@@ -490,8 +398,11 @@
     Game.Staff.setup(THREE, scene, camera, controls, collidables);
     Game.Trash.setup(THREE, scene, camera, controls, collidables);
     Game.Shift.setup(THREE, scene, camera, controls, collidables);
-    Game.Tutorial.setup(controls, THREE, camera, scene);
     Game.Interaction.setup(THREE, camera, controls);
+
+    // Pre-hire nurse and diagnostician on game start (salary disabled)
+    Game.Staff.hire('nurse');
+    Game.Staff.hire('diagnostician');
 
     // --- Quality settings ---
     let useComposer = true;
@@ -586,10 +497,6 @@
         Game.Shelves.update(delta * 2);
         Game.Trash.update(delta * 2);
         Game.Shift.update(delta * 2);
-      }
-
-      if (Game.Tutorial.isActive && Game.Tutorial.isActive()) {
-        Game.Tutorial.update(delta);
       }
 
       if (useComposer) {

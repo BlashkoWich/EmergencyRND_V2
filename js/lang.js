@@ -34,25 +34,8 @@
       'popup.btn.defer': 'Отложить',
       'popup.err.needsDiagnosis': 'Этого пациента нельзя направить на кровать — сначала нужна диагностика',
       'popup.err.noDiagnosisNeeded': 'Этому пациенту диагностика не нужна — направьте его на кровать',
-      'patient.hint.resumeDiag': 'ЛКМ — Открыть результат',
-      'patient.hint.resumeDischarge': 'ЛКМ — Выписка',
-      'popup.btn.sendBed': 'На лечение — кровать ({0}/{1})',
-      'popup.btn.sendWait': 'В зону ожидания ({0}/{1})',
       'popup.btn.sendHome': 'Отпустить домой',
       'popup.btn.ok': 'Понятно',
-
-      // Diagnostics result popup
-      'diag.result.title': 'Результат диагностики',
-      'diag.result.diseaseFound': 'Обнаружено: {0}',
-      'diag.result.healthy': 'Пациент здоров, болезнь не обнаружена',
-      'diag.result.price': 'Стоимость приёма: ${0}',
-
-      // Discharge popup
-      'discharge.title': 'Выписка',
-      'discharge.diagnosis': 'Диагноз: {0}',
-      'discharge.applied': 'Применено',
-      'discharge.cost': 'К оплате: ${0}',
-      'discharge.btn': 'Выписать',
 
       // Signs
       'sign.diagnostics': 'ДИАГНОСТИКА',
@@ -78,14 +61,13 @@
       'shop.staffSection.hired': 'Нанятые',
       'shop.staffSection.empty': 'Пока никого нет',
       'shop.hire': 'Нанять',
-      'shop.fire': 'Уволить — ${0}',
-      'shop.salary': '${0}/день',
-      'shop.perDay': 'день',
+      'shop.fire': 'Уволить',
 
       // HUD
       'hud.balance': 'Баланс:',
       'hud.level': 'Ур.',
       'hud.day': 'День {0}',
+      'hud.lost': 'Потеряно:',
 
       // Shift/Time
       'shift.sign.open': 'ОТКРЫТО',
@@ -107,39 +89,11 @@
       'dayEnd.lost': 'Потеряно пациентов:',
       'dayEnd.earned': 'Заработано:',
       'dayEnd.spent': 'Потрачено:',
-      'dayEnd.salary': 'Зарплата сотрудников:',
       'dayEnd.next': 'Перейти в следующий день',
 
       // Level up
       'levelUp.title': 'Уровень {0}!',
       'levelUp.close': 'Отлично!',
-
-      // Level select
-      'levelSelect.title': 'Частная Клиника',
-      'levelSelect.subtitle': 'Выберите начальный уровень',
-      'levelSelect.level': 'Уровень {0}',
-      'levelSelect.l1.header': 'Уровень 1',
-      'levelSelect.l2.header': 'Уровень 2',
-      'levelSelect.l3.header': 'Уровень 3',
-      'levelSelect.l4.header': 'Уровень 4',
-      'levelSelect.start': 'Начать',
-      'levelSelect.l1f1': 'Только лёгкие пациенты',
-      'levelSelect.l1f2': 'Покупка препаратов',
-      'levelSelect.l1f3': 'Без диагностики',
-      'levelSelect.l1f4': 'Пациенты приходят по одному',
-      'levelSelect.l2f1': '+ Пациенты средней тяжести',
-      'levelSelect.l2f2': '+ Покупка инструментов',
-      'levelSelect.l2f3': 'Пациентам нужна диагностика',
-      'levelSelect.l2f4': 'Пациенты приходят по одному',
-      'levelSelect.l3f1': '+ Тяжёлые пациенты',
-      'levelSelect.l3f2': '+ Покупка мебели и прокачка',
-      'levelSelect.l3f3': 'Поток пациентов каждые 20с',
-      'levelSelect.l3f4': 'Диагностика включена',
-      'levelSelect.l3f5': '+ Мусор на полу',
-      'levelSelect.l4f1': '+ Найм сотрудников',
-      'levelSelect.l4f2': 'Всё разблокировано',
-      'levelSelect.l4f3': 'Поток пациентов каждые 10с',
-      'levelSelect.l4f4': 'Полный хаос!',
 
       // Ad system
       'ad.offer.title': 'Недостаточно средств!',
@@ -233,14 +187,11 @@
       'notify.instrumentsToPanel': 'Инструменты вешайте на панель',
       'notify.alreadyHired': '{0} уже нанят(а)!',
       'notify.hired': '{0} нанят(а)!',
-      'notify.fired': '{0} уволен(а). Выплачено ${1}',
+      'notify.fired': '{0} уволен(а)',
       'notify.wrongItem': 'Это не тот препарат! Нужен: {0}',
       'notify.newWave': 'Пришла новая группа пациентов!',
 
-      // Levels (unlock descriptions)
-      'levels.unlock2.0': 'Покупка инструментов для диагностики',
-      'levels.unlock2.1': 'У пациентов появилась необходимость диагностики',
-      'levels.unlock2.2': 'Инструменты уже висят на панели — берите и используйте!',
+      // Levels (unlock descriptions — levels 3+ only; L1/L2 start state)
       'levels.unlock3.0': 'Покупка мебели',
       'levels.unlock3.1': 'Прокачка инвентаря (слоты)',
       'levels.unlock3.2': 'Пациенты теперь идут потоком!',
@@ -248,30 +199,6 @@
       'levels.unlock4.0': 'Найм сотрудников',
       'levels.xp.treatment': 'XP лечение',
       'levels.xp.diagnostics': 'XP диагностика',
-
-      // Diagnostics
-      'diag.steth.title': 'Фонендоскоп — Прослушайте точки аускультации',
-      'diag.steth.status': 'Наведите на подсвеченную точку',
-      'diag.steth.timeout': 'Время вышло! Попробуйте снова.',
-      'diag.hammer.title': 'Рефлекс-молоток — Проверьте рефлексы',
-      'diag.hammer.status': 'Кликните по точке на колене когда шкала в зелёной зоне ({0}/{1})',
-      'diag.hammer.tooWeak': 'Слишком слабо!',
-      'diag.hammer.tooStrong': 'Слишком сильно!',
-      'diag.hammer.reflex': 'Рефлекс!',
-      'diag.hammer.done': 'Рефлексы проверены! ({0}/{1})',
-      'diag.hammer.reflexPoint': 'Рефлекторная точка',
-      'diag.hammer.power': 'СИЛА',
-      'diag.hammer.weak': 'слабо',
-      'diag.hammer.strong': 'сильно',
-      'diag.rhino.title': 'Риноскоп — Пройдите к очагу воспаления',
-      'diag.rhino.status': 'Проведите прибор через носовой проход к красной точке',
-      'diag.start': 'СТАРТ',
-      'diag.target': 'ОЧАГ',
-      'diag.bodyPart.heart': 'Сердце',
-      'diag.bodyPart.leftLung': 'Левое лёгкое',
-      'diag.bodyPart.rightLung': 'Правое лёгкое',
-      'diag.bodyPart.abdomen': 'Живот',
-      'diag.bodyPart.throat': 'Горло',
 
       // Consumables/Box hints
       'box.held.trash': 'G — Выбросить в мусорку',
@@ -282,15 +209,8 @@
       'box.label.consumables': 'расходники',
       'box.label.medications': 'препараты',
 
-      // Patient hints
-      'patient.hint.treating': 'Пациент лечится...',
-      'patient.hint.diagnose': 'ЛКМ — Диагностика',
-      'patient.hint.treat': 'ЛКМ — Лечить',
-      'patient.hint.treatHold': 'Удерживайте ЛКМ — Лечить',
-      'patient.hint.needMedicines': 'Нужны препараты: {0}',
-      'patient.hint.needMedicine': 'Нужен препарат ({0})',
-      'patient.hint.toBed': 'ЛКМ — Перевести на кровать',
-      'patient.hint.interact': 'Нажмите ЛКМ для взаимодействия',
+      // Patient hints (player only interacts with head-of-queue)
+      'patient.hint.interact': 'ЛКМ — Осмотреть',
       'patient.age': '{0} лет',
       'patient.pulse': '{0} уд/м',
       'patient.needDiagnosis': 'Требуется диагностика',
@@ -331,26 +251,6 @@
 
       // Shop count labels
       'shop.count': '(есть: {0})',
-
-      // Tutorial steps
-      'tutorial.stepOf': 'Шаг {0} из {1}',
-      'tutorial.next': 'Далее',
-      'tutorial.start': 'Начать!',
-      'tutorial.step0': 'Добро пожаловать в Частную Клинику!\nЯ проведу вас по основам работы.\nДавайте начнём!',
-      'tutorial.step1': 'Подойдите к табличке с надписью "ЗАКРЫТО" у входа и нажмите ЛКМ, чтобы открыть смену.',
-      'tutorial.step2': 'Первый пациент пришёл!\nПодойдите к нему и нажмите ЛКМ, чтобы посмотреть его медкарту.',
-      'tutorial.step3': 'Это медицинская карта пациента:\n\n\u2022 Имя, возраст и тяжесть состояния\n\u2022 Витальные показатели: температура, пульс, давление\n\u2022 Жалоба пациента — что его беспокоит\n\u2022 Диагноз и назначенный препарат\n\u2022 Полоска здоровья — текущее состояние',
-      'tutorial.step4': '\u00ABВ зону ожидания\u00BB — пациент ждёт на стуле, пока вы заняты другими.\n\n\u00ABНа кровать\u00BB — пациент ложится, и вы можете начать лечение.\n\nНажмите \u00ABНа кровать\u00BB!',
-      'tutorial.step5html': 'Пациенту нужен препарат. Откройте магазин, нажав <b>Q</b>, и закажите:<br><br>{0}<b>{1}</b><br><br>Первый заказ каждого вида — <span style="color:#4ade80">бесплатный</span>!',
-      'tutorial.step6html': 'Нажмите кнопку \u00ABЗаказать\u00BB напротив:<br><br>{0}<b>{1}</b>',
-      'tutorial.step7': 'Отлично! Товар уже в пути.\nЗакройте магазин кнопкой \u2715 или клавишей Q.',
-      'tutorial.step8': 'Коробка с препаратом появилась в зоне доставки рядом со стеллажами.\nПодойдите к ней и нажмите ЛКМ, чтобы взять препарат.',
-      'tutorial.step9': 'Теперь подойдите к пациенту на кровати и нажмите ЛКМ, чтобы применить препарат.',
-      'tutorial.step10': 'Препарат применён! Пациент выздоравливает — полоска здоровья заполняется.\n\nКогда он полностью выздоровеет, он сам пойдёт к кассе самообслуживания.',
-      'tutorial.step11': 'Пациент идёт к кассе самообслуживания слева у выхода.\nОн сам оплатит приём — деньги появятся в кассе через несколько секунд.',
-      'tutorial.step12': 'Подойдите к кассе и удерживайте E, чтобы забрать накопленные деньги.',
-      'tutorial.step13': 'Деньги сняты с кассы!\n\nСовет: со временем кровати изнашиваются (каждый пациент — -1 HP). Нажмите R, чтобы взять ремонтный ключ, и зажмите E рядом с кроватью, чтобы её починить. Сломанные кровати (0 HP) использовать нельзя.\n\nВы изучили все основы! Теперь управляйте клиникой самостоятельно. Удачи!',
-      'tutorial.defaultMedicine': 'препарат',
 
       // Patient medical data
       'patients.names.male': ['Иван','Алексей','Дмитрий','Сергей','Андрей','Михаил','Николай','Павел','Олег','Виктор'],
@@ -483,25 +383,8 @@
       'popup.btn.defer': 'Defer',
       'popup.err.needsDiagnosis': 'This patient cannot go to a bed — diagnosis is required first',
       'popup.err.noDiagnosisNeeded': 'This patient does not need diagnosis — send them to a bed',
-      'patient.hint.resumeDiag': 'LMB — Open result',
-      'patient.hint.resumeDischarge': 'LMB — Discharge',
-      'popup.btn.sendBed': 'To treatment — bed ({0}/{1})',
-      'popup.btn.sendWait': 'To waiting area ({0}/{1})',
       'popup.btn.sendHome': 'Send home',
       'popup.btn.ok': 'OK',
-
-      // Diagnostics result popup
-      'diag.result.title': 'Diagnosis result',
-      'diag.result.diseaseFound': 'Found: {0}',
-      'diag.result.healthy': 'Patient is healthy, no disease detected',
-      'diag.result.price': 'Visit cost: ${0}',
-
-      // Discharge popup
-      'discharge.title': 'Discharge',
-      'discharge.diagnosis': 'Diagnosis: {0}',
-      'discharge.applied': 'Applied',
-      'discharge.cost': 'Total: ${0}',
-      'discharge.btn': 'Discharge',
 
       // Signs
       'sign.diagnostics': 'DIAGNOSTICS',
@@ -527,14 +410,13 @@
       'shop.staffSection.hired': 'Hired',
       'shop.staffSection.empty': 'No one yet',
       'shop.hire': 'Hire',
-      'shop.fire': 'Fire — ${0}',
-      'shop.salary': '${0}/day',
-      'shop.perDay': 'day',
+      'shop.fire': 'Fire',
 
       // HUD
       'hud.balance': 'Balance:',
       'hud.level': 'Lvl.',
       'hud.day': 'Day {0}',
+      'hud.lost': 'Lost:',
 
       // Shift/Time
       'shift.sign.open': 'OPEN',
@@ -556,39 +438,11 @@
       'dayEnd.lost': 'Patients lost:',
       'dayEnd.earned': 'Earned:',
       'dayEnd.spent': 'Spent:',
-      'dayEnd.salary': 'Staff salary:',
       'dayEnd.next': 'Go to next day',
 
       // Level up
       'levelUp.title': 'Level {0}!',
       'levelUp.close': 'Great!',
-
-      // Level select
-      'levelSelect.title': 'Private Clinic',
-      'levelSelect.subtitle': 'Choose starting level',
-      'levelSelect.level': 'Level {0}',
-      'levelSelect.l1.header': 'Level 1',
-      'levelSelect.l2.header': 'Level 2',
-      'levelSelect.l3.header': 'Level 3',
-      'levelSelect.l4.header': 'Level 4',
-      'levelSelect.start': 'Start',
-      'levelSelect.l1f1': 'Only mild patients',
-      'levelSelect.l1f2': 'Buy medications',
-      'levelSelect.l1f3': 'No diagnostics',
-      'levelSelect.l1f4': 'Patients come one at a time',
-      'levelSelect.l2f1': '+ Medium severity patients',
-      'levelSelect.l2f2': '+ Buy instruments',
-      'levelSelect.l2f3': 'Patients need diagnostics',
-      'levelSelect.l2f4': 'Patients come one at a time',
-      'levelSelect.l3f1': '+ Severe patients',
-      'levelSelect.l3f2': '+ Buy furniture and upgrades',
-      'levelSelect.l3f3': 'Patient stream every 20s',
-      'levelSelect.l3f4': 'Diagnostics enabled',
-      'levelSelect.l3f5': '+ Trash on floor',
-      'levelSelect.l4f1': '+ Hire staff',
-      'levelSelect.l4f2': 'Everything unlocked',
-      'levelSelect.l4f3': 'Patient stream every 10s',
-      'levelSelect.l4f4': 'Total chaos!',
 
       // Ad system
       'ad.offer.title': 'Insufficient funds!',
@@ -682,14 +536,11 @@
       'notify.instrumentsToPanel': 'Hang instruments on the panel',
       'notify.alreadyHired': '{0} is already hired!',
       'notify.hired': '{0} hired!',
-      'notify.fired': '{0} fired. Paid ${1}',
+      'notify.fired': '{0} fired',
       'notify.wrongItem': 'Wrong medication! Need: {0}',
       'notify.newWave': 'A new group of patients has arrived!',
 
       // Levels (unlock descriptions)
-      'levels.unlock2.0': 'Purchase diagnostic instruments',
-      'levels.unlock2.1': 'Patients now require diagnostics',
-      'levels.unlock2.2': 'Instruments are on the panel — use them!',
       'levels.unlock3.0': 'Buy furniture',
       'levels.unlock3.1': 'Inventory upgrades (slots)',
       'levels.unlock3.2': 'Patients now come in streams!',
@@ -697,30 +548,6 @@
       'levels.unlock4.0': 'Hire staff',
       'levels.xp.treatment': 'XP treatment',
       'levels.xp.diagnostics': 'XP diagnostics',
-
-      // Diagnostics
-      'diag.steth.title': 'Stethoscope — Listen to auscultation points',
-      'diag.steth.status': 'Hover over the highlighted point',
-      'diag.steth.timeout': 'Time is up! Try again.',
-      'diag.hammer.title': 'Reflex hammer — Check reflexes',
-      'diag.hammer.status': 'Click the knee point when the bar is in the green zone ({0}/{1})',
-      'diag.hammer.tooWeak': 'Too weak!',
-      'diag.hammer.tooStrong': 'Too strong!',
-      'diag.hammer.reflex': 'Reflex!',
-      'diag.hammer.done': 'Reflexes checked! ({0}/{1})',
-      'diag.hammer.reflexPoint': 'Reflex point',
-      'diag.hammer.power': 'POWER',
-      'diag.hammer.weak': 'weak',
-      'diag.hammer.strong': 'strong',
-      'diag.rhino.title': 'Rhinoscope — Navigate to the inflammation site',
-      'diag.rhino.status': 'Guide the device through the nasal passage to the red point',
-      'diag.start': 'START',
-      'diag.target': 'TARGET',
-      'diag.bodyPart.heart': 'Heart',
-      'diag.bodyPart.leftLung': 'Left lung',
-      'diag.bodyPart.rightLung': 'Right lung',
-      'diag.bodyPart.abdomen': 'Abdomen',
-      'diag.bodyPart.throat': 'Throat',
 
       // Consumables/Box hints
       'box.held.trash': 'G — Throw in trash',
@@ -731,15 +558,8 @@
       'box.label.consumables': 'consumables',
       'box.label.medications': 'medications',
 
-      // Patient hints
-      'patient.hint.treating': 'Patient is being treated...',
-      'patient.hint.diagnose': 'LMB — Diagnose',
-      'patient.hint.treat': 'LMB — Treat',
-      'patient.hint.treatHold': 'Hold LMB — Treat',
-      'patient.hint.needMedicines': 'Need medications: {0}',
-      'patient.hint.needMedicine': 'Need medication ({0})',
-      'patient.hint.toBed': 'LMB — Send to bed',
-      'patient.hint.interact': 'Press LMB to interact',
+      // Patient hints (player only interacts with head-of-queue)
+      'patient.hint.interact': 'LMB — Examine',
       'patient.age': '{0} y.o.',
       'patient.pulse': '{0} bpm',
       'patient.needDiagnosis': 'Diagnosis required',
@@ -780,26 +600,6 @@
 
       // Shop count labels
       'shop.count': '(have: {0})',
-
-      // Tutorial steps
-      'tutorial.stepOf': 'Step {0} of {1}',
-      'tutorial.next': 'Next',
-      'tutorial.start': 'Start!',
-      'tutorial.step0': 'Welcome to Private Clinic!\nI will guide you through the basics.\nLet\'s begin!',
-      'tutorial.step1': 'Go to the "CLOSED" sign at the entrance and click LMB to open your shift.',
-      'tutorial.step2': 'Your first patient has arrived!\nApproach them and click LMB to view their medical card.',
-      'tutorial.step3': 'This is the patient\'s medical card:\n\n\u2022 Name, age and condition severity\n\u2022 Vital signs: temperature, pulse, blood pressure\n\u2022 Patient complaint — what bothers them\n\u2022 Diagnosis and prescribed medication\n\u2022 Health bar — current condition',
-      'tutorial.step4': '"To waiting area" — patient waits on a chair while you\'re busy.\n\n"To bed" — patient lies down and you can start treatment.\n\nClick "To bed"!',
-      'tutorial.step5html': 'The patient needs medication. Open the shop by pressing <b>Q</b> and order:<br><br>{0}<b>{1}</b><br><br>First order of each type is <span style="color:#4ade80">free</span>!',
-      'tutorial.step6html': 'Click the "Order" button next to:<br><br>{0}<b>{1}</b>',
-      'tutorial.step7': 'Great! The item is on its way.\nClose the shop with \u2715 or press Q.',
-      'tutorial.step8': 'A box with medication appeared in the delivery zone near the shelves.\nGo to it and click LMB to take the medication.',
-      'tutorial.step9': 'Now go to the patient on the bed and click LMB to apply the medication.',
-      'tutorial.step10': 'Medication applied! The patient is recovering — the health bar is filling up.\n\nWhen fully recovered, they will go to the self-checkout register.',
-      'tutorial.step11': 'The patient is heading to the self-checkout register on the left near the exit.\nThey will pay themselves — money will appear in the register after a few seconds.',
-      'tutorial.step12': 'Walk up to the register and hold E to withdraw the accumulated money.',
-      'tutorial.step13': 'Money withdrawn!\n\nTip: beds wear down over time (each patient costs 1 HP). Press R to equip the wrench, then hold E near a bed to repair it. Broken beds (0 HP) cannot be used.\n\nYou\'ve learned all the basics! Now manage the clinic on your own. Good luck!',
-      'tutorial.defaultMedicine': 'medication',
 
       // Patient medical data
       'patients.names.male': ['Ivan','Alexei','Dmitry','Sergei','Andrei','Mikhail','Nikolai','Pavel','Oleg','Viktor'],

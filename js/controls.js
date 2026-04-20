@@ -81,8 +81,7 @@
 
       overlay.addEventListener('click', function() {
         overlay.style.display = 'none';
-        var levelSelect = document.getElementById('level-select-screen');
-        if (levelSelect) levelSelect.style.display = 'flex';
+        controls.lock();
       });
 
       var pauseScreen = document.getElementById('pause-screen');
@@ -106,27 +105,12 @@
         crosshairEl.style.display = 'block';
       });
       controls.addEventListener('unlock', function() {
-        if (Game.Tutorial && Game.Tutorial.isActive()) {
-          if (Game.Tutorial.isAllowed('movement')) {
-            var reLock = function() {
-              document.removeEventListener('click', reLock);
-              if (Game.Tutorial && Game.Tutorial.isActive() && Game.Tutorial.isAllowed('movement')) {
-                controls.lock();
-              }
-            };
-            document.addEventListener('click', reLock);
-          }
-          return;
-        }
         if (Game.Ads && Game.Ads.isActive()) return;
         if (Game.Shop && Game.Shop.isOpen()) return;
         if (Game.Patients && Game.Patients.isPopupOpen()) return;
-        if (Game.Diagnostics && Game.Diagnostics.isActive()) return;
         if (Game.Shift && Game.Shift.isPopupOpen()) return;
         if (Game.Levels && Game.Levels.isPopupOpen()) return;
         if (Game.Cashier && Game.Cashier.isPopupOpen()) return;
-        var levelSelect = document.getElementById('level-select-screen');
-        if (levelSelect && levelSelect.style.display !== 'none') return;
 
         if (self._gameEntered) {
           document.getElementById('pause-screen').style.display = 'flex';

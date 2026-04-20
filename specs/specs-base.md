@@ -32,11 +32,11 @@
 - `Game.Shift` — система смен и дней (время, табличка Open/Closed, задачи, итоги дня)
 - `Game.Cashier` — касса и система оплаты
 - `Game.Ads` — система рекламы за деньги (попап предложения, фиктивный ролик, награда $200)
-- `Game.Tutorial` — пошаговый туториал (state machine, 3D-стрелки, spotlight, блокировка действий)
-
 - `Game.Lang` — система локализации (переводы ru/en, функция t(), переключение языка)
 
-Порядок загрузки: lang → helpers → world → patients → controls → consumables → inventory → shop → ads → wrench → furniture → shelves → diagnostics → staff → trash → shift → cashier → tutorial → inline module (оркестратор).
+Порядок загрузки: lang → helpers → world → patients → controls → consumables → inventory → shop → ads → wrench → furniture → shelves → diagnostics (stub) → staff → trash → shift → cashier → inline module (оркестратор).
+
+`tutorial.js` удалён. `diagnostics.js` — no-op заглушка (мини-игры удалены).
 
 ## IMPORTANT: Локализация (i18n)
 **Все тексты в игре ОБЯЗАНЫ быть на всех доступных языках (ru, en).** При разработке любой новой фичи или изменении текста:
@@ -73,12 +73,11 @@ js/
   wrench.js             — ремонтный ключ (R — взять/убрать, first-person модель, hold-E для ремонта кровати)
   furniture.js          — система мебели (покупка, перемещение, indoor/outdoor, динамические слоты, HP кроватей, ремонт)
   shelves.js            — стеллажи (создание, размещение расходников)
-  diagnostics.js        — диагностика (мини-игры: фонендоскоп, рефлекс-молоток, риноскоп; запуск напрямую с прицела)
-  staff.js              — система найма сотрудников (NPC, зарплата)
+  diagnostics.js        — no-op заглушка (мини-игры удалены; диагностикой занимается staff)
+  staff.js              — сотрудники (пре-хайр диагноста + медсестры на старте, зарплата отключена)
   trash.js              — система мусора (спавн, модели, партиклы вони, мухи, уборка игроком)
-  shift.js              — система смен (время, табличка, задачи, маскот, итоги дня)
+  shift.js              — система смен (время, табличка, задачи, маскот, итоги дня без зарплаты)
   cashier.js            — касса самообслуживания (банк кассы + снятие денег hold-E + индикатор)
-  tutorial.js           — пошаговый туториал (state machine, 14 шагов, 3D-стрелки, spotlight)
 serve.mjs               — вспомогательный Node.js HTTP-сервер для локальной разработки
 specs/
   specs-base.md         — этот файл (техническая база)
@@ -164,9 +163,8 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 | ID | Тип | Назначение |
 |----|-----|------------|
 | `fps-counter` | div | Счётчик FPS (top-right, зелёный monospace) |
-| `overlay` | div | Первый экран при загрузке (настройки графики + язык). Клик → показывает level-select-screen |
+| `overlay` | div | Первый экран при загрузке (настройки графики + язык). Клик → controls.lock() (старт игры сразу, без level-select) |
 | `pause-screen` | div | Экран паузы (скрыт по умолчанию). Показывается при ESC/потере фокуса после входа в игру. Клик → controls.lock() с retry |
-| `level-select-screen` | div | Экран выбора уровня (скрыт по умолчанию). Клик "Начать" → controls.lock() |
 | `crosshair` | div | Прицел (CSS-крестик) |
 | `interact-hint` | div | Динамическая подсказка под прицелом |
 | `held-box-hint` | div | Подсказка при удержании коробки (ЛКМ/G) |
@@ -182,21 +180,7 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 | `chair-count` | span | Счётчик свободных стульев "(X/N)" внутри btn-wait |
 | `btn-diag` | button | Кнопка "В диагностику" (для needsDiagnosis пациентов) |
 | `diag-count` | span | Счётчик свободных слотов диагностики "(X/4)" внутри btn-diag |
-| `btn-reject` | button | Кнопка "Отказать" — пациент уходит без оплаты |
-| `diag-result-popup` | div | Попап результата диагностики (после мини-игры) |
-| `diag-result-name` | div | Имя пациента |
-| `diag-result-outcome` | div | "Обнаружено: ..." или "Пациент здоров..." |
-| `diag-result-prescription` | div | Список назначенных препаратов |
-| `diag-result-price` | div | Отображение стоимости приёма |
-| `diag-send-bed` | button | "На лечение — кровать (X/N)" |
-| `diag-send-wait` | button | "В зону ожидания (X/N)" |
-| `diag-send-home` | button | "Отпустить домой ($X)" |
-| `discharge-popup` | div | Попап выписки после применения всех препаратов |
-| `discharge-name` | div | Имя пациента |
-| `discharge-diagnosis` | div | Диагноз |
-| `discharge-applied` | div | Список применённых препаратов |
-| `discharge-cost` | div | К оплате: $X |
-| `discharge-confirm` | button | "Выписать" — направляет к кассе |
+| `btn-reject` | button | Кнопка "Отпустить домой" — пациент уходит без оплаты |
 | `popup-instrument-hint` | div | Подсказка "Требуется диагностика" в попапе (при needsDiagnosis) |
 | `outdoor-warning` | div | Предупреждение о мебели на улице (в попапе пациента) |
 | `broken-bed-warning` | div | Предупреждение о сломанных кроватях (в попапе пациента) |
@@ -223,12 +207,8 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 | `inventory-bar` | div | Панель слотов инвентаря (внутри контейнера) |
 | `inventory-hints` | div | Подсказки "Q — Магазин", "G — Бросить" (внутри контейнера) |
 | `notification` | div | Временное уведомление (создаётся динамически) |
-| `diagnostics-overlay` | div | Overlay мини-игры диагностики |
-| `diagnostics-canvas` | canvas | Игровой canvas (600×500) |
-| `diagnostics-title` | div | Заголовок мини-игры |
-| `diagnostics-controls` | div | Кнопки управления мини-игрой |
-| `diagnostics-status` | div | Статус/инструкции мини-игры |
-| `diagnostics-close` | button | Закрытие мини-игры |
+| `lost-patients-hud` | div | HUD счётчика потерянных пациентов (под balance, красный) |
+| `lost-patients-value` | span | Значение счётчика |
 | `time-hud` | div | HUD времени и дня (top center) |
 | `day-value` | span | "День N" |
 | `time-value` | span | "HH:MM" |
@@ -247,12 +227,11 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 ## CSS Z-Index Layers
 | z-index | Элемент |
 |---------|---------|
-| 5 | `#crosshair`, `#interact-hint`, `#inventory-container` |
-| 10 | `#overlay`, `#pause-screen`, `#level-select-screen` |
+| 5 | `#crosshair`, `#interact-hint`, `#inventory-container`, `#lost-patients-hud` |
+| 10 | `#overlay`, `#pause-screen` |
 | 15 | `#notification` |
-| 20 | `#patient-popup`, `#shop-popup`, `#day-end-popup`, `#diag-result-popup`, `#discharge-popup` |
+| 20 | `#patient-popup`, `#shop-popup`, `#day-end-popup` |
 | 22 | `#ad-offer-popup` |
-| 25 | `#diagnostics-overlay` |
 | 50 | `#ad-overlay`, `#ad-reward-animation` |
 
 ## Centralized Interaction System (`Game.Interaction`, `js/interaction.js`)
@@ -339,7 +318,7 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 - **Камера**: PointerLockControls обрабатывает мышь напрямую (без сглаживания). Фильтр больших delta (>150px) для защиты от бага Pointer Lock API
 - **Перемещение**: velocity-based с экспоненциальным затуханием (`_moveDamping=12.0`). Плавные разгон и торможение вместо мгновенной установки позиции. При столкновении velocity обнуляется
 - Внутренние: `_canMove(direction)`, `_keys`, `_moveSpeed=4.0`, `_sprintSpeed=7.0`, `_collisionDistance=0.4`, `_velocityX/Z` (текущая скорость), `_moveDamping=12.0`, `_collisionOrigin` (Vector3 для рейкаста от y=0.5), `_savedQuat` (сохранённый quaternion при re-lock), `_gameEntered` (boolean — true после первого pointer lock)
-- **Старт**: клик по `#overlay` → скрывает overlay, показывает `#level-select-screen`. Выбор уровня в `levels.js` → `controls.lock()` (старт игры)
+- **Старт**: клик по `#overlay` → скрывает overlay → `controls.lock()` (старт игры, Level 1 и tutorial удалены)
 - **Lock handler**: ставит `_gameEntered = true`, скрывает `#overlay` и `#pause-screen`, показывает crosshair
 - **Unlock handler**: не показывает ничего если активна реклама (`Game.Ads.isActive()`), открыт магазин (`Game.Shop.isOpen()`), попап пациента (`Game.Patients.isPopupOpen()`), диагностика (`Game.Diagnostics.isActive()`) или попап итогов дня (`Game.Shift.isPopupOpen()`). После всех проверок: если `_gameEntered` — показывает `#pause-screen`, иначе `#overlay`
 
@@ -490,10 +469,13 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 - `isPopupOpen()` → boolean — открыт ли попап пациента
 - `getPatientCount()` → number — общее количество пациентов
 - `getActivePatientCount()` → number — пациенты кроме state='leaving'
-- `spawnFirstPatient()` — спавн первого пациента (заходит пешком)
+- `startWaveSystem()` — запуск слот-авто-спавна при открытии смены
 - `clearAll()` — удаление всех пациентов и частиц со сцены
-- `getHoveredPatient()` → patient|null — текущий пациент под прицелом
-- `revealDiagnosis(patient)` — раскрытие диагноза после успешной мини-игры
-- Внутренние функции: `createPatientMesh`, `spawnPatient`, `getQueuePosition`, `updateQueueTargets`, `removeFromQueue`, `highlightPatient`/`unhighlightPatient`, `getPatientFromMesh`, `updateInteraction`, `openPopup`/`closePopup`, `sendPatient`, `sendPatientToDiagnostics`, `rejectPatient`, `advanceDiagQueue`, `showDiagResultPopup`/`closeDiagResultPopup`, `sendFromDiagToSlot`, `sendDiagPatientHome`, `showDischargePopup`/`confirmDischarge`, `updatePatients`, `moveToward`, `randomFrom`, `createBedIndicator`, `updateIndicators`, `treatPatient`, `wrongTreatment`, `removePatient`, `updateAnimations`, `dischargePatient`
-- **Анимации**: emissive меняется напрямую на материале (без `.clone()`), сбрасывается после завершения анимации. Типы: `'heal'`, `'shake'`, `'smiley'` (спрайт-реакция над пациентом после применения препарата — подробнее в specs-treatment.md).
-- **Hold-to-treat**: ЛКМ по пациенту `atBed` с подходящим препаратом запускает удержание 0.75с (`TREAT_HOLD_DURATION`), тик в `updateTreatHold(delta)` из `update()`. SVG-кольцо прогресса — DOM `#treat-hold-progress` в центре экрана.
+- `getHoveredPatient()` → patient|null — текущий пациент под прицелом (всегда head of queue)
+- `revealDiagnosis(patient)` — раскрытие диагноза (вызывается из `autoRouteAfterDiag`)
+- `autoRouteAfterDiag(patient)` — авто-маршрутизация после обследования staff (healthy→cashier, sick→bed/chair)
+- `treatPatientByStaff(patient, consumableType)` — медсестра применяет препарат
+- Внутренние функции: `createPatientMesh`, `spawnPatient`, `getQueuePosition` (horizontal), `updateQueueTargets`, `removeFromQueue`, `highlightPatient`/`unhighlightPatient`, `getPatientFromMesh`, `updateInteraction`, `openPopup`/`closePopup`, `sendPatient`, `sendPatientToDiagnostics`, `rejectPatient`, `advanceDiagQueue`, `autoPromoteWaitingToBed`, `updatePatients`, `moveToward`, `createBedIndicators`, `updateIndicators`, `applyOneConsumable`, `dischargePatient`, `losePatient`, `createHpBarSprite`/`updateHpBar`/`removeHpBar`, `hpActive`
+- **Анимации**: emissive меняется напрямую на материале. Типы: `'heal'`, `'shake'` (для потери HP≤0), `'smiley'`.
+- **HP decay**: уменьшается каждый кадр в активных состояниях, пауза при `staffDiagnosing`/`staffTreating`. `hp <= 0` → `losePatient` (state → leaving без кассы).
+- **Auto-discharge**: `'heal'`-анимация с флагом `autoDischarge: true` по завершении вызывает `dischargePatient` (нет попапа).

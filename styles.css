@@ -195,62 +195,6 @@ canvas { display: block; }
 }
 #popup-close:hover { background: rgba(255,85,85,0.15); color: #ff7777; }
 
-/* Diag-result popup */
-#diag-result-popup {
-  position: fixed; top: 50%; left: 50%; z-index: 20;
-  transform: translate(-50%, -50%);
-  background: #1a2a3a; color: #e0e8f0;
-  font-family: 'Segoe UI', Arial, sans-serif;
-  padding: 22px 26px; border-radius: 12px;
-  min-width: 380px; max-width: 460px;
-  box-shadow: 0 8px 28px rgba(0,0,0,0.55);
-  border: 1px solid rgba(122,191,255,0.12);
-}
-#diag-result-popup h2 {
-  margin: 0 0 12px; font-size: 1.1rem; letter-spacing: 0.04em;
-  color: #9cc0e8; text-align: center;
-}
-#diag-result-popup .buttons { display: flex; gap: 8px; flex-wrap: wrap; }
-#diag-result-popup .buttons button {
-  flex: 1 1 auto; padding: 10px 12px; border: none; border-radius: 6px;
-  font-size: 0.85rem; font-weight: 600; cursor: pointer;
-  color: #fff; transition: background 0.2s;
-  min-width: 140px;
-}
-#diag-result-popup .buttons button:hover { filter: brightness(1.15); }
-/* Per-button colors — must beat the generic rule above (same specificity, so rely on order) */
-#diag-result-popup #diag-send-bed  { background: #1a6b42; } /* green */
-#diag-result-popup #diag-send-wait { background: #2a6aaa; } /* blue */
-#diag-result-popup #diag-send-home { background: #b33232; } /* red */
-#diag-result-popup #diag-defer,
-#discharge-popup   #discharge-defer { background: #4a4a4a; color: #ccc; } /* gray */
-#diag-result-popup #diag-defer:hover,
-#discharge-popup   #discharge-defer:hover { background: #5a5a5a; }
-
-/* Discharge popup */
-#discharge-popup {
-  position: fixed; top: 50%; left: 50%; z-index: 20;
-  transform: translate(-50%, -50%);
-  background: #1a2a3a; color: #e0e8f0;
-  font-family: 'Segoe UI', Arial, sans-serif;
-  padding: 22px 26px; border-radius: 12px;
-  min-width: 380px; max-width: 460px;
-  box-shadow: 0 8px 28px rgba(0,0,0,0.55);
-  border: 1px solid rgba(80,200,130,0.2);
-}
-#discharge-popup h2 {
-  margin: 0 0 12px; font-size: 1.1rem; letter-spacing: 0.04em;
-  color: #7bdfa2; text-align: center;
-}
-#discharge-popup .buttons { display: flex; gap: 8px; }
-#discharge-popup .buttons button {
-  flex: 1 1 auto; padding: 12px 0; border: none; border-radius: 6px;
-  font-size: 0.95rem; font-weight: 600; cursor: pointer;
-  transition: background 0.2s;
-}
-#discharge-confirm { background: #1a6b42; color: #fff; }
-#discharge-confirm:hover { background: #228b55; }
-
 /* --- Shop popup --- */
 #shop-popup {
   position: fixed; top: 50%; left: 50%; z-index: 20;
@@ -308,10 +252,6 @@ canvas { display: block; }
 .staff-hire-item {
   display: flex; align-items: center; justify-content: space-between;
   padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.07);
-}
-.staff-salary {
-  font-size: 0.8rem; color: #ffcc66; margin-left: auto; margin-right: 12px;
-  white-space: nowrap;
 }
 .staff-hired-item {
   display: flex; align-items: center; justify-content: space-between;
@@ -483,54 +423,17 @@ canvas { display: block; }
 }
 #balance-value { color: #4ade80; }
 
-/* --- Level select screen --- */
-#level-select-screen {
-  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-  z-index: 10; display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  background: rgba(0, 0, 0, 0.85);
-  font-family: 'Segoe UI', Arial, sans-serif;
-  color: #d0dbe6;
+/* --- Lost patients HUD (below balance) --- */
+#lost-patients-hud {
+  position: fixed; top: 96px; right: 20px; z-index: 5;
+  background: rgba(0, 0, 0, 0.55);
+  color: #ff9a9a; font-family: 'Segoe UI', Arial, sans-serif;
+  font-size: 0.9rem; font-weight: 600;
+  padding: 6px 12px; border-radius: 8px;
+  pointer-events: none; user-select: none;
+  border: 1px solid rgba(220, 80, 80, 0.28);
 }
-#level-select-screen h1 {
-  font-size: 2.2rem; margin-bottom: 4px; color: #fff;
-}
-.level-select-subtitle {
-  font-size: 1rem; opacity: 0.6; margin-bottom: 24px;
-}
-#level-select-cards {
-  display: flex; gap: 14px; flex-wrap: wrap; justify-content: center;
-  max-width: 900px; padding: 0 16px;
-}
-.level-card {
-  background: rgba(15, 30, 46, 0.95);
-  border: 1px solid rgba(122, 191, 255, 0.2);
-  border-radius: 12px; padding: 20px 18px;
-  width: 190px; display: flex; flex-direction: column;
-  transition: border-color 0.2s, transform 0.2s;
-}
-.level-card:hover {
-  border-color: rgba(255, 215, 0, 0.5);
-  transform: translateY(-3px);
-}
-.level-card-header {
-  font-size: 1.1rem; font-weight: 700; color: #ffd700;
-  margin-bottom: 12px; text-align: center;
-}
-.level-card-features {
-  list-style: none; padding: 0; margin: 0 0 16px 0;
-  font-size: 0.82rem; line-height: 1.7; flex: 1;
-  color: #a0b8d0;
-}
-.level-card-features li::before {
-  content: '\2022 '; color: #7abfff;
-}
-.level-card-btn {
-  padding: 10px 0; border: none; border-radius: 8px;
-  background: #1a5a8a; color: #fff; font-size: 0.95rem;
-  font-weight: 600; cursor: pointer; transition: background 0.2s;
-}
-.level-card-btn:hover { background: #2277aa; }
+#lost-patients-value { color: #ff6b6b; font-weight: 700; }
 
 /* --- Level HUD --- */
 #level-hud {
@@ -601,56 +504,6 @@ canvas { display: block; }
   font-size: 0.65rem;
 }
 
-/* --- Diagnostics overlay --- */
-#diagnostics-overlay {
-  position: fixed; inset: 0; z-index: 25;
-  background: rgba(0, 0, 0, 0.88);
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  font-family: 'Segoe UI', Arial, sans-serif;
-  color: #fff;
-}
-#diagnostics-canvas {
-  border-radius: 12px;
-  box-shadow: 0 0 30px rgba(0,0,0,0.5);
-}
-#diagnostics-close {
-  position: absolute; top: 16px; right: 24px;
-  background: none; border: none;
-  font-size: 1.6rem; cursor: pointer; opacity: 0.5;
-  color: #fff; z-index: 26;
-  font-family: 'Segoe UI', Arial, sans-serif;
-  transition: opacity 0.2s;
-}
-#diagnostics-close:hover { opacity: 1; }
-#diagnostics-title {
-  font-size: 1.2rem; font-weight: 600;
-  margin-bottom: 12px; opacity: 0.9;
-}
-#diagnostics-controls {
-  margin-top: 14px; display: flex; gap: 12px;
-}
-#diagnostics-status {
-  margin-top: 10px; font-size: 0.95rem; text-align: center;
-  min-height: 1.2em;
-}
-.diag-btn {
-  padding: 10px 28px; border: none; border-radius: 8px;
-  font-size: 1rem; font-weight: 600; cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
-  font-family: 'Segoe UI', Arial, sans-serif;
-  color: #fff;
-}
-.diag-btn:active { transform: scale(0.95); }
-.diag-btn-pump { background: #2a6aaa; }
-.diag-btn-pump:hover { background: #3a7abb; }
-.diag-btn-mark { background: #aa4422; }
-.diag-btn-mark:hover { background: #bb5533; }
-.diag-btn-mark:disabled { background: #444; color: #777; cursor: not-allowed; }
-.diag-btn-release { background: #6a4a8a; }
-.diag-btn-release:hover { background: #7a5a9a; }
-.diag-btn-release:disabled { background: #444; color: #777; cursor: not-allowed; }
-
 /* ====== Shift System ====== */
 
 /* Time & Day HUD */
@@ -719,79 +572,6 @@ canvas { display: block; }
 }
 #day-end-next:hover { background: #33a06a; }
 #day-end-next:active { transform: scale(0.96); }
-
-/* ====== TUTORIAL ====== */
-#tutorial-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 28;
-  pointer-events: none;
-}
-
-#tutorial-spotlight {
-  position: fixed;
-  z-index: 16;
-  border-radius: 10px;
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
-  pointer-events: none;
-  transition: top 0.3s ease, left 0.3s ease, width 0.3s ease, height 0.3s ease;
-  display: none;
-}
-
-#tutorial-panel {
-  position: fixed;
-  z-index: 30;
-  background: rgba(8, 20, 35, 0.96);
-  border: 1px solid rgba(100, 180, 255, 0.3);
-  border-radius: 14px;
-  padding: 22px 26px;
-  max-width: 420px;
-  min-width: 280px;
-  color: #c8dae8;
-  font-family: 'Segoe UI', Arial, sans-serif;
-  font-size: 0.95rem;
-  line-height: 1.6;
-  pointer-events: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
-  white-space: pre-line;
-}
-
-#tutorial-step-num {
-  font-size: 0.72rem;
-  color: rgba(100, 170, 255, 0.55);
-  margin-bottom: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-weight: 600;
-}
-
-#tutorial-text {
-  margin-bottom: 4px;
-}
-
-#tutorial-next {
-  margin-top: 18px;
-  padding: 10px 28px;
-  background: rgba(50, 130, 240, 0.85);
-  border: none;
-  border-radius: 8px;
-  color: #fff;
-  font-size: 0.95rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
-  font-family: 'Segoe UI', Arial, sans-serif;
-}
-#tutorial-next:hover { background: rgba(70, 150, 255, 0.95); }
-#tutorial-next:active { transform: scale(0.96); }
-
-/* Tutorial-locked buttons */
-.tutorial-locked {
-  opacity: 0.3 !important;
-  pointer-events: none !important;
-  filter: grayscale(0.8) !important;
-  cursor: not-allowed !important;
-}
 
 /* =====================================================
    Ad system

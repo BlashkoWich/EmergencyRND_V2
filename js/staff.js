@@ -6,11 +6,15 @@
   var hintEl;
 
   // ====== STAFF TYPES ======
+  // Salary disabled — hire is free and no daily deduction.
   var STAFF_TYPES = {
-    administrator: { name: Game.Lang.t('staff.administrator'), salary: 100, color: 0x2266aa, hatColor: 0x1a4a88 },
-    diagnostician: { name: Game.Lang.t('staff.diagnostician'), salary: 100, color: 0x8844cc, hatColor: 0x6633aa },
-    nurse:         { name: Game.Lang.t('staff.nurse'),         salary: 100, color: 0xcc4488, hatColor: 0xaa3366 }
+    administrator: { name: Game.Lang.t('staff.administrator'), salary: 0, color: 0x2266aa, hatColor: 0x1a4a88 },
+    diagnostician: { name: Game.Lang.t('staff.diagnostician'), salary: 0, color: 0x8844cc, hatColor: 0x6633aa },
+    nurse:         { name: Game.Lang.t('staff.nurse'),         salary: 0, color: 0xcc4488, hatColor: 0xaa3366 }
   };
+
+  // Random work duration for diagnostics/treatment (30–45s).
+  function randWorkDuration() { return 30 + Math.random() * 15; }
 
   var STAFF_SPEED = 3.5;
   var STRIDE_LEN = 1.1;
@@ -130,9 +134,7 @@
   // ====== PROGRESS BAR ======
   var ACTION_LABELS = {
     processing: Game.Lang.t('staff.status.processing'),
-    pickInstrument: Game.Lang.t('staff.status.pickInstrument'),
     diagnosing: Game.Lang.t('staff.status.diagnosing'),
-    returnInstrument: Game.Lang.t('staff.status.returnInstrument'),
     pickMedicine: Game.Lang.t('staff.status.pickMedicine'),
     treating: Game.Lang.t('staff.status.treating'),
     cleaningTrash: Game.Lang.t('staff.status.cleaningTrash')
@@ -437,7 +439,7 @@
 
     } else if (staff.state === 'waitingForPatient') {
       // Wait for patient to arrive at desk
-      if (!staff.targetPatient || staff.targetPatient.hp <= 0) {
+      if (!staff.targetPatient || staff.targetPatient.lost) {
         cancelAdminTask(staff);
         return;
       }
@@ -450,7 +452,7 @@
       }
 
     } else if (staff.state === 'processing') {
-      if (!staff.targetPatient || staff.targetPatient.hp <= 0) {
+      if (!staff.targetPatient || staff.targetPatient.lost) {
         cancelAdminTask(staff);
         return;
       }
@@ -488,6 +490,8 @@
   }
 
   // ====== DIAGNOSTICIAN LOGIC ======
+  // Diagnostician works on patients at the exam slot (not at bed).
+  // Sorts candidates by lowest HP — sickest first.
   function updateDiagnostician(staff, delta) {
     var speed = STAFF_SPEED * delta;
 
@@ -497,53 +501,56 @@
       staff.stateTimer = 0;
 
       var patients = Game.Patients.getPatients ? Game.Patients.getPatients() : [];
+      // Find sickest undiagnosed patient at exam-slot.
+      var best = null;
+      var bestHp = Infinity;
       for (var i = 0; i < patients.length; i++) {
         var p = patients[i];
-        if (p.state === 'atBed' && p.needsDiagnosis && !p.staffDiagnosing && !p.treated) {
-          // Check if player is already diagnosing this patient
-          if (Game.Diagnostics && Game.Diagnostics.isActive() && Game.Diagnostics.getPatient() === p) continue;
-
-          // Walk directly to patient — no instrument fetching
-          staff.targetPatient = p;
-          p.staffDiagnosing = true;
-          var patientPos = p.destination ? p.destination.pos : p.mesh.position;
-          staff.targetPos = new THREE.Vector3(patientPos.x + 1.0, 0, patientPos.z);
-          staff.state = 'walkToPatient';
-          return;
+        if (p.state === 'atDiagExam' && p.needsDiagnosis && !p.staffDiagnosing && !p.lost) {
+          if (p.hp < bestHp) { bestHp = p.hp; best = p; }
         }
       }
+      if (!best) return;
+
+      staff.targetPatient = best;
+      best.staffDiagnosing = true;
+      var patientPos = best.destination ? best.destination.pos : (best.diagExamSlot ? best.diagExamSlot.pos : best.mesh.position);
+      // Stand 1 unit east of the exam chair.
+      staff.targetPos = new THREE.Vector3(patientPos.x + 1.0, 0, patientPos.z);
+      staff.state = 'walkToPatient';
+      return;
     } else if (staff.state === 'walkToPatient') {
-      if (!staff.targetPatient || staff.targetPatient.hp <= 0 || staff.targetPatient.state !== 'atBed') {
+      if (!staff.targetPatient || staff.targetPatient.lost || staff.targetPatient.state !== 'atDiagExam') {
         cancelDiagnosticianTask(staff);
         return;
       }
       var arrived = moveToward(staff.mesh.position, staff.targetPos, speed);
       faceTarget(staff, staff.targetPos);
       if (arrived) {
-        setTimedState(staff, 'diagnosing', 15.0);
+        setTimedState(staff, 'diagnosing', randWorkDuration());
       }
     } else if (staff.state === 'diagnosing') {
-      if (!staff.targetPatient || staff.targetPatient.hp <= 0 || staff.targetPatient.state !== 'atBed') {
+      if (!staff.targetPatient || staff.targetPatient.lost || staff.targetPatient.state !== 'atDiagExam') {
         cancelDiagnosticianTask(staff);
         return;
       }
       staff.stateTimer -= delta;
       if (staff.stateTimer <= 0) {
-        // Reveal diagnosis
-        if (Game.Patients.revealDiagnosis) {
-          Game.Patients.revealDiagnosis(staff.targetPatient);
+        var p = staff.targetPatient;
+        p.staffDiagnosing = false;
+        // Auto-route after diag: healthy → cashier; sick → bed/chair, no popup.
+        if (Game.Patients.autoRouteAfterDiag) {
+          Game.Patients.autoRouteAfterDiag(p);
         }
-        staff.targetPatient.staffDiagnosing = false;
         staff.targetPatient = null;
-        // Return to work position
         var workPos = WORK_POSITIONS[staff.type];
         staff.targetPos = new THREE.Vector3(workPos.x, 0, workPos.z);
         staff.state = 'returning';
       }
     } else if (staff.state === 'returning') {
-      var arrived = moveToward(staff.mesh.position, staff.targetPos, speed);
+      var arrivedR = moveToward(staff.mesh.position, staff.targetPos, speed);
       faceTarget(staff, staff.targetPos);
-      if (arrived) {
+      if (arrivedR) {
         staff.mesh.rotation.y = WORK_POSITIONS[staff.type].rotY || 0;
         staff.state = 'idle';
         staff.stateTimer = 0;
@@ -600,33 +607,41 @@
       if (staff.stateTimer < 1.0) return;
       staff.stateTimer = 0;
 
-      // Rebuild missing meds list each check cycle
+      // Rebuild missing meds list each check cycle. Pick sickest patient first (min HP).
       var newMissing = {};
       var patients = Game.Patients.getPatients ? Game.Patients.getPatients() : [];
+      var candidates = [];
       for (var i = 0; i < patients.length; i++) {
         var p = patients[i];
-        if (p.state === 'atBed' && !p.needsDiagnosis && !p.treated && !p.staffTreating && !p.staffDiagnosing && p.pendingConsumables && p.pendingConsumables.length > 0) {
-          // Check medicine availability on shelves — pick first pending consumable
-          var requiredMed = p.pendingConsumables[0];
-          var slot = Game.Shelves.findSlotWithItem ? Game.Shelves.findSlotWithItem(requiredMed) : null;
-
-          if (!slot) {
-            newMissing[requiredMed] = true;
-            continue;
-          }
-
-          // Found medicine — go get it
-          missingMeds = newMissing;
-          updateNurseWarningHUD();
-          staff.targetPatient = p;
-          p.staffTreating = true;
-          staff.heldItem = requiredMed;
-          staff.targetSlot = slot;
-          staff.targetPos = new THREE.Vector3(slot.pos.x, 0, slot.pos.z + 0.8);
-          staff.state = 'walkToShelf';
-          return;
+        if (p.state === 'atBed' && !p.needsDiagnosis && !p.treated && !p.lost
+            && !p.staffTreating && !p.staffDiagnosing
+            && p.pendingConsumables && p.pendingConsumables.length > 0) {
+          candidates.push(p);
         }
       }
+      candidates.sort(function(a, b) { return a.hp - b.hp; });
+
+      for (var ci = 0; ci < candidates.length; ci++) {
+        var cand = candidates[ci];
+        var requiredMed = cand.pendingConsumables[0];
+        var slot = Game.Shelves.findSlotWithItem ? Game.Shelves.findSlotWithItem(requiredMed) : null;
+
+        if (!slot) {
+          newMissing[requiredMed] = true;
+          continue;
+        }
+
+        missingMeds = newMissing;
+        updateNurseWarningHUD();
+        staff.targetPatient = cand;
+        cand.staffTreating = true;
+        staff.heldItem = requiredMed;
+        staff.targetSlot = slot;
+        staff.targetPos = new THREE.Vector3(slot.pos.x, 0, slot.pos.z + 0.8);
+        staff.state = 'walkToShelf';
+        return;
+      }
+
       missingMeds = newMissing;
       updateNurseWarningHUD();
     } else if (staff.state === 'walkToShelf') {
@@ -653,11 +668,10 @@
         }
       }
     } else if (staff.state === 'walkToPatient') {
-      if (!staff.targetPatient || staff.targetPatient.hp <= 0 || staff.targetPatient.state !== 'atBed' || staff.targetPatient.treated) {
+      if (!staff.targetPatient || staff.targetPatient.lost || staff.targetPatient.state !== 'atBed' || staff.targetPatient.treated) {
         cancelNurseTask(staff);
         return;
       }
-      // Check if player already applied this specific medicine while nurse was walking
       if (staff.targetPatient.pendingConsumables && staff.targetPatient.pendingConsumables.indexOf(staff.heldItem) === -1) {
         cancelNurseTask(staff);
         return;
@@ -665,14 +679,13 @@
       var arrived = moveToward(staff.mesh.position, staff.targetPos, speed);
       faceTarget(staff, staff.targetPos);
       if (arrived) {
-        setTimedState(staff, 'treating', 5.0);
+        setTimedState(staff, 'treating', randWorkDuration());
       }
     } else if (staff.state === 'treating') {
-      if (!staff.targetPatient || staff.targetPatient.hp <= 0 || staff.targetPatient.state !== 'atBed') {
+      if (!staff.targetPatient || staff.targetPatient.lost || staff.targetPatient.state !== 'atBed') {
         cancelNurseTask(staff);
         return;
       }
-      // Check if player already applied this medicine while nurse was treating
       if (staff.targetPatient.pendingConsumables && staff.targetPatient.pendingConsumables.indexOf(staff.heldItem) === -1) {
         cancelNurseTask(staff);
         return;
@@ -842,40 +855,32 @@
       return false;
     },
 
-    // Fire a staff member
+    // Fire a staff member — no salary payout (salary disabled).
     fire: function(staffId) {
       for (var i = 0; i < hiredStaff.length; i++) {
         if (hiredStaff[i].id === staffId) {
           var s = hiredStaff[i];
-          var salary = STAFF_TYPES[s.type].salary;
 
-          // Clean up target patient flags
           if (s.targetPatient) {
             if (s.targetPatient.staffDiagnosing) s.targetPatient.staffDiagnosing = false;
             if (s.targetPatient.staffTreating) s.targetPatient.staffTreating = false;
             if (s.targetPatient.staffProcessing) s.targetPatient.staffProcessing = false;
           }
 
-          // Remove progress bar and held item
           removeProgressBar(s);
           removeHeldItem(s);
           if (s.heldItem && Game.Shelves.placeOnAnyShelf) {
             Game.Shelves.placeOnAnyShelf(s.heldItem);
           }
 
-          // Remove 3D model
           scene.remove(s.mesh);
-
-          // Pay salary and remove
-          Game.Cashier.spend(salary);
           hiredStaff.splice(i, 1);
 
-          // Clear warnings if relevant staff fired
           if (s.type === 'nurse') {
             missingMeds = {};
             updateNurseWarningHUD();
           }
-          Game.Inventory.showNotification(Game.Lang.t('notify.fired', [STAFF_TYPES[s.type].name, salary]), 'rgba(200, 150, 50, 0.85)');
+          Game.Inventory.showNotification(Game.Lang.t('notify.fired', [STAFF_TYPES[s.type].name]), 'rgba(200, 150, 50, 0.85)');
           return true;
         }
       }
@@ -884,13 +889,8 @@
 
     getHiredStaff: function() { return hiredStaff; },
 
-    getDailySalary: function() {
-      var total = 0;
-      for (var i = 0; i < hiredStaff.length; i++) {
-        total += STAFF_TYPES[hiredStaff[i].type].salary;
-      }
-      return total;
-    },
+    // Salary disabled — returns 0. Kept for backward compatibility with shift.js.
+    getDailySalary: function() { return 0; },
 
 
     isPatientBeingDiagnosed: function(patient) {

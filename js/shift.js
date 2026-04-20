@@ -25,6 +25,7 @@
   // UI elements
   var timeValueEl, dayValueEl, taskTextEl, taskMascotEl;
   var dayEndPopupEl, statServedEl, statLostEl, statEarnedEl, statSpentEl, dayEndNumberEl;
+  var lostHudEl;
   var dayEndPopupOpen = false;
 
   // ====== TIME MATH ======
@@ -146,7 +147,6 @@
     if (Game.Patients && Game.Patients.isPopupOpen()) { clearSignHover(); return; }
     if (Game.Shop && Game.Shop.isOpen()) { clearSignHover(); return; }
     if (Game.Cashier && Game.Cashier.isPopupOpen()) { clearSignHover(); return; }
-    if (Game.Diagnostics && Game.Diagnostics.isActive()) { clearSignHover(); return; }
     if (!Game.Interaction.isActive('shift')) {
       clearSignHover();
       return;
@@ -190,7 +190,6 @@
   function onSignClick() {
     if (!hoveredSign || dayEndPopupOpen) return;
     if (!controls.isLocked) return;
-    if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('sign_click')) return;
 
     if (!shiftOpen && !shiftEnding) {
       openShift();
@@ -204,21 +203,14 @@
     shiftEnding = false;
     gameTime = 0;
     dayStats = { patientsServed: 0, patientsLost: 0, moneyEarned: 0, moneySpent: 0 };
+    updateLostHUD();
     updateSignTexture();
     updateTaskText();
     Game.Inventory.showNotification(Game.Lang.t('shift.started', [dayNumber]), 'rgba(34, 139, 34, 0.85)');
-    // Spawn first patient (or start wave system)
-    var spawnMode = Game.Levels ? Game.Levels.getSpawnMode() : 'sequential';
-    if (spawnMode === 'wave') {
-      if (Game.Patients && Game.Patients.startWaveSystem) {
-        Game.Patients.startWaveSystem();
-      }
-    } else {
-      if (Game.Patients && Game.Patients.spawnFirstPatient) {
-        Game.Patients.spawnFirstPatient();
-      }
+    // Always use slot-based auto-spawn (Level 1/tutorial removed).
+    if (Game.Patients && Game.Patients.startWaveSystem) {
+      Game.Patients.startWaveSystem();
     }
-    if (Game.Tutorial) Game.Tutorial.onEvent('shift_opened');
   }
 
   function endShiftTime() {
@@ -495,26 +487,12 @@
 
   // ====== DAY END POPUP ======
   function showDayEndPopup() {
-    // Pay staff salary
-    var salary = 0;
-    if (Game.Staff && Game.Staff.getDailySalary) {
-      salary = Game.Staff.getDailySalary();
-      if (salary > 0) {
-        Game.Cashier.spend(salary);
-      }
-    }
-
     dayEndPopupOpen = true;
     dayEndNumberEl.textContent = dayNumber;
     statServedEl.textContent = dayStats.patientsServed;
     statLostEl.textContent = dayStats.patientsLost;
     statEarnedEl.textContent = '$' + dayStats.moneyEarned;
     statSpentEl.textContent = '$' + dayStats.moneySpent;
-
-    var statSalaryEl = document.getElementById('stat-salary');
-    if (statSalaryEl) {
-      statSalaryEl.textContent = '$' + salary;
-    }
 
     dayEndPopupEl.style.display = 'block';
     controls.unlock();
@@ -525,10 +503,8 @@
     dayEndPopupOpen = false;
     dayEndPopupEl.style.display = 'none';
 
-    // Increment day
     dayNumber++;
 
-    // Clear all remaining patients
     if (Game.Patients && Game.Patients.clearAll) {
       Game.Patients.clearAll();
     }
@@ -536,13 +512,18 @@
       Game.Cashier.clearQueue();
     }
 
-    // Reset time
     gameTime = 0;
+    dayStats = { patientsServed: 0, patientsLost: 0, moneyEarned: 0, moneySpent: 0 };
+    updateLostHUD();
     updateHUD();
     updateTaskText();
     updateSignTexture();
 
     controls.lock();
+  }
+
+  function updateLostHUD() {
+    if (lostHudEl) lostHudEl.textContent = dayStats.patientsLost;
   }
 
   // ====== HUD UPDATE ======
@@ -561,7 +542,6 @@
     if (Game.Patients && Game.Patients.isPopupOpen()) return;
     if (Game.Shop && Game.Shop.isOpen()) return;
     if (Game.Cashier && Game.Cashier.isPopupOpen()) return;
-    if (Game.Diagnostics && Game.Diagnostics.isActive()) return;
 
     onSignClick();
   }
@@ -589,6 +569,7 @@
       statEarnedEl = document.getElementById('stat-earned');
       statSpentEl = document.getElementById('stat-spent');
       dayEndNumberEl = document.getElementById('day-end-number');
+      lostHudEl = document.getElementById('lost-patients-value');
 
       // Draw mascot
       var mascotUrl = drawMascot();
@@ -626,12 +607,10 @@
       if (isPauseVisible) return;
 
       if (shiftOpen) {
-        if (!(Game.Tutorial && Game.Tutorial.isPaused())) {
-          gameTime += delta;
-          if (gameTime >= SHIFT_DURATION) {
-            gameTime = SHIFT_DURATION;
-            endShiftTime();
-          }
+        gameTime += delta;
+        if (gameTime >= SHIFT_DURATION) {
+          gameTime = SHIFT_DURATION;
+          endShiftTime();
         }
         updateHUD();
       }
@@ -656,6 +635,6 @@
     trackEarning: function(amount) { dayStats.moneyEarned += amount; },
     trackSpending: function(amount) { dayStats.moneySpent += amount; },
     trackPatientServed: function() { dayStats.patientsServed++; },
-    trackPatientLost: function() { dayStats.patientsLost++; }
+    trackPatientLost: function() { dayStats.patientsLost++; updateLostHUD(); }
   };
 })();

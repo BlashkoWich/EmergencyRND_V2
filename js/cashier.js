@@ -345,10 +345,6 @@
       cashierDeskGroup.position.x = baseGroupX;
       cashierDeskGroup.position.z = baseGroupZ;
     }
-    // Notify tutorial
-    if (drainRemoved > 0 && Game.Tutorial && Game.Tutorial.isActive()) {
-      Game.Tutorial.onEvent('register_withdrawn');
-    }
     drainRemoved = 0;
     drainInitial = 0;
   }
@@ -535,10 +531,6 @@
           currentPatient.state = 'atRegister';
           currentPatient.targetPos = null;
           checkoutTimer = 0;
-          if (!firedAtRegister && Game.Tutorial && Game.Tutorial.isActive()) {
-            Game.Tutorial.onEvent('patient_at_register');
-            firedAtRegister = true;
-          }
         }
       }
 

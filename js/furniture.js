@@ -754,8 +754,6 @@
     if (!controls.isLocked) return;
     if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
     if (Game.Cashier && Game.Cashier.isPopupOpen()) return;
-    if (Game.Diagnostics && Game.Diagnostics.isActive()) return;
-    if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('furniture_interact')) return;
 
     if (carriedFurniture) {
       placeFurniture();
@@ -769,7 +767,6 @@
       // Self-checkout with money → withdraw hold (continuous drain)
       if (hoveredFurniture.type === 'cashierDesk'
           && Game.Cashier && Game.Cashier.hasMoney && Game.Cashier.hasMoney()) {
-        if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('withdraw')) return;
         eKeyHeld = true;
         eHoldStartTime = performance.now();
         eHoldTarget = hoveredFurniture;

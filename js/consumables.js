@@ -960,10 +960,7 @@
       document.addEventListener('mousedown', function(e) {
         if (e.button !== 0 || !controls.isLocked) return;
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
-        if (Game.Diagnostics && Game.Diagnostics.isActive()) return;
         if (Game.Patients.hasInteraction()) return;
-        var tutorialActive = Game.Tutorial && Game.Tutorial.isActive();
-        var pickupAllowed = !tutorialActive || Game.Tutorial.isAllowed('pickup_item');
 
         // If holding a box, LMB takes items from box (bulk — fills slot to max)
         if (heldBox) {
@@ -976,7 +973,6 @@
             if (heldBox.remaining <= 0) {
               markBoxEmpty(heldBox);
             }
-            if (tutorialActive) Game.Tutorial.onEvent('item_picked_up', heldBox.type);
           } else {
             Game.Inventory.showNotification(Game.Lang.t('notify.inventoryFull'));
           }
@@ -986,31 +982,27 @@
         // Take items from grounded box on LMB (bulk — fills slot to max)
         if (hoveredBox) {
           if (hoveredBox.remaining <= 0) return;
-          var added = Game.Inventory.addItemBulk(hoveredBox.type, hoveredBox.remaining);
-          if (added > 0) {
-            hoveredBox.remaining -= added;
+          var added2 = Game.Inventory.addItemBulk(hoveredBox.type, hoveredBox.remaining);
+          if (added2 > 0) {
+            hoveredBox.remaining -= added2;
             updateBoxLabel(hoveredBox);
             if (hoveredBox.remaining <= 0) {
               markBoxEmpty(hoveredBox);
             }
-            if (tutorialActive) Game.Tutorial.onEvent('item_picked_up', hoveredBox.type);
           } else {
             Game.Inventory.showNotification(Game.Lang.t('notify.inventoryFull'));
           }
           return;
         }
 
-        // Normal item pickup (still restricted by tutorial step)
-        if (!pickupAllowed) return;
+        // Normal item pickup
         if (!hoveredItem) return;
         if (Game.Inventory.addItem(hoveredItem.type)) {
-          var pickedType = hoveredItem.type;
           hoveredItem.pickedUp = true;
           scene.remove(hoveredItem.mesh);
           unhighlightGroup(hoveredItem.mesh);
           hoveredItem = null;
           hintEl.style.display = 'none';
-          if (tutorialActive) Game.Tutorial.onEvent('item_picked_up', pickedType);
         } else {
           Game.Inventory.showNotification(Game.Lang.t('notify.inventoryFull'));
         }
@@ -1021,7 +1013,6 @@
         if (e.code !== 'KeyG') return;
         if (!controls.isLocked) return;
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
-        if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('drop_item')) return;
 
         // Priority: throw held box
         if (heldBox) {
@@ -1041,7 +1032,6 @@
         if (e.code !== 'KeyE') return;
         if (!controls.isLocked) return;
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
-        if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('pickup_box')) return;
         if (Game.Furniture && (Game.Furniture.isCarrying() || Game.Furniture.hasInteraction())) return;
         if (heldBox) return;
         if (!hoveredBox) return;

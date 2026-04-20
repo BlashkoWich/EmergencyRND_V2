@@ -494,7 +494,6 @@
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
         if (Game.Patients.hasInteraction() || Game.Consumables.hasInteraction() || Game.Consumables.hasBoxInteraction()) return;
         if (Game.Consumables.isHoldingBox()) return;
-        if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('shelf_take')) return;
         if (!hoveredShelf || shelfMode !== 'take') return;
 
         if (!hoveredSlot) return;
@@ -502,7 +501,6 @@
         var added = Game.Inventory.addItemBulk(type, hoveredSlot.count);
         if (added > 0) {
           takeItemsFromShelf(hoveredSlot, added);
-          if (Game.Tutorial && Game.Tutorial.isActive()) Game.Tutorial.onEvent('item_taken_from_shelf', type);
         } else {
           Game.Inventory.showNotification(Game.Lang.t('notify.inventoryFull'));
         }
@@ -515,7 +513,6 @@
         if (Game.Patients.isPopupOpen() || Game.Shop.isOpen()) return;
         if (Game.Patients.hasInteraction() || Game.Consumables.hasInteraction() || Game.Consumables.hasBoxInteraction()) return;
         if (Game.Consumables.isHoldingBox()) return;
-        if (Game.Tutorial && Game.Tutorial.isActive() && !Game.Tutorial.isAllowed('shelf_place')) return;
         if (!hoveredShelf) return;
 
         var type = Game.Inventory.getActive();
