@@ -1,13 +1,12 @@
 # EmergencyRND V2 — Касса самообслуживания
 
 ## Overview
-Пациент идёт к кассе самообслуживания после одного из трёх сценариев (все — автоматические, без попапов):
-1. **Выписка после лечения** — медсестра применила последний препарат → heal-анимация → `dischargePatient()` (автоматически, `reason: 'discharged'`)
-2. **После диагностики — здоров** — диагност подтвердил `isHealthy` → `autoRouteAfterDiag` (автоматически, `reason: 'home-healthy'`)
+Пациент идёт к кассе самообслуживания после лечения:
+1. **Выписка после лечения** — медсестра применила последний препарат → recovery-анимация → `dischargePatient()` (автоматически, `reason: 'discharged'`)
 
 Пациент стоит у кассы 10 сек (имитация самостоятельной оплаты), после чего `paymentInfo.total` зачисляется в **банк кассы** (не в баланс игрока). Игрок периодически подходит к кассе и снимает накопленные деньги удержанием E — касса трясётся, летят зелёные частицы с `$` к камере. Над кассой — 3-уровневый индикатор (монеты / мешочек / большой мешок).
 
-Пациенты, отклонённые через кнопку «Отпустить домой» в первичном попапе, **не проходят через кассу** — идут сразу к выходу. Потерянные пациенты (hp ≤ 0) тоже не платят.
+Пациенты, отклонённые через кнопку «Отпустить домой» в первичном попапе, **не проходят через кассу** — идут сразу к выходу.
 
 ## Player Balance
 - Стартовый баланс: `$350`
@@ -16,24 +15,14 @@
 - Баланс увеличивается только при **снятии** денег с кассы (tickWithdraw)
 - Баланс уменьшается при покупках в магазине и выплате зарплат
 
-## Pricing (вычисляется в `patients.js`, НЕ в `cashier.js`)
-```js
-// patients.js
-BASE_PRICES = { mild: 35, medium: 50, severe: 70 }
-PRICE_VARIANCE = 5                // ±5 от базы
-DIAGNOSIS_FEE = 15                // доплата за подтверждённый диагноз
-```
-- Лёгкое (mild) → `procedureFee = $30–$40`
-- Среднее (medium) → `procedureFee = $45–$55`
-- Тяжёлое (severe) → `procedureFee = $65–$75`
+## Pricing (вычисляется в `wards.js`/`patients.js`, НЕ в `cashier.js`)
+Цена палаты — из `Game.Wards.TYPES` (см. `specs-wards.md`). Полная цена списывается при совпадении `ward.tier === patient.preferredTier`; при несовпадении — `BASIC_PRICE_BY_SEVERITY[patient.severity.key]` (30/40/60).
 
-`procedureFee` устанавливается при спавне (`spawnPatient`).
-`treatmentFee` = 15 после подтверждённого диагноза (не healthy) — устанавливается в `showDiagResultPopup`.
+`procedureFee` устанавливается в момент **приёма в палату** (`admitToWard` или `sendPatientByStaff` с `wardId`) через `Game.Wards.calcPayment(wardId, patient)`.
 
 ### paymentInfo contract
-`patient.paymentInfo = { procedure, treatment, total, reason }` формируется в `patients.js` перед вызовом `Game.Cashier.addPatientToQueue(patient)`:
-- `reason: 'home-healthy'` → `total = procedureFee` (здоровый — авто после диагностики)
-- `reason: 'discharged'` → `total = procedureFee + treatmentFee` (лечение завершено — авто после heal-анимации)
+`patient.paymentInfo = { procedure, total, reason }` формируется в `patients.js` перед вызовом `Game.Cashier.addPatientToQueue(patient)`:
+- `reason: 'discharged'` → `total = procedureFee` (лечение завершено — авто после recovery-анимации)
 
 Cashier **не** вычисляет цену — только читает `paymentInfo.total`. При отсутствии `paymentInfo` предполагается `total = 0`.
 
@@ -181,7 +170,7 @@ XP_DIAGNOSIS_BONUS = 5
 ```
 
 ## Integration Points
-- `patients.js`: формирует `patient.paymentInfo` и вызывает `Game.Cashier.addPatientToQueue(patient)` автоматически при выписке (после heal-анимации) или при отправке домой (из `autoRouteAfterDiag` для healthy); `onPatientPaid()` оставлен как noop (slot-based spawn сам управляет refill)
+- `patients.js`: формирует `patient.paymentInfo` и вызывает `Game.Cashier.addPatientToQueue(patient)` автоматически при выписке (после recovery-анимации); `onPatientPaid()` оставлен как noop (slot-based spawn сам управляет refill)
 - `shop.js`: `Game.Cashier.getBalance()` / `.spend(price)` для покупок; `.isPopupOpen()` стаб (всегда false)
 - `shift.js`: `trackEarning(amount)` вызывается из cashier при начислении; зарплата больше не списывается
 - `ads.js`: `earn(AD_REWARD)` после просмотра рекламы

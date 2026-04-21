@@ -21,54 +21,18 @@
   </svg>
   <div id="interact-hint" data-lang-key="hint.interact"></div>
   <div id="held-box-hint"></div>
-  <div id="lost-patients-hud"><span data-lang-key="hud.lost"></span> <span id="lost-patients-value">0</span></div>
   <div id="patient-popup">
     <div id="popup-severity-band"></div>
     <button id="popup-close" type="button" aria-label="Close">&times;</button>
     <div class="popup-header">
       <h2 id="popup-name"></h2>
-      <div class="popup-meta">
-        <span class="popup-meta-item"><span class="meta-label" data-lang-key="popup.age"></span> <span id="popup-age"></span></span>
-        <span class="popup-meta-item"><span class="meta-label" data-lang-key="popup.severity"></span> <span id="popup-severity"></span></span>
-      </div>
     </div>
-    <div class="popup-vitals">
-      <div class="vital-cell">
-        <div class="vital-label" data-lang-key="popup.temp"></div>
-        <div class="vital-value" id="popup-temp"></div>
-      </div>
-      <div class="vital-cell">
-        <div class="vital-label" data-lang-key="popup.pulse"></div>
-        <div class="vital-value" id="popup-pulse"></div>
-      </div>
-      <div class="vital-cell">
-        <div class="vital-label" data-lang-key="popup.bp"></div>
-        <div class="vital-value" id="popup-bp"></div>
-      </div>
-    </div>
-    <div class="popup-clinical">
-      <div class="clinical-block complaint-block">
-        <div class="clinical-label" data-lang-key="popup.complaint"></div>
-        <div class="clinical-value" id="popup-complaint"></div>
-      </div>
-      <div class="clinical-block">
-        <div class="clinical-label" data-lang-key="popup.diagnosis"></div>
-        <div class="clinical-value" id="popup-diagnosis"></div>
-      </div>
-      <div class="clinical-block">
-        <div class="clinical-label" data-lang-key="popup.prescription"></div>
-        <div class="clinical-value"><span id="popup-supply-icon"></span><span id="popup-supply"></span></div>
-      </div>
-      <div id="popup-instrument-hint" style="display:none; padding: 7px 0 7px 12px; margin-bottom: 4px; border-left: 2px solid rgba(255,170,68,0.4); font-size: 0.88rem;"></div>
-    </div>
+    <div id="popup-tier" class="popup-tier-line"></div>
     <div id="outdoor-warning" style="display:none; color:#ff8844; font-size:0.85rem; padding:4px 12px; border-left:2px solid rgba(255,136,68,0.4);"></div>
     <div id="broken-bed-warning" style="display:none; color:#cc4444; font-size:0.85rem; padding:4px 12px; border-left:2px solid rgba(204,68,68,0.4);"></div>
     <div id="popup-error" style="display:none; color:#ff5555; font-size:0.88rem; padding:6px 12px; border-left:2px solid rgba(255,85,85,0.5);"></div>
+    <div id="popup-wards"></div>
     <div class="buttons">
-      <div class="buttons-row">
-        <button id="btn-bed"><span data-lang-key="popup.btn.bed"></span> <span id="bed-count" style="opacity:0.7"></span></button>
-        <button id="btn-diag"><span data-lang-key="popup.btn.diag"></span> <span id="diag-count" style="opacity:0.7"></span></button>
-      </div>
       <div class="buttons-row">
         <button id="btn-wait"><span data-lang-key="popup.btn.wait"></span> <span id="chair-count" style="opacity:0.7"></span></button>
         <button id="btn-reject" data-lang-key="popup.btn.sendHome"></button>
@@ -137,11 +101,6 @@
       <div class="staff-hire-item" data-type="administrator">
         <span class="shop-item-icon" style="background:#2266aa"></span>
         <span class="shop-item-name" data-lang-key="staff.administrator"></span>
-        <button class="shop-buy-btn staff-hire-btn" data-lang-key="shop.hire"></button>
-      </div>
-      <div class="staff-hire-item" data-type="diagnostician">
-        <span class="shop-item-icon" style="background:#8844cc"></span>
-        <span class="shop-item-name" data-lang-key="staff.diagnostician"></span>
         <button class="shop-buy-btn staff-hire-btn" data-lang-key="shop.hire"></button>
       </div>
       <div class="staff-hire-item" data-type="nurse">
@@ -275,12 +234,13 @@
     <div class="ad-reward-label" data-lang-key="ad.reward"></div>
   </div>
 
-  <script src="js/lang.js?v=2"></script>
+  <script src="js/lang.js?v=3"></script>
   <script src="js/interaction.js?v=2"></script>
   <script src="js/helpers.js?v=2"></script>
   <script src="js/levels.js?v=2"></script>
-  <script src="js/world.js?v=2"></script>
-  <script src="js/patients.js?v=7"></script>
+  <script src="js/wards.js?v=1"></script>
+  <script src="js/world.js?v=3"></script>
+  <script src="js/patients.js?v=8"></script>
   <script src="js/controls.js?v=2"></script>
   <script src="js/consumables.js?v=2"></script>
   <script src="js/inventory.js?v=2"></script>
@@ -289,8 +249,7 @@
   <script src="js/wrench.js?v=2"></script>
   <script src="js/furniture.js?v=2"></script>
   <script src="js/shelves.js?v=2"></script>
-  <script src="js/diagnostics.js?v=2"></script>
-  <script src="js/staff.js?v=2"></script>
+  <script src="js/staff.js?v=3"></script>
   <script src="js/trash.js?v=2"></script>
   <script src="js/shift.js?v=2"></script>
   <script src="js/cashier.js?v=2"></script>
@@ -375,17 +334,20 @@
     const collidables = [];
 
     // --- Build world ---
-    const { beds, waitingChairs, cashierDesk, bedMeshes, chairMeshes, diagQueueSlots, diagExamSlot, sunLight } = Game.World.setup(THREE, scene, collidables);
+    const { wards, waitingChairs, cashierDesk, chairMeshes, sunLight } = Game.World.setup(THREE, scene, collidables);
+
+    // Wire ward slots into Game.Wards before anything queries them.
+    Game.Wards.setup(wards);
 
     // --- Setup controls ---
     const controls = Game.Controls.setup(THREE, camera, collidables, PointerLockControls);
 
     // --- Setup patients ---
-    Game.Patients.setup(THREE, scene, camera, controls, beds, waitingChairs, diagQueueSlots, diagExamSlot);
+    Game.Patients.setup(THREE, scene, camera, controls, waitingChairs);
 
     // --- Setup consumables, inventory, shop, shelves ---
     Game.Furniture.setup(THREE, scene, camera, controls, collidables);
-    Game.Furniture.registerExisting(bedMeshes, chairMeshes);
+    Game.Furniture.registerExisting([], chairMeshes);
     Game.Consumables.setup(THREE, scene, camera, controls, collidables);
     Game.Inventory.setup();
     Game.Levels.setup(controls);
@@ -393,16 +355,17 @@
     Game.Ads.setup();
     Game.Wrench.setup(THREE, scene, camera, controls);
     Game.Shelves.setup(THREE, scene, camera, controls, collidables);
-    Game.Diagnostics.setup(controls);
     Game.Cashier.setup(THREE, scene, camera, controls, cashierDesk);
     Game.Staff.setup(THREE, scene, camera, controls, collidables);
     Game.Trash.setup(THREE, scene, camera, controls, collidables);
     Game.Shift.setup(THREE, scene, camera, controls, collidables);
     Game.Interaction.setup(THREE, camera, controls);
 
-    // Pre-hire nurse and diagnostician on game start (salary disabled)
+    // Pre-hire 4 nurses on game start (salary disabled)
     Game.Staff.hire('nurse');
-    Game.Staff.hire('diagnostician');
+    Game.Staff.hire('nurse');
+    Game.Staff.hire('nurse');
+    Game.Staff.hire('nurse');
 
     // --- Quality settings ---
     let useComposer = true;

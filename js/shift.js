@@ -25,7 +25,6 @@
   // UI elements
   var timeValueEl, dayValueEl, taskTextEl, taskMascotEl;
   var dayEndPopupEl, statServedEl, statLostEl, statEarnedEl, statSpentEl, dayEndNumberEl;
-  var lostHudEl;
   var dayEndPopupOpen = false;
 
   // ====== TIME MATH ======
@@ -203,7 +202,6 @@
     shiftEnding = false;
     gameTime = 0;
     dayStats = { patientsServed: 0, patientsLost: 0, moneyEarned: 0, moneySpent: 0 };
-    updateLostHUD();
     updateSignTexture();
     updateTaskText();
     Game.Inventory.showNotification(Game.Lang.t('shift.started', [dayNumber]), 'rgba(34, 139, 34, 0.85)');
@@ -514,16 +512,11 @@
 
     gameTime = 0;
     dayStats = { patientsServed: 0, patientsLost: 0, moneyEarned: 0, moneySpent: 0 };
-    updateLostHUD();
     updateHUD();
     updateTaskText();
     updateSignTexture();
 
     controls.lock();
-  }
-
-  function updateLostHUD() {
-    if (lostHudEl) lostHudEl.textContent = dayStats.patientsLost;
   }
 
   // ====== HUD UPDATE ======
@@ -569,7 +562,6 @@
       statEarnedEl = document.getElementById('stat-earned');
       statSpentEl = document.getElementById('stat-spent');
       dayEndNumberEl = document.getElementById('day-end-number');
-      lostHudEl = document.getElementById('lost-patients-value');
 
       // Draw mascot
       var mascotUrl = drawMascot();
@@ -635,6 +627,6 @@
     trackEarning: function(amount) { dayStats.moneyEarned += amount; },
     trackSpending: function(amount) { dayStats.moneySpent += amount; },
     trackPatientServed: function() { dayStats.patientsServed++; },
-    trackPatientLost: function() { dayStats.patientsLost++; updateLostHUD(); }
+    trackPatientLost: function() { dayStats.patientsLost++; }
   };
 })();

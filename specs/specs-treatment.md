@@ -16,57 +16,40 @@
 - `requiredConsumables[]` — полный список
 - `pendingConsumables[]` — оставшиеся (уменьшается по применению)
 - `treated` (boolean) — `true` когда `pendingConsumables` пуст
-- `wasDiagnosed` — флаг для доплаты `treatmentFee = 15`
+- `procedureFee` — цена палаты (устанавливается при приёме через `Game.Wards.calcPayment`)
 
-### Для needsDiagnosis
-- До `revealDiagnosis()`: списки = `null`
-- После `revealDiagnosis()`: строится по severity (выше), создаются индикаторы при `atBed`
+Диагностика как фаза удалена: диагноз у пациента всегда виден сразу.
 
-## Bed Indicators (3D Sprites)
-Над пациентом на кровати — по одному спрайту на каждый `pending` препарат.
+## Bed Indicators (3D Sprites) — ОТКЛЮЧЕНЫ
+Иконки препаратов и диагностики над головами пациентов **не отображаются**. `createBedIndicators(patient)` теперь no-op (только сбрасывает массив `patient.indicators`). Хелперы `createSingleIndicatorSprite`, `removeAllIndicators`, `removeOneIndicator`, `updateIndicators` сохранены и работают вхолостую (массив всегда пуст). Логика лечения завязана на `patient.pendingConsumables`, а не на наличие спрайтов — медсестра по-прежнему перебирает `pendingConsumables` для подбора препарата.
 
-### Создание — `createBedIndicators(patient)`
-- `needsDiagnosis` (на exam-slot): 1 индикатор с иконкой инструмента
-- Обычный `atBed`: цикл по `pendingConsumables`
-
-### Спрайт — `createSingleIndicatorSprite(itemType)`
-- Canvas 64×64, `THREE.CanvasTexture`, `SpriteMaterial({ transparent: true, depthTest: false })`
-- Тёмный круг с цветной рамкой (цвет из `Game.Consumables.TYPES[type].color` / `INSTRUMENT_TYPES[type].color`)
-- Иконка через `drawIndicatorIcon(ctx, itemType)`
-- `scale(0.4, 0.4, 1)`
-- `sprite.userData = { consumableType: itemType }`
-
-### Позиционирование (`updateIndicators()`)
-- Центрируются над пациентом: `offsetX = (j - (count - 1) / 2) * 0.45`
-- Y: `1.5` (лёжа) / `2.0` (стоя/сидя)
-- Пульсация: `scale = 0.4 + sin(t + patientId + j*0.5) * 0.06`
-
-### Хелперы
-- `removeAllIndicators(patient)` — dispose всех спрайтов
-- `removeOneIndicator(patient, consumableType)` — удаляет по matching userData
+## Recovery Progress Bar (3D Sprite)
+После применения **последнего** препарата над пациентом появляется зелёный прогресс-бар «Восстановление» (Canvas 192×28, `SpriteMaterial({ transparent: true, depthTest: false })`, `scale(0.85, 0.12, 1)`).
+- Y: `1.6` (лёжа) / `2.1` (стоя/сидя), X/Z по позиции пациента.
+- Цвет рамки `#22aa44`, заливка градиент `#22aa44 → #7fffaa`, текст `patient.status.recovering` слева, процент справа.
+- Перерисовка только при смене целочисленного процента.
+- Привязан к анимации `'recover'`. По завершении: dispose sprite/texture/material → `dischargePatient`.
 
 ## Treatment Pipeline (only nurse)
 
 ### `applyOneConsumable(patient, consumableType)` (применяется медсестрой и только медсестрой)
 1. `pendingConsumables.splice(indexOf(consumableType), 1)`
-2. `removeOneIndicator(patient, consumableType)`
-3. `patient.animating = true`
-4. Если `pendingConsumables.length === 0`:
-   - `patient.treated = true`
-   - Зелёная `'heal'`-анимация (0.5с, emissive 0x00ff44 → 0)
-   - Анимация помечена `autoDischarge: true`
+2. `removeOneIndicator(patient, consumableType)` (no-op, индикаторов нет)
+3. Если `pendingConsumables.length === 0`:
+   - `patient.animating = true`, `patient.treated = true`
+   - Запускается анимация `'recover'` (30–45с рандом, `autoDischarge: true`) с прогресс-баром над пациентом
    - Уведомление "Лечение начато!" (зелёное)
-5. Иначе (частичное):
-   - Синяя вспышка (emissive 0x4488ff, 0.3с)
+   - **Эмиссивная зелёная подсветка тела пациента удалена** — пациент во время восстановления выглядит обычно
+4. Иначе (частичное):
    - Уведомление "Препарат применён! Осталось: N" (синее)
-6. `spawnSmileyReaction(patient)` — случайный смайл над головой
+   - **Эмиссивная синяя вспышка удалена** — нет анимации, никаких флагов
+5. `spawnSmileyReaction(patient)` — случайный смайл над головой
 
 ### Auto-Discharge (в `updateAnimations`)
-По завершении `'heal'`-анимации с флагом `autoDischarge === true`:
-1. `paymentInfo = { procedure: procedureFee, treatment: wasDiagnosed ? 15 : 0, total, reason: 'discharged' }`
+По завершении анимации `'recover'` с флагом `autoDischarge === true`:
+1. `paymentInfo = { procedure: procedureFee, total: procedureFee, reason: 'discharged' }`
 2. `dischargePatient(patient)`:
-   - Освобождает кровать
-   - Декремент HP кровати
+   - Освобождает ward-slot
    - `removeAllIndicators`
    - state → `discharged`
    - `Game.Shift.trackPatientServed()`
@@ -84,8 +67,8 @@ Game.Patients.treatPatientByStaff(patient, consumableType)
 - **`#treat-hold-progress`** SVG overlay
 - **`patient.hint.treat` / `patient.hint.treatHold` / `patient.hint.wrongTreatment`** — не используются
 - **`wrongTreatment(patient)`** — не вызывается (препарат всегда подбирается медсестрой автоматически)
-- **`#discharge-popup`** и `showDischargePopup`/`confirmDischarge` — замещены `autoDischarge`
-- **Состояния `recovering`/`awaitingDischargeDecision`** и `RECOVERY_DURATION` — удалены
+- **`#discharge-popup`** и `showDischargePopup`/`confirmDischarge` — замещены `autoDischarge`-флагом анимации `'recover'` (после фазы восстановления 30–45с — `dischargePatient`)
+- **Состояния `recovering` / `awaitingDischargeDecision`** и `RECOVERY_DURATION` — удалены. HP-система удалена целиком.
 - **3D-индикатор «бланк выписки»** (`createDischargeFormIndicator`) — удалён
 - **`patient.hint.resumeDischarge` / `patient.hint.resumeDiag`** — удалены
 
@@ -106,12 +89,13 @@ Game.Patients.treatPatientByStaff(patient, consumableType)
 
 ## Animation System
 Массив `animations[]` с объектами `{ patient, type, timer, maxTime, ... }`:
-- `'heal'` — вспышка, по завершении: если `autoDischarge`, вызывается `dischargePatient`
-- `'shake'` — тряска 0.3с + красная вспышка (используется при потере HP≤0)
+- `'recover'` — фаза восстановления 30–45с (рандом на пациента); каждый кадр обновляет позицию и текстуру 3D прогресс-бара `bar`; по завершении dispose бара и, если `autoDischarge`, вызывается `dischargePatient`
+- `'shake'` — тряска 0.3с + красная вспышка (зарезервировано; сейчас не используется)
 - `'smiley'` — сприт-смайл, поднимается и fade-out
+- `'heal'` — **удалён** (эмиссивная зелёная/синяя вспышка больше не используется)
 
 ## Health Bar
-HP-бар у пациентов **вернулся** — см. [specs-patient.md](specs-patient.md) §HP System.
+HP-система полностью **удалена**. Пациенты не имеют HP, не деградируют, не теряются по таймеру. Единственный неоплачиваемый путь ухода — «Отпустить домой» из первичного попапа (state → `leaving`).
 
 ## Healing Particle System
-Удалены (лечение завершается мгновенно — зелёная вспышка 0.5с, затем выписка).
+Удалена. После последнего препарата над пациентом появляется зелёный прогресс-бар «Восстановление» (30–45с), без свечения тела и без частиц.

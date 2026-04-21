@@ -49,7 +49,7 @@ dayEndPopupOpen = false // попап итогов дня показан
 
 ### 3. Смена активна
 - `gameTime += delta` каждый кадр
-- Пациенты спавнятся поочередно (auto-spawn, Level 2+): стартовый burst заполняет все места (`beds + chairs`) с 1-3 с интервалом, далее 10-20 с между спавнами при освобождении мест. Cap: общее количество в больнице ≤ `beds + chairs`, в очереди ≤ 2. Подробности — [specs-patient.md](specs-patient.md)
+- Пациенты спавнятся поочередно (auto-spawn): стартовый burst заполняет ~75% ward-capacity (≈ 11 пациентов из 14 кроватей) с 1–3с интервалом, далее 10–20с между спавнами. Cap: общее количество в больнице ≤ `wardCapacity + waitingChairs`. Подробности — [specs-patient.md](specs-patient.md)
 - Задача: "Обслуживайте пациентов!"
 
 ### 4. 20:00 — Приём окончен
@@ -158,8 +158,6 @@ Game.Shift.trackPatientLost()
 | `stat-earned` | span | Заработано |
 | `stat-spent` | span | Потрачено |
 | `day-end-next` | button | Кнопка следующего дня |
-| `lost-patients-hud` | div | HUD: счётчик потерянных пациентов (красный, под balance) |
-| `lost-patients-value` | span | Значение счётчика |
 
 ## No Session Persistence
 - Никаких данных не сохраняется между сессиями

@@ -11,12 +11,15 @@
   };
   var CONSUMABLE_KEYS = Object.keys(MEDICAL_DATA);
 
-  var INSTRUMENT_MAP = {
-    painkiller:    'instrument_hammer',
-    antihistamine: 'instrument_rhinoscope',
-    strepsils:     'instrument_stethoscope'
-  };
   var BODY_COLORS = [0x4477aa, 0x44aa77, 0xaa7744, 0x7744aa, 0xaa4466, 0x5599bb, 0x88aa44];
+
+  // Preferred-tier distribution for spawn: basic 60%, improved 30%, vip 10%.
+  function rollPreferredTier() {
+    var r = Math.random();
+    if (r < 0.60) return 'basic';
+    if (r < 0.90) return 'improved';
+    return 'vip';
+  }
 
   var WALK_SPEED = { severe: 1.0, medium: 1.0, mild: 1.0, normal: 1.0 };
 
@@ -81,20 +84,6 @@
     { key: 'mild',   label: Game.Lang.t('severity.mild') }
   ];
 
-  var BASE_PRICES = { mild: 35, medium: 50, severe: 70 };
-  var PRICE_VARIANCE = 5;
-  var DIAGNOSIS_FEE = 15;
-
-  // --- HP system (brought back) ---
-  // Severity → initial HP + decay rate (HP/sec). HP decays uniformly in all
-  // active states except recovering/discharged/atRegister/leaving, and is
-  // paused while staff is diagnosing/treating the patient. HP ≤ 0 → patient lost.
-  var HP_CONFIG = {
-    mild:   { max: 100, start: 100, decay: 0.7 },
-    medium: { max: 100, start: 85,  decay: 1.2 },
-    severe: { max: 100, start: 70,  decay: 1.8 }
-  };
-
   function randomFrom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
   function randomRange(min, max) { return min + Math.random() * (max - min); }
   function randomInt(min, max) { return Math.floor(randomRange(min, max + 1)); }
@@ -116,7 +105,7 @@
 
   // --- Module state ---
   var THREE, scene, camera, controls;
-  var beds, waitingChairs;
+  var waitingChairs;
   var patients = [];
   var queue = [];
   var patientIdCounter = 0;
@@ -133,6 +122,7 @@
   var lastSmileyIndex = -1;
   var prevSmileyIndex = -2;
 
+
   // Slot-based auto-spawn (always active — no sequential/tutorial mode).
   var autoSpawnActive = false;
   var initialSpawnCount = 0;
@@ -144,34 +134,28 @@
   var STEADY_MIN = 10, STEADY_MAX = 20;
 
   function getQueueCap() {
-    var beds = Game.Furniture ? Game.Furniture.getIndoorBeds().length : 3;
+    var beds = Game.Wards ? Game.Wards.getTotalCapacity() : 0;
     var waits = Game.Furniture ? Game.Furniture.getIndoorChairs().length : 3;
-    var diag = diagQueueSlots.length + (diagExamSlot ? 1 : 0);
-    return beds + diag + waits;
+    return beds + waits;
   }
 
   // --- UI elements ---
-  var hintEl, popupEl, popupName, popupDiagnosis, popupSupply, popupSupplyIcon, popupSeverity;
-  var popupAge, popupComplaint, popupTemp, popupPulse, popupBp;
+  var hintEl, popupEl, popupName;
   var popupSeverityBand;
-  var btnBed, btnWait, btnDiag, btnReject, bedCount, chairCount, diagCount;
-
-  // Diag room slots
-  var diagQueueSlots = [];
-  var diagExamSlot = null;
-
-  // Doorway waypoint for diag room routing
-  function diagDoorWaypoint() { return new THREE.Vector3(-2.7, 0, -14.5); }
+  var popupTier;
+  var btnWait, btnReject, chairCount;
+  var wardsContainer;
+  var wardButtons = {}; // wardId -> { btnEl, labelEl, priceEl, countEl }
 
   // --- Interaction raycaster ---
   var interactRay;
   var screenCenter;
 
-  // Horizontal queue in front of the reception desk (desk at z=-9).
-  // Patients line up along X from x=-3.0 to the east, facing north (rotY = 0).
-  // Only the head of the queue (index 0) is interactable.
+  // Vertical queue in front of the reception desk (desk at z=-9).
+  // Index 0 (head) is closest to the desk; subsequent patients line up southward.
+  // Any patient in the queue is clickable (player can examine any one).
   function getQueuePosition(index) {
-    return new THREE.Vector3(-3.0 + index * 1.2, 0, -7.5);
+    return new THREE.Vector3(0, 0, -7.5 + index * 1.2);
   }
 
   function createPatientMesh() {
@@ -261,8 +245,8 @@
     ud.illnessVisuals = [];
     ud.illnessMaterials = [];
 
-    var cType = patient.hiddenConsumable || patient.requiredConsumable;
-    var diag = patient.hiddenDiagnosis || patient.diagnosis;
+    var cType = patient.requiredConsumable;
+    var diag = patient.diagnosis;
     if (!cType) return;
 
     var region = getIllnessRegion(cType, diag);
@@ -376,94 +360,8 @@
     }
   }
 
-  // --- HP bar sprite ---
-  function createHpBarSprite(patient) {
-    var canvas = document.createElement('canvas');
-    canvas.width = 128; canvas.height = 18;
-    var texture = new THREE.CanvasTexture(canvas);
-    texture.minFilter = THREE.LinearFilter;
-    var mat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
-    var sprite = new THREE.Sprite(mat);
-    sprite.scale.set(0.85, 0.13, 1);
-    scene.add(sprite);
-    patient.hpBar = sprite;
-    patient.hpBarCanvas = canvas;
-    patient.hpBarTexture = texture;
-    patient._lastHpDraw = -1;
-    drawHpBar(patient);
-  }
 
-  function drawHpBar(patient) {
-    var canvas = patient.hpBarCanvas;
-    if (!canvas) return;
-    var ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, 128, 18);
-
-    // Background
-    ctx.fillStyle = 'rgba(10, 15, 30, 0.85)';
-    ctx.beginPath();
-    ctx.roundRect(0, 0, 128, 18, 4);
-    ctx.fill();
-
-    // Border
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.roundRect(0, 0, 128, 18, 4);
-    ctx.stroke();
-
-    // HP fill
-    var frac = Math.max(0, patient.hp / patient.maxHp);
-    var color;
-    if (frac > 0.6) color = '#44dd44';
-    else if (frac > 0.3) color = '#ddcc44';
-    else color = '#dd4444';
-
-    var fillW = Math.max(0, Math.min(124, frac * 124));
-    if (fillW > 0) {
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.roundRect(2, 2, fillW, 14, 3);
-      ctx.fill();
-    }
-
-    patient.hpBarTexture.needsUpdate = true;
-  }
-
-  function updateHpBar(patient) {
-    if (!patient.hpBar) return;
-    var isLying = patient.anim.pose === 'lying';
-    patient.hpBar.position.x = patient.mesh.position.x;
-    patient.hpBar.position.z = patient.mesh.position.z;
-    patient.hpBar.position.y = isLying ? 1.6 : 2.25;
-
-    var pctInt = Math.floor((patient.hp / patient.maxHp) * 100);
-    if (pctInt !== patient._lastHpDraw) {
-      patient._lastHpDraw = pctInt;
-      drawHpBar(patient);
-    }
-  }
-
-  function removeHpBar(patient) {
-    if (patient.hpBar) {
-      scene.remove(patient.hpBar);
-      if (patient.hpBar.material.map) patient.hpBar.material.map.dispose();
-      patient.hpBar.material.dispose();
-      patient.hpBar = null;
-      patient.hpBarCanvas = null;
-      patient.hpBarTexture = null;
-    }
-  }
-
-  // States where HP actively decays (everywhere except recovery/exit pipeline).
-  function hpActive(state) {
-    return state !== 'recovering'
-      && state !== 'discharged'
-      && state !== 'atRegister'
-      && state !== 'leaving';
-  }
-
-  function spawnPatient(instant, explicitSeverityKey, explicitNeedsDiagnosis) {
+  function spawnPatient(instant, explicitSeverityKey, explicitPreferredTier) {
     var mesh = createPatientMesh();
     mesh.position.set(0, 0, 1);
     scene.add(mesh);
@@ -486,14 +384,8 @@
         severity = roll < 0.60 ? SEVERITIES[2] : roll < 0.85 ? SEVERITIES[1] : SEVERITIES[0];
       }
     }
-    var diagChance = Game.Levels && Game.Levels.getDiagnosisChance ? Game.Levels.getDiagnosisChance() : 0.30;
-    var needsDiagnosis;
-    if (explicitNeedsDiagnosis !== null && explicitNeedsDiagnosis !== undefined) {
-      needsDiagnosis = !!explicitNeedsDiagnosis;
-    } else {
-      needsDiagnosis = Math.random() < diagChance;
-    }
-    var isHealthy = needsDiagnosis && (Math.random() < 0.5);
+
+    var preferredTier = explicitPreferredTier || rollPreferredTier();
 
     var requiredConsumables;
     if (severity.key === 'mild') {
@@ -505,53 +397,32 @@
       requiredConsumables = CONSUMABLE_KEYS.slice();
     }
 
-    var procedureFee = BASE_PRICES[severity.key] + (Math.floor(Math.random() * (PRICE_VARIANCE * 2 + 1)) - PRICE_VARIANCE);
-
-    var hpCfg = HP_CONFIG[severity.key];
-
     var patient = {
       id: patientIdCounter++,
       name: randomFrom(NAMES),
       surname: randomFrom(SURNAMES),
       age: randomInt(18, 75),
       symptom: null,
-      diagnosis: needsDiagnosis ? null : medCase.diagnosis,
+      diagnosis: medCase.diagnosis,
       complaint: medCase.complaint,
       vitals: generateVitals(severity.key),
-      requiredConsumable: needsDiagnosis ? null : consumableType,
-      requiredConsumables: needsDiagnosis ? null : requiredConsumables,
-      pendingConsumables: needsDiagnosis ? null : requiredConsumables.slice(),
-      needsDiagnosis: needsDiagnosis,
-      isHealthy: isHealthy,
-      requiredInstrument: needsDiagnosis ? INSTRUMENT_MAP[consumableType] : null,
-      hiddenSymptom: null,
-      hiddenDiagnosis: needsDiagnosis ? medCase.diagnosis : null,
-      hiddenConsumable: needsDiagnosis ? consumableType : null,
+      requiredConsumable: consumableType,
+      requiredConsumables: requiredConsumables,
+      pendingConsumables: requiredConsumables.slice(),
+      preferredTier: preferredTier,
       mesh: mesh,
       state: 'queued',
       targetPos: null,
       queueTarget: null,
       destination: null,
+      wardId: null,
       indicators: [],
       animating: false,
       severity: severity,
       treated: false,
-      wasDiagnosed: false,
-      lost: false,
-      procedureFee: procedureFee,
-      treatmentFee: 0,
+      procedureFee: 0,
       paymentInfo: null,
-      diagQueueSlot: null,
-      diagExamSlot: null,
-      hp: hpCfg.start,
-      maxHp: hpCfg.max,
-      hpDecayRate: hpCfg.decay,
-      hpBar: null,
-      hpBarCanvas: null,
-      hpBarTexture: null,
-      _lastHpDraw: -1,
       staffProcessing: false,
-      staffDiagnosing: false,
       staffTreating: false,
       anim: {
         walkPhase: 0,
@@ -569,11 +440,10 @@
     queue.push(patient);
     updateQueueTargets();
     applyIllnessVisuals(patient);
-    createHpBarSprite(patient);
 
     if (instant && patient.queueTarget) {
       mesh.position.copy(patient.queueTarget);
-      mesh.rotation.y = 0;
+      mesh.rotation.y = Math.PI;
     }
 
     return patient;
@@ -654,85 +524,32 @@
     patient._wasWaiting = wasWaiting;
 
     popupName.textContent = patient.name + ' ' + patient.surname;
-    popupAge.textContent = Game.Lang.t('patient.age', [patient.age]);
+    if (popupSeverityBand) popupSeverityBand.className = patient.severity.key;
 
-    var sevColors = { severe: '#ff4444', medium: '#ffcc00', mild: '#44cc44' };
-    popupSeverity.textContent = patient.severity.label;
-    popupSeverity.style.color = sevColors[patient.severity.key] || '#7abfff';
-    popupSeverityBand.className = patient.severity.key;
-
-    var v = patient.vitals;
-    popupTemp.textContent = v.temp.toFixed(1) + '\u00B0C';
-    popupTemp.className = 'vital-value' + (v.temp >= 39.0 ? ' vital-critical' : v.temp >= 37.5 ? ' vital-warning' : '');
-    popupPulse.textContent = Game.Lang.t('patient.pulse', [v.pulse]);
-    popupPulse.className = 'vital-value' + (v.pulse >= 110 ? ' vital-critical' : v.pulse >= 90 ? ' vital-warning' : '');
-    popupBp.textContent = v.bpSys + '/' + v.bpDia;
-    popupBp.className = 'vital-value' + (v.bpSys >= 160 ? ' vital-critical' : v.bpSys >= 140 ? ' vital-warning' : '');
-
-    popupComplaint.textContent = '\u00AB' + patient.complaint + '\u00BB';
-
-    var popupInstrumentHint = document.getElementById('popup-instrument-hint');
-
-    if (patient.needsDiagnosis) {
-      popupDiagnosis.textContent = '????';
-      popupDiagnosis.style.color = '#ff4444';
-      popupSupply.textContent = '????';
-      popupSupply.style.color = '#ff4444';
-      popupSupplyIcon.style.display = 'none';
-      if (popupInstrumentHint) {
-        popupInstrumentHint.textContent = Game.Lang.t('patient.needDiagnosis');
-        popupInstrumentHint.style.display = 'block';
-        popupInstrumentHint.style.color = '#ffaa44';
-      }
-    } else {
-      popupDiagnosis.textContent = patient.diagnosis;
-      popupDiagnosis.style.color = '';
-      popupSupply.style.color = '';
-      popupSupplyIcon.style.display = '';
-      if (popupInstrumentHint) popupInstrumentHint.style.display = 'none';
-
-      if (patient.requiredConsumables && patient.requiredConsumables.length > 1) {
-        var parts = [];
-        for (var ci = 0; ci < patient.requiredConsumables.length; ci++) {
-          var cKey = patient.requiredConsumables[ci];
-          var cInfo = Game.Consumables.TYPES[cKey];
-          var applied = !patient.pendingConsumables || patient.pendingConsumables.indexOf(cKey) === -1;
-          parts.push(applied ? '\u2713 ' + cInfo.name : cInfo.name);
-        }
-        popupSupply.textContent = parts.join(', ');
-        var c = Game.Consumables.TYPES[patient.requiredConsumable].color;
-        popupSupplyIcon.style.backgroundColor = 'rgb(' + ((c >> 16) & 255) + ',' + ((c >> 8) & 255) + ',' + (c & 255) + ')';
-      } else {
-        var typeInfo = Game.Consumables.TYPES[patient.requiredConsumable];
-        popupSupply.textContent = typeInfo.name;
-        var c2 = typeInfo.color;
-        popupSupplyIcon.style.backgroundColor = 'rgb(' + ((c2 >> 16) & 255) + ',' + ((c2 >> 8) & 255) + ',' + (c2 & 255) + ')';
-      }
+    // Severity + preferred-tier summary — shown directly under the name header.
+    if (popupTier) {
+      var sevColor = SEVERITY_COLORS[patient.severity.key] || '#c0d8f0';
+      popupTier.innerHTML =
+        '<span class="popup-tier-item">' +
+          Game.Lang.t('popup.severity') +
+          ' <span class="popup-tier-sev" style="color:' + sevColor + '">' + patient.severity.label + '</span>' +
+        '</span>' +
+        '<span class="popup-tier-sep">\u2022</span>' +
+        '<span class="popup-tier-item">' +
+          Game.Lang.t('patient.tierPrefers', [Game.Lang.t('patient.tier.' + patient.preferredTier)]) +
+        '</span>';
     }
 
     popupEl.style.display = 'block';
 
-    var indoorBeds = Game.Furniture.getIndoorBeds();
+    refreshWardButtons(patient);
+
     var indoorChairs = Game.Furniture.getIndoorChairs();
-    var freeBeds = indoorBeds.filter(function(b) { return !b.occupied && !Game.Furniture.isBedBroken(b); }).length;
     var freeChairs = indoorChairs.filter(function(c) { return !c.occupied; }).length;
-    var outdoorBedCount = Game.Furniture.getOutdoorBedCount();
     var outdoorChairCount = Game.Furniture.getOutdoorChairCount();
-    var freeDiag = getFreeDiagSlotsCount();
-    var totalDiag = diagQueueSlots.length + (diagExamSlot ? 1 : 0);
 
-    btnBed.style.display = '';
     btnWait.style.display = '';
-    btnDiag.style.display = '';
     btnReject.style.display = '';
-
-    btnBed.disabled = freeBeds === 0;
-    btnBed.style.opacity = freeBeds > 0 ? '1' : '0.4';
-    bedCount.textContent = '(' + freeBeds + '/' + indoorBeds.length + ')';
-
-    btnDiag.disabled = freeDiag === 0;
-    btnDiag.style.opacity = freeDiag > 0 ? '1' : '0.4';
-    diagCount.textContent = '(' + freeDiag + '/' + totalDiag + ')';
 
     if (wasWaiting) {
       btnWait.style.display = 'none';
@@ -746,7 +563,7 @@
     if (popupError) popupError.style.display = 'none';
 
     var outdoorWarning = document.getElementById('outdoor-warning');
-    if (outdoorBedCount > 0 || outdoorChairCount > 0) {
+    if (outdoorChairCount > 0) {
       outdoorWarning.textContent = Game.Lang.t('patient.outdoorWarning');
       outdoorWarning.style.display = 'block';
     } else {
@@ -754,31 +571,62 @@
     }
 
     var brokenWarning = document.getElementById('broken-bed-warning');
-    var brokenBedCount = Game.Furniture.getBrokenBedCount();
-    if (brokenBedCount > 0) {
-      brokenWarning.textContent = Game.Lang.t(brokenBedCount === 1 ? 'patient.brokenWarning1' : 'patient.brokenWarningN', [brokenBedCount]);
-      brokenWarning.style.display = 'block';
-    } else {
-      brokenWarning.style.display = 'none';
-    }
+    if (brokenWarning) brokenWarning.style.display = 'none';
 
     controls.unlock();
   }
 
-  function getFreeDiagSlotsCount() {
-    var free = 0;
-    for (var i = 0; i < diagQueueSlots.length; i++) {
-      if (!diagQueueSlots[i].occupied) free++;
+  // --- Ward button rendering / state ---
+  var SEVERITY_ORDER = ['mild', 'medium', 'severe'];
+
+  function renderSeverityChips(wardDef, patientSeverityKey) {
+    var parts = [];
+    for (var i = 0; i < SEVERITY_ORDER.length; i++) {
+      var sev = SEVERITY_ORDER[i];
+      if (wardDef.accepts.indexOf(sev) === -1) continue;
+      var color = SEVERITY_COLORS[sev] || '#888';
+      var active = sev === patientSeverityKey ? ' ward-sev-active' : '';
+      parts.push('<span class="ward-sev-dot' + active + '" style="background:' + color + '" title="' + sev + '"></span>');
     }
-    if (diagExamSlot && !diagExamSlot.occupied) free++;
-    return free;
+    return parts.join('');
   }
 
-  function findFreeDiagQueueSlot() {
-    for (var i = 0; i < diagQueueSlots.length; i++) {
-      if (!diagQueueSlots[i].occupied) return diagQueueSlots[i];
+  function refreshWardButtons(patient) {
+    if (!wardsContainer || !Game.Wards) return;
+    var order = Game.Wards.ORDER;
+    for (var i = 0; i < order.length; i++) {
+      var wid = order[i];
+      var def = Game.Wards.TYPES[wid];
+      var ui = wardButtons[wid];
+      if (!ui) continue;
+      var cap = Game.Wards.getCapacity(wid);
+      var free = Game.Wards.getFreeCount(wid);
+      var accepts = Game.Wards.accepts(wid, patient.severity.key);
+
+      ui.labelEl.textContent = Game.Lang.t('ward.name.' + wid);
+      ui.countEl.textContent = '(' + free + '/' + cap + ')';
+      if (ui.acceptsEl) ui.acceptsEl.innerHTML = renderSeverityChips(def, patient.severity.key);
+
+      var fullPrice = def.price;
+      var payPrice = Game.Wards.calcPayment(wid, patient);
+      if (payPrice < fullPrice) {
+        ui.priceEl.innerHTML = '<span class="ward-price-strike">$' + fullPrice + '</span> <span class="ward-price-actual">$' + payPrice + '</span>';
+      } else {
+        ui.priceEl.innerHTML = '<span class="ward-price-actual">$' + fullPrice + '</span>';
+      }
+
+      ui.btnEl.classList.remove('ward-disabled', 'ward-full', 'ward-mismatch', 'ward-match');
+      if (!accepts) {
+        ui.btnEl.disabled = true;
+        ui.btnEl.classList.add('ward-disabled');
+      } else if (free <= 0) {
+        ui.btnEl.disabled = true;
+        ui.btnEl.classList.add('ward-full');
+      } else {
+        ui.btnEl.disabled = false;
+        ui.btnEl.classList.add(def.tier === patient.preferredTier ? 'ward-match' : 'ward-mismatch');
+      }
     }
-    return null;
   }
 
   function closePopup() {
@@ -812,6 +660,25 @@
     patient.anim.targetPose = 'standing';
     removeFromQueue(patient);
     closePopup();
+  }
+
+  // Admit patient to a chosen ward. Validates severity, computes procedureFee
+  // from Game.Wards, marks ward slot occupied, and dispatches walking state.
+  function admitToWard(patient, wardId) {
+    if (!Game.Wards) return false;
+    if (!Game.Wards.accepts(wardId, patient.severity.key)) {
+      showPopupError(Game.Lang.t('popup.err.wardTypeMismatch'));
+      return false;
+    }
+    var slot = Game.Wards.getFreeSlot(wardId);
+    if (!slot) {
+      showPopupError(Game.Lang.t('popup.err.wardFull'));
+      return false;
+    }
+    patient.wardId = wardId;
+    patient.procedureFee = Game.Wards.calcPayment(wardId, patient);
+    sendPatient(patient, slot.pos, slot);
+    return true;
   }
 
   function moveToward(pos, target, maxDist) {
@@ -935,29 +802,8 @@
   }
 
   function createBedIndicators(patient) {
+    // Bed indicator icons (drug/diagnostic sprites) over patient heads are disabled.
     removeAllIndicators(patient);
-
-    if (patient.needsDiagnosis) {
-      var sprite = createSingleIndicatorSprite(patient.requiredInstrument);
-      sprite.position.copy(patient.mesh.position);
-      sprite.position.y = 2.0;
-      scene.add(sprite);
-      patient.indicators.push(sprite);
-      return;
-    }
-
-    if (!patient.pendingConsumables) return;
-    var count = patient.pendingConsumables.length;
-    for (var i = 0; i < count; i++) {
-      var type = patient.pendingConsumables[i];
-      var s = createSingleIndicatorSprite(type);
-      var offsetX = (i - (count - 1) / 2) * 0.45;
-      s.position.copy(patient.mesh.position);
-      s.position.x += offsetX;
-      s.position.y = 2.0;
-      scene.add(s);
-      patient.indicators.push(s);
-    }
   }
 
   function removeAllIndicators(patient) {
@@ -982,6 +828,13 @@
       }
     }
   }
+
+  // Severity colors used by the ward-button chips in the popup.
+  var SEVERITY_COLORS = {
+    mild:   '#3ecb5e',
+    medium: '#ffcc33',
+    severe: '#ff5555'
+  };
 
   // --- Walking animation ---
   var STRIDE_LEN = 1.1;
@@ -1150,28 +1003,87 @@
     if (idx !== -1) patient.pendingConsumables.splice(idx, 1);
     removeOneIndicator(patient, consumableType);
 
-    patient.animating = true;
-
     if (patient.pendingConsumables.length === 0) {
-      // All meds applied — schedule auto-discharge after heal animation.
+      // All meds applied — schedule auto-discharge after recovery progress bar finishes.
+      patient.animating = true;
       patient.treated = true;
       Game.Inventory.showNotification(Game.Lang.t('notify.treatmentStarted'), 'rgba(34, 139, 34, 0.85)');
-      for (var j = 0; j < patient.mesh.userData.bodyParts.length; j++) {
-        var part = patient.mesh.userData.bodyParts[j];
-        part.material.emissive = new THREE.Color(0x00ff44);
-        part.material.emissiveIntensity = 0.8;
-      }
-      animations.push({ patient: patient, type: 'heal', timer: 0.5, maxTime: 0.5, autoDischarge: true });
+      var recoveryDuration = 30 + Math.random() * 15;
+      var bar = createRecoveryProgressBar();
+      animations.push({ patient: patient, type: 'recover', timer: recoveryDuration, maxTime: recoveryDuration, autoDischarge: true, bar: bar });
     } else {
       Game.Inventory.showNotification(Game.Lang.t('notify.medicineApplied', [patient.pendingConsumables.length]), 'rgba(70, 130, 180, 0.85)');
-      for (var k = 0; k < patient.mesh.userData.bodyParts.length; k++) {
-        var p2 = patient.mesh.userData.bodyParts[k];
-        p2.material.emissive = new THREE.Color(0x4488ff);
-        p2.material.emissiveIntensity = 0.5;
-      }
-      animations.push({ patient: patient, type: 'heal', timer: 0.3, maxTime: 0.3 });
     }
     spawnSmileyReaction(patient);
+  }
+
+  // --- Recovery progress bar (3D sprite over patient) ---
+  function createRecoveryProgressBar() {
+    var canvas = document.createElement('canvas');
+    canvas.width = 192; canvas.height = 28;
+    var texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    var mat = new THREE.SpriteMaterial({ map: texture, transparent: true, depthTest: false });
+    var sprite = new THREE.Sprite(mat);
+    sprite.scale.set(0.85, 0.12, 1);
+    scene.add(sprite);
+    return { sprite: sprite, canvas: canvas, texture: texture, lastDraw: -1 };
+  }
+
+  function drawRecoveryProgressBar(bar, progress) {
+    var progressInt = Math.floor(progress * 100);
+    if (progressInt === bar.lastDraw) return;
+    bar.lastDraw = progressInt;
+    var ctx = bar.canvas.getContext('2d');
+    ctx.clearRect(0, 0, 192, 28);
+
+    ctx.fillStyle = 'rgba(10, 30, 15, 0.85)';
+    ctx.beginPath();
+    ctx.roundRect(0, 0, 192, 28, 6);
+    ctx.fill();
+
+    var borderColor = '#22aa44';
+    ctx.strokeStyle = borderColor;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.roundRect(0, 0, 192, 28, 6);
+    ctx.stroke();
+
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)';
+    ctx.beginPath();
+    ctx.roundRect(3, 16, 186, 8, 3);
+    ctx.fill();
+
+    var fillW = Math.max(0, Math.min(186, progress * 186));
+    if (fillW > 0) {
+      var grad = ctx.createLinearGradient(3, 0, 189, 0);
+      grad.addColorStop(0, borderColor);
+      grad.addColorStop(1, '#7fffaa');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.roundRect(3, 16, fillW, 8, 3);
+      ctx.fill();
+    }
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(Game.Lang.t('patient.status.recovering'), 6, 9);
+
+    ctx.fillStyle = '#aaffcc';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText(progressInt + '%', 188, 9);
+
+    bar.texture.needsUpdate = true;
+  }
+
+  function disposeRecoveryProgressBar(bar) {
+    if (!bar) return;
+    scene.remove(bar.sprite);
+    if (bar.sprite.material.map) bar.sprite.material.map.dispose();
+    bar.sprite.material.dispose();
   }
 
   // --- Smiley reactions ---
@@ -1324,43 +1236,12 @@
     });
   }
 
-  // --- Diagnostic routing ---
-  function startWalk(patient, waypoints) {
-    if (!waypoints || waypoints.length === 0) return;
-    patient.targetPos = waypoints[0].clone();
-    patient.walkPath = waypoints.length > 1 ? waypoints.slice(1).map(function(v){ return v.clone(); }) : null;
-  }
-
-  function sendPatientToDiagnostics(patient) {
-    if (diagExamSlot && !diagExamSlot.occupied) {
-      diagExamSlot.occupied = true;
-      patient.diagExamSlot = diagExamSlot;
-      patient.state = 'walkingToDiagExam';
-      startWalk(patient, [diagDoorWaypoint(), diagExamSlot.pos]);
-      patient.anim.targetPose = 'standing';
-      removeFromQueue(patient);
-      closePopup();
-      return;
-    }
-    var qslot = findFreeDiagQueueSlot();
-    if (!qslot) return;
-    qslot.occupied = true;
-    patient.diagQueueSlot = qslot;
-    patient.state = 'walkingToDiagQueue';
-    startWalk(patient, [qslot.pos]);
-    patient.anim.targetPose = 'standing';
-    removeFromQueue(patient);
-    closePopup();
-  }
-
   function rejectPatient(patient) {
     removeFromQueue(patient);
     if (patient.destination) {
       patient.destination.occupied = false;
       patient.destination = null;
     }
-    if (patient.diagQueueSlot) { patient.diagQueueSlot.occupied = false; patient.diagQueueSlot = null; }
-    if (patient.diagExamSlot) { patient.diagExamSlot.occupied = false; patient.diagExamSlot = null; }
     removeIllnessVisuals(patient);
     patient.state = 'leaving';
     patient.leavePhase = 'toExit';
@@ -1368,158 +1249,12 @@
     patient.anim.targetPose = 'standing';
     Game.Inventory.showNotification(Game.Lang.t('notify.patientRejected'));
     closePopup();
-    advanceDiagQueue();
-  }
-
-  function advanceDiagQueue() {
-    if (!diagExamSlot || diagExamSlot.occupied) return;
-    for (var i = 0; i < patients.length; i++) {
-      var p = patients[i];
-      if (p.state === 'inDiagQueue') {
-        if (p.diagQueueSlot) { p.diagQueueSlot.occupied = false; p.diagQueueSlot = null; }
-        diagExamSlot.occupied = true;
-        p.diagExamSlot = diagExamSlot;
-        p.state = 'walkingToDiagExam';
-        startWalk(p, [diagDoorWaypoint(), diagExamSlot.pos]);
-        p.anim.targetPose = 'standing';
-        return;
-      }
-    }
-  }
-
-  // --- Auto-routing after staff diagnosis (no popup shown) ---
-  // Called by staff.js::updateDiagnostician when diagnosis completes.
-  // For healthy patients: set payment and send to cashier.
-  // For sick patients: reveal diagnosis, then route to bed (free) or waiting chair.
-  // If nothing is free — patient stays on exam-slot and will be picked up next tick.
-  function autoRouteAfterDiag(patient) {
-    patient.wasDiagnosed = true;
-    patient.needsDiagnosis = false;
-
-    if (patient.isHealthy) {
-      patient.treatmentFee = 0;
-      patient.requiredConsumables = [];
-      patient.pendingConsumables = [];
-      removeIllnessVisuals(patient);
-      removeAllIndicators(patient);
-      freeExamSlot(patient);
-      patient.homeSent = true;
-      patient.paymentInfo = {
-        procedure: patient.procedureFee,
-        treatment: 0,
-        total: patient.procedureFee,
-        reason: 'home-healthy'
-      };
-      patient.anim.recovered = true;
-      patient.anim.targetPose = 'standing';
-      if (Game.Shift) Game.Shift.trackPatientServed();
-      Game.Cashier.addPatientToQueue(patient);
-      if (patient.targetPos) {
-        var finalCashierPos = patient.targetPos.clone();
-        startWalk(patient, [diagDoorWaypoint(), finalCashierPos]);
-      }
-      return;
-    }
-
-    // Sick: reveal, then route.
-    revealDiagnosis(patient);
-    patient.treatmentFee = DIAGNOSIS_FEE;
-
-    // Prefer a free indoor bed.
-    var indoorBeds = Game.Furniture.getIndoorBeds();
-    for (var i = 0; i < indoorBeds.length; i++) {
-      if (!indoorBeds[i].occupied && !Game.Furniture.isBedBroken(indoorBeds[i])) {
-        freeExamSlot(patient);
-        patient.state = 'walking';
-        var bedTarget = indoorBeds[i].pos.clone();
-        bedTarget.y = 0;
-        startWalk(patient, [diagDoorWaypoint(), bedTarget]);
-        patient.destination = indoorBeds[i];
-        indoorBeds[i].occupied = true;
-        patient.anim.targetPose = 'standing';
-        return;
-      }
-    }
-
-    // Else: waiting chair.
-    var indoorChairs = Game.Furniture.getIndoorChairs();
-    for (var j = 0; j < indoorChairs.length; j++) {
-      if (!indoorChairs[j].occupied) {
-        freeExamSlot(patient);
-        patient.state = 'walking';
-        var chairTarget = indoorChairs[j].pos.clone();
-        chairTarget.y = 0;
-        startWalk(patient, [diagDoorWaypoint(), chairTarget]);
-        patient.destination = indoorChairs[j];
-        indoorChairs[j].occupied = true;
-        patient.anim.targetPose = 'standing';
-        return;
-      }
-    }
-
-    // Nothing free: patient stays on exam-slot (awaitingDiagDecision-like holding pattern).
-    // The slot is still occupied; auto-promote function will pick them up later.
-    patient.state = 'awaitingAutoRoute';
-  }
-
-  // When a bed frees up, pull diagnosed patients from waiting chairs or
-  // exam-slot holding pattern onto it (sickest/lowest HP first).
-  function autoPromoteWaitingToBed() {
-    var indoorBeds = Game.Furniture.getIndoorBeds();
-    for (var i = 0; i < indoorBeds.length; i++) {
-      var bed = indoorBeds[i];
-      if (bed.occupied || Game.Furniture.isBedBroken(bed)) continue;
-
-      // Find sickest diagnosed patient sitting in waiting or on exam-slot awaiting route
-      var best = null;
-      var bestHp = Infinity;
-      for (var j = 0; j < patients.length; j++) {
-        var p = patients[j];
-        if (p.treated || p.lost) continue;
-        if (!p.requiredConsumables || p.requiredConsumables.length === 0) continue;
-        if (p.state === 'waiting' || p.state === 'awaitingAutoRoute') {
-          if (p.hp < bestHp) { bestHp = p.hp; best = p; }
-        }
-      }
-      if (!best) continue;
-
-      // Transfer best → bed
-      if (best.state === 'waiting' && best.destination) {
-        best.destination.occupied = false;
-      }
-      if (best.state === 'awaitingAutoRoute') {
-        freeExamSlot(best);
-      }
-      best.state = 'walking';
-      var target = bed.pos.clone();
-      target.y = 0;
-      // If patient is in the diag room, route through doorway
-      if (best.mesh.position.x < -3) {
-        startWalk(best, [diagDoorWaypoint(), target]);
-      } else {
-        startWalk(best, [target]);
-      }
-      best.destination = bed;
-      bed.occupied = true;
-      best.anim.targetPose = 'standing';
-    }
-  }
-
-  function freeExamSlot(patient) {
-    if (patient.diagExamSlot) {
-      patient.diagExamSlot.occupied = false;
-      patient.diagExamSlot = null;
-    }
-    advanceDiagQueue();
   }
 
   function dischargePatient(patient) {
     removeAllIndicators(patient);
     if (patient.destination) {
       patient.destination.occupied = false;
-      if (Game.Furniture.isBedSlot(patient.destination)) {
-        Game.Furniture.decrementBedHp(patient.destination);
-      }
       patient.destination = null;
     }
     patient.treated = false;
@@ -1530,73 +1265,18 @@
     Game.Cashier.addPatientToQueue(patient);
   }
 
-  // HP ≤ 0: mark lost, free slots, walk to exit without paying.
-  function losePatient(patient) {
-    if (patient.lost) return;
-    patient.lost = true;
-    patient.hp = 0;
-
-    // Clear staff flags — staff update loops will abort on next tick.
-    patient.staffProcessing = false;
-    patient.staffDiagnosing = false;
-    patient.staffTreating = false;
-
-    // Free all slots
-    removeFromQueue(patient);
-    if (patient.destination) {
-      patient.destination.occupied = false;
-      patient.destination = null;
-    }
-    if (patient.diagQueueSlot) { patient.diagQueueSlot.occupied = false; patient.diagQueueSlot = null; }
-    if (patient.diagExamSlot) { patient.diagExamSlot.occupied = false; patient.diagExamSlot = null; }
-
-    removeAllIndicators(patient);
-    removeIllnessVisuals(patient);
-
-    if (Game.Shift) Game.Shift.trackPatientLost();
-    Game.Inventory.showNotification(Game.Lang.t('notify.patientLeft'));
-
-    // Red flash + walk to exit
-    patient.animating = true;
-    for (var j = 0; j < patient.mesh.userData.bodyParts.length; j++) {
-      var part = patient.mesh.userData.bodyParts[j];
-      part.material.emissive = new THREE.Color(0xff2222);
-      part.material.emissiveIntensity = 0.5;
-    }
-    animations.push({ patient: patient, type: 'shake', timer: 0.3, maxTime: 0.3, originX: patient.mesh.position.x });
-
-    patient.state = 'leaving';
-    patient.leavePhase = 'toExit';
-    patient.targetPos = new THREE.Vector3(0, 0, 1);
-    patient.anim.targetPose = 'standing';
-
-    // If patient was in diag room, route through doorway
-    if (patient.mesh.position.x < -3) {
-      startWalk(patient, [diagDoorWaypoint(), new THREE.Vector3(0, 0, 1)]);
-    }
-
-    advanceDiagQueue();
-  }
-
   function removePatient(patient) {
     removeIllnessVisuals(patient);
     removeAllIndicators(patient);
-    removeHpBar(patient);
     scene.remove(patient.mesh);
     if (patient.destination) {
       patient.destination.occupied = false;
-      if (Game.Furniture.isBedSlot(patient.destination)) {
-        Game.Furniture.decrementBedHp(patient.destination);
-      }
     }
-    if (patient.diagQueueSlot) { patient.diagQueueSlot.occupied = false; patient.diagQueueSlot = null; }
-    if (patient.diagExamSlot) { patient.diagExamSlot.occupied = false; patient.diagExamSlot = null; }
     var idx = patients.indexOf(patient);
     if (idx !== -1) patients.splice(idx, 1);
     var qIdx = queue.indexOf(patient);
     if (qIdx !== -1) { queue.splice(qIdx, 1); updateQueueTargets(); }
     if (hoveredPatient === patient) hoveredPatient = null;
-    advanceDiagQueue();
   }
 
   function updateAnimations(delta) {
@@ -1604,28 +1284,28 @@
       var anim = animations[i];
       anim.timer -= delta;
 
-      if (anim.type === 'heal') {
-        var intensity = Math.max(0, anim.timer / anim.maxTime) * 0.8;
-        for (var j = 0; j < anim.patient.mesh.userData.bodyParts.length; j++) {
-          anim.patient.mesh.userData.bodyParts[j].material.emissiveIntensity = intensity;
+      if (anim.type === 'recover') {
+        var patientAliveR = anim.patient && patients.indexOf(anim.patient) !== -1;
+        if (!patientAliveR) {
+          disposeRecoveryProgressBar(anim.bar);
+          animations.splice(i, 1);
+          continue;
         }
+        var progressR = 1.0 - Math.max(0, anim.timer / anim.maxTime);
+        var isLyingR = anim.patient.anim.pose === 'lying';
+        anim.bar.sprite.position.set(
+          anim.patient.mesh.position.x,
+          isLyingR ? 1.6 : 2.1,
+          anim.patient.mesh.position.z
+        );
+        drawRecoveryProgressBar(anim.bar, progressR);
         if (anim.timer <= 0) {
-          for (var k = 0; k < anim.patient.mesh.userData.bodyParts.length; k++) {
-            var part = anim.patient.mesh.userData.bodyParts[k];
-            part.material.emissive.setHex(0x000000);
-            part.material.emissiveIntensity = 0;
-          }
+          disposeRecoveryProgressBar(anim.bar);
           anim.patient.animating = false;
-          if (anim.patient.treated) {
-            removeAllIndicators(anim.patient);
-          }
           if (anim.autoDischarge && anim.patient.treated && patients.indexOf(anim.patient) !== -1) {
-            // All meds applied — go straight to cashier (no popup).
-            var total = anim.patient.procedureFee + (anim.patient.wasDiagnosed ? anim.patient.treatmentFee : 0);
             anim.patient.paymentInfo = {
               procedure: anim.patient.procedureFee,
-              treatment: anim.patient.wasDiagnosed ? anim.patient.treatmentFee : 0,
-              total: total,
+              total: anim.patient.procedureFee,
               reason: 'discharged'
             };
             dischargePatient(anim.patient);
@@ -1677,25 +1357,13 @@
       var isMoving = false;
       var speed = getPatientSpeed(p) * delta;
 
-      // HP decay — pauses while staff is helping this patient.
-      if (hpActive(p.state) && !p.lost && !p.treated) {
-        var hpPaused = p.staffDiagnosing || p.staffTreating;
-        if (!hpPaused) {
-          p.hp -= p.hpDecayRate * delta;
-          if (p.hp <= 0) {
-            losePatient(p);
-            continue;
-          }
-        }
-      }
-
       if (p.state === 'queued' && p.queueTarget) {
         var qDx = p.queueTarget.x - p.mesh.position.x;
         var qDz = p.queueTarget.z - p.mesh.position.z;
         isMoving = (qDx * qDx + qDz * qDz) > 0.01;
         moveToward(p.mesh.position, p.queueTarget, speed);
-        // Horizontal queue: face north (rotY = 0) toward reception desk
-        p.mesh.rotation.y = 0;
+        // Vertical queue: face south (rotY = PI) toward reception desk to the north
+        p.mesh.rotation.y = Math.PI;
       }
       if (p.state === 'walking' && p.targetPos) {
         var arrived = moveToward(p.mesh.position, p.targetPos, speed);
@@ -1711,49 +1379,13 @@
           isMoving = true;
         }
         if (arrived) {
-          var isBed = p.destination && Game.Furniture.isBedSlot(p.destination);
+          var isBed = !!p.wardId;
           p.state = isBed ? 'atBed' : 'waiting';
           p.targetPos = null;
           p.anim.targetPose = isBed ? 'lying' : 'sitting';
           if (p.state === 'atBed') {
             createBedIndicators(p);
           }
-        }
-      }
-      if (p.state === 'walkingToDiagQueue' && p.targetPos) {
-        var arrivedQ = moveToward(p.mesh.position, p.targetPos, speed);
-        var dirQ = new THREE.Vector3().subVectors(p.targetPos, p.mesh.position);
-        if (dirQ.lengthSq() > 0.01) {
-          p.mesh.rotation.y = Math.atan2(dirQ.x, dirQ.z);
-        }
-        isMoving = !arrivedQ;
-        if (arrivedQ) {
-          p.state = 'inDiagQueue';
-          p.targetPos = null;
-          p.anim.targetPose = 'sitting';
-          p.mesh.rotation.y = 0;
-          advanceDiagQueue();
-        }
-      }
-      if (p.state === 'walkingToDiagExam' && p.targetPos) {
-        var arrivedE = moveToward(p.mesh.position, p.targetPos, speed);
-        var dirE = new THREE.Vector3().subVectors(p.targetPos, p.mesh.position);
-        if (dirE.lengthSq() > 0.01) {
-          p.mesh.rotation.y = Math.atan2(dirE.x, dirE.z);
-        }
-        isMoving = !arrivedE;
-        if (arrivedE && p.walkPath && p.walkPath.length > 0) {
-          p.targetPos = p.walkPath.shift();
-          if (p.walkPath.length === 0) p.walkPath = null;
-          arrivedE = false;
-          isMoving = true;
-        }
-        if (arrivedE) {
-          p.state = 'atDiagExam';
-          p.targetPos = null;
-          p.anim.targetPose = 'sitting';
-          p.mesh.rotation.y = Math.PI;
-          createBedIndicators(p);
         }
       }
       if (p.state === 'discharged' && p.targetPos) {
@@ -1794,7 +1426,6 @@
               child.material.opacity = opacity;
             }
           });
-          if (p.hpBar) p.hpBar.material.opacity = opacity;
           if (opacity <= 0) {
             removePatient(p);
             continue;
@@ -1804,36 +1435,7 @@
 
       updateWalkAnimation(p, delta, isMoving);
       updatePoseTransition(p, delta);
-      updateHpBar(p);
     }
-
-    // Auto-promote diagnosed patients from waiting/holding to free beds.
-    autoPromoteWaitingToBed();
-  }
-
-  function revealDiagnosis(patient) {
-    patient.wasDiagnosed = true;
-    patient.needsDiagnosis = false;
-    patient.symptom = null;
-    patient.diagnosis = patient.hiddenDiagnosis;
-    patient.requiredConsumable = patient.hiddenConsumable;
-    patient.requiredInstrument = null;
-
-    var primary = patient.requiredConsumable;
-    var requiredConsumables;
-    if (patient.severity.key === 'mild') {
-      requiredConsumables = [primary];
-    } else if (patient.severity.key === 'medium') {
-      var others = CONSUMABLE_KEYS.filter(function(k) { return k !== primary; });
-      requiredConsumables = [primary, randomFrom(others)];
-    } else {
-      requiredConsumables = CONSUMABLE_KEYS.slice();
-    }
-    patient.requiredConsumables = requiredConsumables;
-    patient.pendingConsumables = requiredConsumables.slice();
-
-    removeAllIndicators(patient);
-    Game.Inventory.showNotification(Game.Lang.t('notify.diagnosisSet'), 'rgba(34, 139, 34, 0.85)');
   }
 
   window.Game.Patients = {
@@ -1848,13 +1450,11 @@
       return count;
     },
     getHoveredPatient: function() { return hoveredPatient; },
-    revealDiagnosis: function(patient) { revealDiagnosis(patient); },
-    autoRouteAfterDiag: function(patient) { autoRouteAfterDiag(patient); },
 
     // Staff APIs
     getPatients: function() { return patients; },
     getQueue: function() { return queue; },
-    sendPatientByStaff: function(patient, dest, slot) {
+    sendPatientByStaff: function(patient, dest, slot, wardId) {
       if (patient.state === 'waiting' && patient.destination) {
         patient.destination.occupied = false;
       }
@@ -1867,6 +1467,10 @@
       patient.targetPos.y = 0;
       patient.destination = slot;
       slot.occupied = true;
+      if (wardId) {
+        patient.wardId = wardId;
+        if (Game.Wards) patient.procedureFee = Game.Wards.calcPayment(wardId, patient);
+      }
       patient.anim.targetPose = 'standing';
       removeFromQueue(patient);
     },
@@ -1876,20 +1480,17 @@
       patient.queueTarget = new THREE.Vector3(deskPos.x, 0, deskPos.z);
     },
     treatPatientByStaff: function(patient, consumableType) {
-      if (!patient || patient.treated || patient.lost) return;
+      if (!patient || patient.treated) return;
       if (!patient.pendingConsumables || patient.pendingConsumables.indexOf(consumableType) === -1) return;
       applyOneConsumable(patient, consumableType);
     },
 
-    setup: function(_THREE, _scene, _camera, _controls, _beds, _waitingChairs, _diagQueueSlots, _diagExamSlot) {
+    setup: function(_THREE, _scene, _camera, _controls, _waitingChairs) {
       THREE = _THREE;
       scene = _scene;
       camera = _camera;
       controls = _controls;
-      beds = _beds;
       waitingChairs = _waitingChairs;
-      diagQueueSlots = _diagQueueSlots || [];
-      diagExamSlot = _diagExamSlot || null;
 
       interactRay = new THREE.Raycaster();
       interactRay.far = 5;
@@ -1898,25 +1499,53 @@
       hintEl = document.getElementById('interact-hint');
       popupEl = document.getElementById('patient-popup');
       popupName = document.getElementById('popup-name');
-      popupDiagnosis = document.getElementById('popup-diagnosis');
-      popupSupply = document.getElementById('popup-supply');
-      popupSupplyIcon = document.getElementById('popup-supply-icon');
-      popupSeverity = document.getElementById('popup-severity');
-      popupAge = document.getElementById('popup-age');
-      popupComplaint = document.getElementById('popup-complaint');
-      popupTemp = document.getElementById('popup-temp');
-      popupPulse = document.getElementById('popup-pulse');
-      popupBp = document.getElementById('popup-bp');
       popupSeverityBand = document.getElementById('popup-severity-band');
-      btnBed = document.getElementById('btn-bed');
+      popupTier = document.getElementById('popup-tier');
       btnWait = document.getElementById('btn-wait');
-      btnDiag = document.getElementById('btn-diag');
       btnReject = document.getElementById('btn-reject');
-      bedCount = document.getElementById('bed-count');
       chairCount = document.getElementById('chair-count');
-      diagCount = document.getElementById('diag-count');
 
-      // Click to interact — only head of queue is clickable.
+      // Build 6 ward buttons into #popup-wards (row-major 3×2 via CSS grid).
+      wardsContainer = document.getElementById('popup-wards');
+      if (wardsContainer && Game.Wards) {
+        wardsContainer.innerHTML = '';
+        var order = Game.Wards.ORDER;
+        for (var wi = 0; wi < order.length; wi++) {
+          var wid = order[wi];
+          var btn = document.createElement('button');
+          btn.className = 'ward-btn';
+          btn.dataset.ward = wid;
+          btn.innerHTML =
+            '<span class="ward-name"></span>' +
+            '<span class="ward-accepts"></span>' +
+            '<span class="ward-price"></span>' +
+            '<span class="ward-count"></span>';
+          wardsContainer.appendChild(btn);
+          wardButtons[wid] = {
+            btnEl: btn,
+            labelEl: btn.querySelector('.ward-name'),
+            acceptsEl: btn.querySelector('.ward-accepts'),
+            priceEl: btn.querySelector('.ward-price'),
+            countEl: btn.querySelector('.ward-count')
+          };
+          (function(id) {
+            btn.addEventListener('click', function() {
+              if (!popupPatient) return;
+              if (!Game.Wards.accepts(id, popupPatient.severity.key)) {
+                showPopupError(Game.Lang.t('popup.err.wardTypeMismatch'));
+                return;
+              }
+              if (Game.Wards.getFreeCount(id) <= 0) {
+                showPopupError(Game.Lang.t('popup.err.wardFull'));
+                return;
+              }
+              admitToWard(popupPatient, id);
+            });
+          })(wid);
+        }
+      }
+
+      // Click to interact — any queued/waiting patient is clickable.
       document.addEventListener('mousedown', function(e) {
         if (e.button !== 0 || !controls.isLocked) return;
         if (popupPatient) return;
@@ -1930,22 +1559,6 @@
         openPopup(hoveredPatient);
       });
 
-      // Popup buttons
-      btnBed.addEventListener('click', function() {
-        if (!popupPatient) return;
-        if (popupPatient.needsDiagnosis) {
-          showPopupError(Game.Lang.t('popup.err.needsDiagnosis'));
-          return;
-        }
-        var indoorBeds = Game.Furniture.getIndoorBeds();
-        var slot = null;
-        for (var i = 0; i < indoorBeds.length; i++) {
-          if (!indoorBeds[i].occupied && !Game.Furniture.isBedBroken(indoorBeds[i])) { slot = indoorBeds[i]; break; }
-        }
-        if (!slot) return;
-        sendPatient(popupPatient, slot.pos, slot);
-      });
-
       btnWait.addEventListener('click', function() {
         if (!popupPatient) return;
         var indoorChairs = Game.Furniture.getIndoorChairs();
@@ -1955,15 +1568,6 @@
         }
         if (!slot) return;
         sendPatient(popupPatient, slot.pos, slot);
-      });
-
-      btnDiag.addEventListener('click', function() {
-        if (!popupPatient) return;
-        if (!popupPatient.needsDiagnosis) {
-          showPopupError(Game.Lang.t('popup.err.noDiagnosisNeeded'));
-          return;
-        }
-        sendPatientToDiagnostics(popupPatient);
       });
 
       btnReject.addEventListener('click', function() {
@@ -1979,14 +1583,20 @@
         });
       }
 
-      // Register with central interaction system — only head-of-queue is clickable.
-      // Patients at beds/waiting/exam are NOT interactive (visible HP bar only).
+      // Register with central interaction system — patients in queue or sitting
+      // in waiting chairs are clickable so the player can route them.
       Game.Interaction.register('patients', function() {
         var meshes = [];
-        if (queue.length > 0) {
-          var head = queue[0];
-          if (!head.animating && (head.state === 'queued' || head.state === 'interacting')) {
-            meshes.push(head.mesh);
+        for (var i = 0; i < queue.length; i++) {
+          var q = queue[i];
+          if (!q.animating && (q.state === 'queued' || q.state === 'interacting')) {
+            meshes.push(q.mesh);
+          }
+        }
+        for (var w = 0; w < patients.length; w++) {
+          var pw = patients[w];
+          if (!pw.animating && pw.state === 'waiting') {
+            meshes.push(pw.mesh);
           }
         }
         return meshes;
@@ -1996,16 +1606,29 @@
     startWaveSystem: function() {
       autoSpawnActive = true;
       initialSpawnCount = 0;
-      var bedCount = Game.Furniture.getAllBeds().length;
-      var diagCount = diagQueueSlots.length;
-      initialBurstTarget = bedCount + diagCount;
+      // Fill 75% of total ward capacity at shift open.
+      var totalBeds = Game.Wards ? Game.Wards.getTotalCapacity() : 0;
+      initialBurstTarget = Math.max(1, Math.ceil(totalBeds * 0.75));
+
+      // Severity mix: spread across what wards can admit. Compose the burst
+      // so each severity appears in proportion to available wards, then shuffle.
+      // Approximation: mild ≈ 40%, medium ≈ 35%, severe ≈ 25%.
+      var mix = [];
+      var nMild = Math.round(initialBurstTarget * 0.40);
+      var nMedium = Math.round(initialBurstTarget * 0.35);
+      var nSevere = initialBurstTarget - nMild - nMedium;
+      for (var sm = 0; sm < nMild; sm++) mix.push('mild');
+      for (var sd = 0; sd < nMedium; sd++) mix.push('medium');
+      for (var ss = 0; ss < nSevere; ss++) mix.push('severe');
+      // Fisher–Yates shuffle (so queue order feels varied).
+      for (var k = mix.length - 1; k > 0; k--) {
+        var r = Math.floor(Math.random() * (k + 1));
+        var tmp = mix[k]; mix[k] = mix[r]; mix[r] = tmp;
+      }
 
       initialPlan = [];
-      for (var ib = 0; ib < bedCount; ib++) initialPlan.push(false);
-      for (var id = 0; id < diagCount; id++) initialPlan.push(true);
-      for (var k = initialPlan.length - 1; k > 0; k--) {
-        var r = Math.floor(Math.random() * (k + 1));
-        var tmp = initialPlan[k]; initialPlan[k] = initialPlan[r]; initialPlan[r] = tmp;
+      for (var i = 0; i < initialBurstTarget; i++) {
+        initialPlan.push({ severity: mix[i], preferredTier: rollPreferredTier() });
       }
 
       pendingSpawns = [0];
@@ -2021,15 +1644,9 @@
         var p = patients[i];
         removeIllnessVisuals(p);
         removeAllIndicators(p);
-        removeHpBar(p);
         if (p.destination) {
           p.destination.occupied = false;
-          if (Game.Furniture.isBedSlot(p.destination)) {
-            Game.Furniture.decrementBedHp(p.destination);
-          }
         }
-        if (p.diagQueueSlot) p.diagQueueSlot.occupied = false;
-        if (p.diagExamSlot) p.diagExamSlot.occupied = false;
         scene.remove(p.mesh);
       }
       patients.length = 0;
@@ -2047,10 +1664,9 @@
     update: function(delta) {
       if (Game.Shift && Game.Shift.isOpen()) {
         if (autoSpawnActive) {
-          var totalCap = Game.Furniture.getAllBeds().length
-                       + Game.Furniture.getAllChairs().length
-                       + diagQueueSlots.length
-                       + (diagExamSlot ? 1 : 0);
+          var wardCap = Game.Wards ? Game.Wards.getTotalCapacity() : 0;
+          var chairCap = Game.Furniture ? Game.Furniture.getAllChairs().length : 0;
+          var totalCap = wardCap + chairCap;
 
           var totalInBuilding = 0;
           var queuedCount = 0;
@@ -2092,11 +1708,14 @@
                 && totalInBuilding < totalCap
                 && queuedCount < getQueueCap()) {
               pendingSpawns.splice(idx, 1);
-              var plannedDiag = null;
+              var plannedSeverity = null;
+              var plannedTier = null;
               if (initialPlan && initialPlan.length > 0 && initialSpawnCount < initialBurstTarget) {
-                plannedDiag = initialPlan.shift();
+                var entry = initialPlan.shift();
+                plannedSeverity = entry.severity;
+                plannedTier = entry.preferredTier;
               }
-              spawnPatient(false, null, plannedDiag);
+              spawnPatient(false, plannedSeverity, plannedTier);
               initialSpawnCount++;
               totalInBuilding++;
               queuedCount++;

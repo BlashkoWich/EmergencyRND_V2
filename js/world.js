@@ -5,10 +5,12 @@
     setup: function(THREE, scene, collidables) {
       var H = Game.Helpers;
 
-      // === BUILDING: 16 wide (x: -8..8), 18 deep (z: -18..0) — extended north for diag room ===
-      var BW = 16, BD = 18;
-      var BX1 = -BW / 2, BX2 = BW / 2; // -8, 8
-      var BZ1 = -BD, BZ2 = 0;           // -18, 0
+      // === BUILDING: 22 wide (x: -11..11), 24 deep (z: -24..0) ===
+      // South half houses reception + cashier + waiting chairs.
+      // North half houses the 6 wards (14 beds total).
+      var BW = 22, BD = 24;
+      var BX1 = -BW / 2, BX2 = BW / 2; // -11, 11
+      var BZ1 = -BD, BZ2 = 0;           // -24, 0
 
       // --- Indoor floor (tile) ---
       var indoorFloor = new THREE.Mesh(
@@ -33,24 +35,27 @@
       // --- Grass areas ---
       var grassMat = new THREE.MeshLambertMaterial({ map: H.createGrassTexture(THREE) });
       var grassL = new THREE.Mesh(new THREE.BoxGeometry(20, 0.1, 40), grassMat);
-      grassL.position.set(-20, -0.04, 20); grassL.receiveShadow = true; scene.add(grassL); collidables.push(grassL);
+      grassL.position.set(-22, -0.04, 20); grassL.receiveShadow = true; scene.add(grassL); collidables.push(grassL);
       var grassR = new THREE.Mesh(new THREE.BoxGeometry(20, 0.1, 40), grassMat);
-      grassR.position.set(20, -0.04, 20); grassR.receiveShadow = true; scene.add(grassR); collidables.push(grassR);
-      // Back of the building (z < -18 — extended building depth)
+      grassR.position.set(22, -0.04, 20); grassR.receiveShadow = true; scene.add(grassR); collidables.push(grassR);
+      // Back of the building (z < -24)
       var grassBack = new THREE.Mesh(new THREE.BoxGeometry(60, 0.1, 24), grassMat);
-      grassBack.position.set(0, -0.04, -30); grassBack.receiveShadow = true; scene.add(grassBack); collidables.push(grassBack);
-      // Strip along west side of building (between entrance and delivery pad south edge)
-      var grassWestSide = new THREE.Mesh(new THREE.BoxGeometry(8, 0.1, 7.3), grassMat);
-      grassWestSide.position.set(-12, -0.04, -3.65); grassWestSide.receiveShadow = true; scene.add(grassWestSide); collidables.push(grassWestSide);
-      // Strip along east side of building (extended building depth to z=-18)
-      var grassEastSide = new THREE.Mesh(new THREE.BoxGeometry(2, 0.1, 18), grassMat);
-      grassEastSide.position.set(9, -0.04, -9); grassEastSide.receiveShadow = true; scene.add(grassEastSide); collidables.push(grassEastSide);
-      // Fill west gap between grassL and delivery zone (avoids overlap with delivery pad at x=-16..-8)
+      grassBack.position.set(0, -0.04, -36); grassBack.receiveShadow = true; scene.add(grassBack); collidables.push(grassBack);
+      // Strip along west side of building (south portion, outside delivery pad)
+      var grassWestSide = new THREE.Mesh(new THREE.BoxGeometry(9, 0.1, 7.3), grassMat);
+      grassWestSide.position.set(-15.5, -0.04, -3.65); grassWestSide.receiveShadow = true; scene.add(grassWestSide); collidables.push(grassWestSide);
+      // Strip along east side of building
+      var grassEastSide = new THREE.Mesh(new THREE.BoxGeometry(2, 0.1, 24), grassMat);
+      grassEastSide.position.set(12, -0.04, -12); grassEastSide.receiveShadow = true; scene.add(grassEastSide); collidables.push(grassEastSide);
+      // Fill west gap between grassL and delivery zone
       var grassWestMid = new THREE.Mesh(new THREE.BoxGeometry(14, 0.1, 12), grassMat);
-      grassWestMid.position.set(-23, -0.04, -6); grassWestMid.receiveShadow = true; scene.add(grassWestMid); collidables.push(grassWestMid);
-      // Fill east gap between grassR and building strip (extended to match building depth)
-      var grassEastMid = new THREE.Mesh(new THREE.BoxGeometry(20, 0.1, 18), grassMat);
-      grassEastMid.position.set(20, -0.04, -9); grassEastMid.receiveShadow = true; scene.add(grassEastMid); collidables.push(grassEastMid);
+      grassWestMid.position.set(-26, -0.04, -6); grassWestMid.receiveShadow = true; scene.add(grassWestMid); collidables.push(grassWestMid);
+      // Fill west mid-north strip (between delivery pad and back grass)
+      var grassWestNorth = new THREE.Mesh(new THREE.BoxGeometry(22, 0.1, 10), grassMat);
+      grassWestNorth.position.set(-22, -0.04, -19); grassWestNorth.receiveShadow = true; scene.add(grassWestNorth); collidables.push(grassWestNorth);
+      // Fill east gap between grassR and building strip
+      var grassEastMid = new THREE.Mesh(new THREE.BoxGeometry(20, 0.1, 24), grassMat);
+      grassEastMid.position.set(23, -0.04, -12); grassEastMid.receiveShadow = true; scene.add(grassEastMid); collidables.push(grassEastMid);
 
       // --- Ceiling (only over building) ---
       var ceilMesh = new THREE.Mesh(
@@ -64,27 +69,22 @@
 
       // --- Building walls (with window openings cut out) ---
       var T = 0.2;
-      var WIN_W = 1.4, WIN_H = 1.0, WIN_Y = 1.7; // window dims (centered at y=1.7)
-      var winBottomH = WIN_Y - WIN_H / 2;        // 1.2
-      var winTopH = 3.0 - (WIN_Y + WIN_H / 2);    // 0.8
-      // isHorizontal: wall runs along x (constant z = axisVal); else runs along z (constant x = axisVal)
-      // windows: [{center, width}] along the running axis
+      var WIN_W = 1.4, WIN_H = 1.0, WIN_Y = 1.7;
+      var winBottomH = WIN_Y - WIN_H / 2;
+      var winTopH = 3.0 - (WIN_Y + WIN_H / 2);
       function createWallSegments(isHorizontal, axisVal, min, max, windows) {
         var fullLen = max - min;
         var fullCenter = (min + max) / 2;
-        // Bottom strip (full length, h=1.2)
         if (isHorizontal) {
           H.createWall(THREE, scene, collidables, fullCenter, axisVal, fullLen, T, { h: winBottomH, y: winBottomH / 2 });
         } else {
           H.createWall(THREE, scene, collidables, axisVal, fullCenter, T, fullLen, { h: winBottomH, y: winBottomH / 2 });
         }
-        // Top strip (full length, h=0.8)
         if (isHorizontal) {
           H.createWall(THREE, scene, collidables, fullCenter, axisVal, fullLen, T, { h: winTopH, y: 3.0 - winTopH / 2 });
         } else {
           H.createWall(THREE, scene, collidables, axisVal, fullCenter, T, fullLen, { h: winTopH, y: 3.0 - winTopH / 2 });
         }
-        // Middle band (h=1.0 at y=1.7) — broken into segments between windows
         var sorted = windows.slice().sort(function(a, b) { return a.center - b.center; });
         var cursor = min;
         for (var i = 0; i < sorted.length; i++) {
@@ -111,44 +111,46 @@
           }
         }
       }
-      // North wall (z=BZ1=-18, x: -8.1..8.1) — 2 windows
+      // North wall (z=-24, x: -11..11) — 3 windows
       createWallSegments(true, BZ1, BX1 - T / 2, BX2 + T / 2, [
-        { center: -2.5, width: WIN_W },
-        { center: 3.5, width: WIN_W }
+        { center: -6, width: WIN_W },
+        { center: 0, width: WIN_W },
+        { center: 6, width: WIN_W }
       ]);
-      // West wall — side door at z: -12..-9.6. Wall is split:
-      // (a) North of door: z=-18..-12. (b) South of door: z=-9.6..0
-      var westDoorZ1 = -12;     // north edge of side door
-      var westDoorZ2 = -9.6;    // south edge of side door
-      // (a) North segment of west wall (z: -18..-12) — 1 window at z=-15
+      // West wall — side door at z: -12..-9.6
+      var westDoorZ1 = -12;
+      var westDoorZ2 = -9.6;
+      // North segment (z: -24..-12) — 2 windows
       createWallSegments(false, BX1, BZ1, westDoorZ1, [
+        { center: -20, width: WIN_W },
         { center: -15, width: WIN_W }
       ]);
-      // (b) South segment of west wall (z: -9.6..0) — 2 windows
+      // South segment (z: -9.6..0) — 2 windows
       createWallSegments(false, BX1, westDoorZ2, BZ2, [
         { center: -8, width: WIN_W },
         { center: -4, width: WIN_W }
       ]);
-      // Lintel above side door (only over the opening, z: westDoorZ1..westDoorZ2)
-      var westDoorWidth = Math.abs(westDoorZ1 - westDoorZ2); // 2.4
+      // Lintel above side door
+      var westDoorWidth = Math.abs(westDoorZ1 - westDoorZ2);
       H.createWall(THREE, scene, collidables, BX1, (westDoorZ1 + westDoorZ2) / 2, T, westDoorWidth, { h: 0.5, y: 2.75 });
-      // Side door frame posts (north + south edges of gap)
+      // Side door frame posts
       var westFrameMat = new THREE.MeshLambertMaterial({ color: 0x99a8b8 });
       var westPostN = new THREE.Mesh(new THREE.BoxGeometry(0.25, 3, 0.08), westFrameMat);
       westPostN.position.set(BX1, 1.5, westDoorZ1); scene.add(westPostN); collidables.push(westPostN);
       var westPostS = new THREE.Mesh(new THREE.BoxGeometry(0.25, 3, 0.08), westFrameMat);
       westPostS.position.set(BX1, 1.5, westDoorZ2); scene.add(westPostS); collidables.push(westPostS);
-      // East wall (x=8, z: -18..0) — 3 windows (extended)
+      // East wall (x=11) — 4 windows
       createWallSegments(false, BX2, BZ1, BZ2, [
+        { center: -20, width: WIN_W },
         { center: -15, width: WIN_W },
         { center: -10, width: WIN_W },
-        { center: -7, width: WIN_W }
+        { center: -5, width: WIN_W }
       ]);
-      // South wall — two segments with entrance gap (x: -1.2..1.2), each with 1 window
+      // South wall — entrance gap (x: -1.2..1.2), 1 window each side
       var doorHalf = 1.2;
       createWallSegments(true, BZ2, BX1, -doorHalf, [{ center: -6, width: WIN_W }]);
       createWallSegments(true, BZ2, doorHalf, BX2, [{ center: 6, width: WIN_W }]);
-      H.createWall(THREE, scene, collidables, 0, BZ2, doorHalf * 2, T, { h: 0.5, y: 2.75 }); // Entrance lintel
+      H.createWall(THREE, scene, collidables, 0, BZ2, doorHalf * 2, T, { h: 0.5, y: 2.75 });
 
       // Door frame posts
       var frameMat = new THREE.MeshLambertMaterial({ color: 0x99a8b8 });
@@ -161,7 +163,7 @@
       // --- Entrance sign ---
       H.createSign(THREE, scene, Game.Lang.t('sign.clinic'), 0, 2.3, BZ2 + 0.15, 0);
 
-      // === FURNITURE ===
+      // === FURNITURE — SOUTH HALF (reception + waiting + cashier) ===
 
       // --- Reception desk ---
       var deskMat = new THREE.MeshLambertMaterial({ color: 0x6688aa });
@@ -181,7 +183,7 @@
       var deskSide2 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 1.0, 1.0), deskPanelMat);
       deskSide2.position.set(1.5, 0.5, -9.0); scene.add(deskSide2); collidables.push(deskSide2);
 
-      // --- 3 Chairs (waiting area, along east wall) ---
+      // --- 3 Waiting Chairs (east side) ---
       var chairMat = new THREE.MeshLambertMaterial({ color: 0x3366aa });
       var chairLegMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
 
@@ -209,18 +211,17 @@
         return { group: g, collisionBox: box };
       }
 
-      createChair(6.5, -2, -Math.PI / 2);
-      createChair(6.5, -3.2, -Math.PI / 2);
-      createChair(6.5, -4.4, -Math.PI / 2);
+      createChair(9.5, -2, -Math.PI / 2);
+      createChair(9.5, -3.2, -Math.PI / 2);
+      createChair(9.5, -4.4, -Math.PI / 2);
 
-      H.createSign(THREE, scene, Game.Lang.t('sign.waitingArea'), 7.88, 2.5, -3.2, -Math.PI / 2);
+      H.createSign(THREE, scene, Game.Lang.t('sign.waitingArea'), 10.88, 2.5, -3.2, -Math.PI / 2);
 
-      // --- 4 Medical beds ---
-      var bedFrameMat = new THREE.MeshLambertMaterial({ color: 0xcccccc });
+      // === WARDS — NORTH HALF (14 beds across 6 wards) ===
+
+      // Medical bed constructor (body 2.0 wide on X, 0.9 deep on Z).
       var mattressMat = new THREE.MeshLambertMaterial({ color: 0x88bbaa });
       var pillowMat = new THREE.MeshLambertMaterial({ color: 0xddeedd });
-
-      var bedMeshes = [];
       function createBed(x, z, rotY) {
         var frameMat = new THREE.MeshLambertMaterial({ color: 0xcccccc });
         var g = new THREE.Group();
@@ -237,82 +238,92 @@
         scene.add(g);
         var box = new THREE.Mesh(new THREE.BoxGeometry(2.1, 1.0, 1.0), new THREE.MeshBasicMaterial({ visible: false }));
         box.position.set(x, 0.5, z); scene.add(box); collidables.push(box);
-        bedMeshes.push({ group: g, collisionBox: box, frame: frame, rail: rail, frameMat: frameMat });
+        return { group: g, collisionBox: box, frame: frame, rail: rail, frameMat: frameMat };
       }
 
-      createBed(-5.5, -9, 0);
-      createBed(-5.5, -7, 0);
-      createBed(-5.5, -5, 0);
-
-      H.createSign(THREE, scene, Game.Lang.t('sign.examination'), -7.88, 2.5, -6, Math.PI / 2);
-
-      // === DIAGNOSTICS ROOM (NW corner, x:-8..-3, z:-18..-13, past the shelves) ===
-      // Door on EAST (side) interior wall, at z:-15..-14 (width 1.0, centered z=-14.5)
-      var diagWallMat = new THREE.MeshLambertMaterial({ color: 0xd4d0c4 });
-
-      // East interior wall — split around doorway at z=-15..-14
-      var diagWallENorth = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.0, 3.0), diagWallMat);
-      diagWallENorth.position.set(-3, 1.5, -16.5); diagWallENorth.castShadow = true; diagWallENorth.receiveShadow = true;
-      scene.add(diagWallENorth); collidables.push(diagWallENorth);
-      var diagWallESouth = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3.0, 1.0), diagWallMat);
-      diagWallESouth.position.set(-3, 1.5, -13.5); diagWallESouth.castShadow = true; diagWallESouth.receiveShadow = true;
-      scene.add(diagWallESouth); collidables.push(diagWallESouth);
-
-      // South interior wall (solid, no doorway) — x: -8..-3
-      var diagWallS = new THREE.Mesh(new THREE.BoxGeometry(5.0, 3.0, 0.2), diagWallMat);
-      diagWallS.position.set(-5.5, 1.5, -13); diagWallS.castShadow = true; diagWallS.receiveShadow = true;
-      scene.add(diagWallS); collidables.push(diagWallS);
-
-      // Lintel above east doorway (spans the 1.0-wide opening along z)
-      var diagLintel = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.6, 1.0), diagWallMat);
-      diagLintel.position.set(-3, 2.7, -14.5); scene.add(diagLintel);
-
-      // Door frame posts (north + south edges of opening)
-      var diagFrameMat = new THREE.MeshLambertMaterial({ color: 0x99a8b8 });
-      var diagPostN = new THREE.Mesh(new THREE.BoxGeometry(0.25, 3, 0.08), diagFrameMat);
-      diagPostN.position.set(-3, 1.5, -15); scene.add(diagPostN); collidables.push(diagPostN);
-      var diagPostS = new THREE.Mesh(new THREE.BoxGeometry(0.25, 3, 0.08), diagFrameMat);
-      diagPostS.position.set(-3, 1.5, -14); scene.add(diagPostS); collidables.push(diagPostS);
-
-      // Diagnostic desk inside room (against north wall, facing south)
-      var docDeskGroup = new THREE.Group();
-      var docDeskMat = new THREE.MeshLambertMaterial({ color: 0x8B6F47 });
-      var docDeskTop = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.05, 0.7), docDeskMat);
-      docDeskTop.position.y = 0.75; docDeskTop.castShadow = true; docDeskGroup.add(docDeskTop);
-      for (var di = 0; di < 4; di++) {
-        var dlx = (di % 2 === 0 ? -1 : 1) * 0.8;
-        var dlz = (di < 2 ? -1 : 1) * 0.3;
-        var dleg = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.75, 0.06), docDeskMat);
-        dleg.position.set(dlx, 0.38, dlz); docDeskGroup.add(dleg);
+      // Floor-tile zone (coloured overlay) — slight y offset, no collision.
+      function createWardFloor(xMin, xMax, zMin, zMax, color) {
+        var w = xMax - xMin, d = zMax - zMin;
+        var mat = new THREE.MeshLambertMaterial({ color: color, transparent: true, opacity: 0.55 });
+        var tile = new THREE.Mesh(new THREE.BoxGeometry(w, 0.02, d), mat);
+        tile.position.set((xMin + xMax) / 2, 0.01, (zMin + zMax) / 2);
+        tile.receiveShadow = true;
+        scene.add(tile);
+        return tile;
       }
-      // Monitor on desk (facing south toward doctor/patient)
-      var monBaseMat = new THREE.MeshLambertMaterial({ color: 0x222222 });
-      var monBase = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.3, 0.05), monBaseMat);
-      monBase.position.set(0.4, 0.95, 0.15); docDeskGroup.add(monBase);
-      var monScreenMat = new THREE.MeshLambertMaterial({ color: 0x1a3a5a, emissive: 0x0a1a3a, emissiveIntensity: 0.4 });
-      var monScreen = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.27, 0.01), monScreenMat);
-      monScreen.position.set(0.4, 0.95, 0.18); docDeskGroup.add(monScreen);
-      docDeskGroup.position.set(-5.5, 0, -17.3);
-      scene.add(docDeskGroup);
-      var docDeskCol = new THREE.Mesh(new THREE.BoxGeometry(1.9, 1.0, 0.8), new THREE.MeshBasicMaterial({ visible: false }));
-      docDeskCol.position.set(-5.5, 0.5, -17.3); scene.add(docDeskCol); collidables.push(docDeskCol);
 
-      // Single patient chair inside the room, CLOSE to the desk (exam slot).
-      // Patient faces north toward the desk (rotY=π → back south, face north).
-      createChair(-5.5, -16.5, Math.PI, true);
+      // Ward zone colours (subtle tint so they read as distinct rooms).
+      var WARD_COLORS = {
+        easy:     0x88cc88, // green
+        easyPlus: 0x66bb99,
+        medium:   0xccbb55, // amber
+        hard:     0xcc6666, // red
+        hardPlus: 0xbb5599,
+        vip:      0xd4af37  // gold
+      };
 
-      // 3 Queue chairs along the EAST exterior wall of the diag room (north of door),
-      // in a column (backs against the wall, facing east into the main hall).
-      // Door opening is at z=-15..-14; chairs sit north of door in z=-18..-15 range.
-      // Index 0 is the chair closest to the door.
-      createChair(-2.5, -15.3, Math.PI / 2, true);
-      createChair(-2.5, -16.5, Math.PI / 2, true);
-      createChair(-2.5, -17.7, Math.PI / 2, true);
+      // Helper: beds built with rotY=0 → headboard (rail) at bed.x-1, patient at bed.x+1.
+      // Beds built with rotY=π → headboard at bed.x+1, patient at bed.x-1.
+      var wards = {
+        easy: { slots: [] },
+        easyPlus: { slots: [] },
+        medium: { slots: [] },
+        hard: { slots: [] },
+        hardPlus: { slots: [] },
+        vip: { slots: [] }
+      };
 
-      // Sign mounted on the east-wall exterior face, facing +x (into main hall)
-      H.createSign(THREE, scene, Game.Lang.t('sign.diagnostics'), -2.89, 2.35, -14.5, Math.PI / 2);
-      // Sign above side door (interior, on remaining west wall near door edge)
-      H.createSign(THREE, scene, Game.Lang.t('sign.deliveryZone'), -7.88, 2.5, -9.4, Math.PI / 2);
+      // West column: easy (north 3 beds) + easyPlus (south 2 beds), rotY=0 (head west).
+      createWardFloor(-10.5, -6, -23, -17, WARD_COLORS.easy);
+      createBed(-9, -22, 0); wards.easy.slots.push({ pos: new THREE.Vector3(-8, 0, -22), occupied: false });
+      createBed(-9, -20, 0); wards.easy.slots.push({ pos: new THREE.Vector3(-8, 0, -20), occupied: false });
+      createBed(-9, -18, 0); wards.easy.slots.push({ pos: new THREE.Vector3(-8, 0, -18), occupied: false });
+
+      createWardFloor(-10.5, -6, -17, -12.5, WARD_COLORS.easyPlus);
+      createBed(-9, -16, 0); wards.easyPlus.slots.push({ pos: new THREE.Vector3(-8, 0, -16), occupied: false });
+      createBed(-9, -14, 0); wards.easyPlus.slots.push({ pos: new THREE.Vector3(-8, 0, -14), occupied: false });
+
+      // Center column: medium (north 3 beds) + vip (south 1 bed), rotY=0.
+      createWardFloor(-3.5, 1, -23, -17, WARD_COLORS.medium);
+      createBed(-2, -22, 0); wards.medium.slots.push({ pos: new THREE.Vector3(-1, 0, -22), occupied: false });
+      createBed(-2, -20, 0); wards.medium.slots.push({ pos: new THREE.Vector3(-1, 0, -20), occupied: false });
+      createBed(-2, -18, 0); wards.medium.slots.push({ pos: new THREE.Vector3(-1, 0, -18), occupied: false });
+
+      createWardFloor(-3.5, 1, -16, -12.5, WARD_COLORS.vip);
+      createBed(-2, -14, 0); wards.vip.slots.push({ pos: new THREE.Vector3(-1, 0, -14), occupied: false });
+
+      // East column: hard (north 3 beds) + hardPlus (south 2 beds), rotY=π (head east).
+      createWardFloor(5.5, 10.5, -23, -17, WARD_COLORS.hard);
+      createBed(9, -22, Math.PI); wards.hard.slots.push({ pos: new THREE.Vector3(8, 0, -22), occupied: false });
+      createBed(9, -20, Math.PI); wards.hard.slots.push({ pos: new THREE.Vector3(8, 0, -20), occupied: false });
+      createBed(9, -18, Math.PI); wards.hard.slots.push({ pos: new THREE.Vector3(8, 0, -18), occupied: false });
+
+      createWardFloor(5.5, 10.5, -17, -12.5, WARD_COLORS.hardPlus);
+      createBed(9, -16, Math.PI); wards.hardPlus.slots.push({ pos: new THREE.Vector3(8, 0, -16), occupied: false });
+      createBed(9, -14, Math.PI); wards.hardPlus.slots.push({ pos: new THREE.Vector3(8, 0, -14), occupied: false });
+
+      // --- Ward signs (mounted on walls, per memory: signs_on_walls) ---
+      // West wall (x=-11), facing east (into the hall): easy (z=-20), easyPlus (z=-15).
+      H.createSign(THREE, scene, Game.Lang.t('sign.ward.easy'), BX1 + 0.12, 2.5, -20, Math.PI / 2);
+      H.createSign(THREE, scene, Game.Lang.t('sign.ward.easyPlus'), BX1 + 0.12, 2.5, -15, Math.PI / 2);
+
+      // East wall (x=11), facing west: hard (z=-20), hardPlus (z=-16), vip (z=-14).
+      H.createSign(THREE, scene, Game.Lang.t('sign.ward.hard'), BX2 - 0.12, 2.5, -20, -Math.PI / 2);
+      H.createSign(THREE, scene, Game.Lang.t('sign.ward.hardPlus'), BX2 - 0.12, 2.5, -16, -Math.PI / 2);
+
+      // North wall (z=-24): medium sign (above medium zone).
+      H.createSign(THREE, scene, Game.Lang.t('sign.ward.medium'), -1, 2.5, BZ1 + 0.12, 0);
+
+      // VIP decorative divider stub wall (x=2, z=-16..-12.5) — houses VIP sign facing west.
+      var vipDivMat = new THREE.MeshLambertMaterial({ color: 0xd4af37 });
+      var vipDividerH = 1.8;
+      var vipDivider = new THREE.Mesh(new THREE.BoxGeometry(0.12, vipDividerH, 3.5), vipDivMat);
+      vipDivider.position.set(2, vipDividerH / 2, -14.25); vipDivider.castShadow = true;
+      scene.add(vipDivider); collidables.push(vipDivider);
+      H.createSign(THREE, scene, Game.Lang.t('sign.ward.vip'), 2 - 0.08, 2.5, -14.25, -Math.PI / 2);
+
+      // --- Reception & delivery-zone signs ---
+      H.createSign(THREE, scene, Game.Lang.t('sign.deliveryZone'), BX1 + 0.12, 2.5, -10.8, Math.PI / 2);
 
       // === OUTDOOR ENVIRONMENT ===
 
@@ -321,7 +332,7 @@
         new THREE.BoxGeometry(8, 0.1, 6),
         new THREE.MeshLambertMaterial({ map: H.createAsphaltTexture(THREE) })
       );
-      westPad.position.set(-12, -0.055, -10.3);
+      westPad.position.set(-15, -0.055, -10.3);
       westPad.receiveShadow = true;
       scene.add(westPad);
       collidables.push(westPad);
@@ -337,22 +348,22 @@
         var col = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 2.5, 8), new THREE.MeshBasicMaterial({ visible: false }));
         col.position.set(x, 1.25, z); scene.add(col); collidables.push(col);
       }
-      createTree(-5, 4);
-      createTree(5, 4);
-      createTree(-12, 8);
-      createTree(12, 8);
-      createTree(-8, 15);
-      createTree(8, 15);
-      // Behind the building (extended building north wall now at z=-18)
-      createTree(-6, -24);
-      createTree(6, -24);
-      createTree(-14, -24);
-      createTree(14, -24);
+      createTree(-7, 4);
+      createTree(7, 4);
+      createTree(-14, 8);
+      createTree(14, 8);
+      createTree(-10, 15);
+      createTree(10, 15);
+      // Behind the building (north wall now at z=-24)
+      createTree(-8, -30);
+      createTree(8, -30);
+      createTree(-16, -30);
+      createTree(16, -30);
       // East side
-      createTree(13, -2);
-      createTree(14, -14);
-      // West side (past delivery zone)
-      createTree(-18, -4);
+      createTree(16, -4);
+      createTree(17, -16);
+      // West side
+      createTree(-22, -4);
 
       // --- Benches ---
       var benchMat = new THREE.MeshLambertMaterial({ color: 0x8B6F47 });
@@ -377,7 +388,7 @@
       createBench(4, 2, 0);
       createBench(-4, 2, 0);
 
-      // --- Windows (decorative, do not cut walls; not in collidables) ---
+      // --- Windows (decorative panes) ---
       var windowFrameMat = new THREE.MeshLambertMaterial({ color: 0x556677 });
       var windowGlassMat = new THREE.MeshLambertMaterial({
         color: 0xaaccee,
@@ -390,7 +401,6 @@
       function createWindow(x, y, z, rotY) {
         var w = 1.4, h = 1.0;
         var g = new THREE.Group();
-        // Frame: top, bottom (sill), left, right
         var top = new THREE.Mesh(new THREE.BoxGeometry(w + 0.08, 0.08, 0.28), windowFrameMat);
         top.position.set(0, h / 2, 0); g.add(top);
         var sill = new THREE.Mesh(new THREE.BoxGeometry(w + 0.12, 0.06, 0.30), windowFrameMat);
@@ -399,12 +409,10 @@
         left.position.set(-w / 2, 0, 0); g.add(left);
         var right = new THREE.Mesh(new THREE.BoxGeometry(0.08, h, 0.28), windowFrameMat);
         right.position.set(w / 2, 0, 0); g.add(right);
-        // Mullions (cross)
         var horiz = new THREE.Mesh(new THREE.BoxGeometry(w - 0.08, 0.05, 0.22), windowFrameMat);
         horiz.position.set(0, 0, 0); g.add(horiz);
         var vert = new THREE.Mesh(new THREE.BoxGeometry(0.05, h - 0.08, 0.22), windowFrameMat);
         vert.position.set(0, 0, 0); g.add(vert);
-        // Glass panes (outer + inner, perpendicular to wall via group rotation)
         var glassGeo = new THREE.PlaneGeometry(w - 0.1, h - 0.1);
         var glassOuter = new THREE.Mesh(glassGeo, windowGlassMat);
         glassOuter.position.set(0, 0, 0.12); g.add(glassOuter);
@@ -414,42 +422,42 @@
         g.rotation.y = rotY || 0;
         scene.add(g);
       }
-      // North wall (z=-18) — flanking sign.reception (x=0)
-      createWindow(-2.5, 1.7, -18, 0);
-      createWindow(3.5, 1.7, -18, 0);
-      // East wall (x=8) — outside chair zone / sign at z=-3.2 + extended area
-      createWindow(8, 1.7, -7, -Math.PI / 2);
-      createWindow(8, 1.7, -10, -Math.PI / 2);
-      createWindow(8, 1.7, -15, -Math.PI / 2);
-      // West wall (x=-8) — between beds (z=-4, -8), diag room window (z=-15)
-      createWindow(-8, 1.7, -4, Math.PI / 2);
-      createWindow(-8, 1.7, -8, Math.PI / 2);
-      createWindow(-8, 1.7, -15, Math.PI / 2);
-      // South wall (z=0) — flanking entrance, avoiding cashier (x=-3.5)
+      // North wall (z=-24) — 3 windows at x=-6, 0, 6
+      createWindow(-6, 1.7, BZ1, 0);
+      createWindow(0, 1.7, BZ1, 0);
+      createWindow(6, 1.7, BZ1, 0);
+      // East wall (x=11) — 4 windows
+      createWindow(BX2, 1.7, -5, -Math.PI / 2);
+      createWindow(BX2, 1.7, -10, -Math.PI / 2);
+      createWindow(BX2, 1.7, -15, -Math.PI / 2);
+      createWindow(BX2, 1.7, -20, -Math.PI / 2);
+      // West wall (x=-11) — 4 windows
+      createWindow(BX1, 1.7, -4, Math.PI / 2);
+      createWindow(BX1, 1.7, -8, Math.PI / 2);
+      createWindow(BX1, 1.7, -15, Math.PI / 2);
+      createWindow(BX1, 1.7, -20, Math.PI / 2);
+      // South wall (z=0) — flanking entrance
       createWindow(-6, 1.7, 0, Math.PI);
       createWindow(6, 1.7, 0, Math.PI);
 
       // === LIGHTING ===
 
-      // Hemisphere light (sky + ground)
       var hemiLight = new THREE.HemisphereLight(0x87ceeb, 0x556633, 0.6);
       scene.add(hemiLight);
 
-      // Sunlight
       var sunLight = new THREE.DirectionalLight(0xfff5e0, 1.2);
-      sunLight.position.set(10, 15, 5);
+      sunLight.position.set(10, 18, 5);
       sunLight.castShadow = true;
       sunLight.shadow.mapSize.width = 1024;
       sunLight.shadow.mapSize.height = 1024;
-      sunLight.shadow.camera.left = -14;
-      sunLight.shadow.camera.right = 14;
-      sunLight.shadow.camera.top = 2;
-      sunLight.shadow.camera.bottom = -22;
+      sunLight.shadow.camera.left = -18;
+      sunLight.shadow.camera.right = 18;
+      sunLight.shadow.camera.top = 4;
+      sunLight.shadow.camera.bottom = -28;
       sunLight.shadow.camera.near = 1;
-      sunLight.shadow.camera.far = 45;
+      sunLight.shadow.camera.far = 55;
       scene.add(sunLight);
 
-      // Indoor lighting
       scene.add(new THREE.AmbientLight(0xffffff, 0.3));
 
       var fixtureGeo = new THREE.BoxGeometry(0.9, 0.04, 0.3);
@@ -466,8 +474,8 @@
         scene.add(fixture);
       }
 
-      for (var x = -6; x <= 6; x += 4) {
-        for (var z = -16; z <= -2; z += 4) {
+      for (var x = -8; x <= 8; x += 4) {
+        for (var z = -22; z <= -2; z += 4) {
           addLight(x, z, 0.8);
         }
       }
@@ -475,12 +483,10 @@
       // --- Self-service checkout (right of exit) ---
       var cashierDeskGroup = new THREE.Group();
 
-      // Base cabinet — metallic gray
       var baseMat = new THREE.MeshLambertMaterial({ color: 0x5a5a60 });
       var baseCabinet = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.9, 0.5), baseMat);
       baseCabinet.position.set(0, 0.45, 0); baseCabinet.castShadow = true; cashierDeskGroup.add(baseCabinet);
 
-      // Top panel — slightly slanted dark panel holding the screen
       var panelMat = new THREE.MeshLambertMaterial({ color: 0x2a2a2a });
       var topPanel = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.4, 0.08), panelMat);
       topPanel.position.set(0, 1.15, -0.05);
@@ -488,23 +494,19 @@
       topPanel.castShadow = true;
       cashierDeskGroup.add(topPanel);
 
-      // LCD screen — green emissive, attached to front face of panel
       var screenMat = new THREE.MeshLambertMaterial({ color: 0x1a3a1a, emissive: 0x0a3a0a, emissiveIntensity: 0.6 });
       var lcdScreen = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.3, 0.005), screenMat);
       lcdScreen.position.set(0, 1.15, 0);
       lcdScreen.rotation.x = -0.3;
-      // Offset slightly forward of panel along tilted direction
       lcdScreen.position.z += Math.sin(0.3) * 0.04;
       lcdScreen.position.y += Math.cos(0.3) * 0.04 - 0.04;
       cashierDeskGroup.add(lcdScreen);
 
-      // Card reader slot on top of cabinet
       var cardReaderMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
       var cardReader = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.02, 0.06), cardReaderMat);
       cardReader.position.set(0, 0.92, 0.15);
       cashierDeskGroup.add(cardReader);
 
-      // Receipt printer slot — white paper peek
       var receiptMat = new THREE.MeshLambertMaterial({ color: 0xf5f5f0 });
       var receiptSlot = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.015, 0.04), receiptMat);
       receiptSlot.position.set(0, 0.92, 0.23);
@@ -517,30 +519,18 @@
       var cashierTableBox = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.9, 0.6), new THREE.MeshBasicMaterial({ visible: false }));
       cashierTableBox.position.set(-3.5, 0.45, -1.5); scene.add(cashierTableBox); collidables.push(cashierTableBox);
 
-      // Sign above exit (interior of south wall) — wall-mounted per memory guidance
+      // Wall-mounted signs (memory: signs_on_walls)
       H.createSign(THREE, scene, Game.Lang.t('sign.selfService'), -3.5, 2.5, -0.11, Math.PI);
-      H.createSign(THREE, scene, Game.Lang.t('sign.reception'), 0, 2.5, -17.88, 0);
+      H.createSign(THREE, scene, Game.Lang.t('sign.reception'), 0, 2.5, -9.0 - 0.45, 0);
 
-      // Return destination slots for patient system
       return {
-        beds: [
-          { pos: new THREE.Vector3(-4.5, 0, -9), occupied: false },
-          { pos: new THREE.Vector3(-4.5, 0, -7), occupied: false },
-          { pos: new THREE.Vector3(-4.5, 0, -5), occupied: false }
-        ],
+        wards: wards,
         waitingChairs: [
-          { pos: new THREE.Vector3(5.5, 0, -2), occupied: false },
-          { pos: new THREE.Vector3(5.5, 0, -3.2), occupied: false },
-          { pos: new THREE.Vector3(5.5, 0, -4.4), occupied: false }
+          { pos: new THREE.Vector3(8.5, 0, -2), occupied: false },
+          { pos: new THREE.Vector3(8.5, 0, -3.2), occupied: false },
+          { pos: new THREE.Vector3(8.5, 0, -4.4), occupied: false }
         ],
-        bedMeshes: bedMeshes,
         chairMeshes: chairMeshes,
-        diagQueueSlots: [
-          { pos: new THREE.Vector3(-2.5, 0, -15.3), occupied: false },
-          { pos: new THREE.Vector3(-2.5, 0, -16.5), occupied: false },
-          { pos: new THREE.Vector3(-2.5, 0, -17.7), occupied: false }
-        ],
-        diagExamSlot: { pos: new THREE.Vector3(-5.5, 0, -16.5), occupied: false },
         cashierDesk: {
           group: cashierDeskGroup,
           collisionBox: cashierTableBox,

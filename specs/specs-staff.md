@@ -1,42 +1,54 @@
 # EmergencyRND V2 — Сотрудники
 
 ## Overview
-На старте игры **автоматически наняты диагност и медсестра** (бесплатно, зарплата отключена). Игрок может дополнительно нанять администратора (также бесплатно) через магазин (Q). Сотрудники — автономные NPC.
+На старте игры **автоматически наняты 4 медсестры** (бесплатно, зарплата отключена). Игрок может дополнительно нанять администратора (также бесплатно) через магазин (Q). Сотрудники — автономные NPC.
+
+Диагност и связанный с ним пайплайн удалены.
 
 ## Модуль
-`Game.Staff` — файл `js/staff.js` (IIFE). Загружается после `diagnostics.js`, перед `trash.js`/`shift.js`.
+`Game.Staff` — файл `js/staff.js` (IIFE). Загружается после `shelves.js`, перед `trash.js`/`shift.js`.
 
 ## Типы сотрудников (все бесплатные, зарплата = 0)
 ```js
 STAFF_TYPES = {
   administrator: { name: t('staff.administrator'), salary: 0, color: 0x2266aa, hatColor: 0x1a4a88 },
-  diagnostician: { name: t('staff.diagnostician'), salary: 0, color: 0x8844cc, hatColor: 0x6633aa },
   nurse:         { name: t('staff.nurse'),         salary: 0, color: 0xcc4488, hatColor: 0xaa3366 }
 }
 ```
 
 ## Рабочие позиции
 ```js
-WORK_POSITIONS = {
-  administrator: { x: 0,    z: -9.5,  rotY: Math.PI },
-  diagnostician: { x: -5.0, z: -11.0, rotY: 0 },
-  nurse:         { x: -4.0, z: -11.0, rotY: 0 }
-}
+WORK_POSITIONS.administrator = { x: 0, z: -9.5, rotY: Math.PI }
+
+NURSE_WORK_POSITIONS = [
+  { x: -4, z: -11, rotY: 0 },
+  { x:  4, z: -11, rotY: 0 },
+  { x: -4, z: -13, rotY: 0 },
+  { x:  4, z: -13, rotY: 0 }
+]
 ```
+Медсёстры встают в коридоре между палатными колоннами. Каждой при найме резервируется свободный slot (`workSlotIndex`).
+
+## Caps
+```js
+MAX_NURSES = 4
+```
+Админ — max 1. Медсестра — до 4. `isTypeHired(type)` возвращает `true` когда cap достигнут (магазин скроет кнопку найма).
 
 ## Pre-hire на старте
 В `index.html` после `Game.Staff.setup(...)`:
 ```js
-Game.Staff.hire('nurse');
-Game.Staff.hire('diagnostician');
+Game.Staff.hire('nurse'); × 4
 ```
-Оба типа появляются уже нанятыми на экране магазина (в блоке «Нанятые», с кнопкой «Уволить»). Админ остаётся доступным для найма через магазин.
+Админ доступен для найма через магазин.
 
-## Random Work Duration
+## Work Durations
 ```js
-function randWorkDuration() { return 30 + Math.random() * 15; }  // 30–45 секунд
+var TREAT_APPLY_DURATION = 4;  // фикс 4с на один препарат
 ```
-Используется в диагносте (`diagnosing`) и медсестре (`treating`). `processing` админа — 5с. `pickMedicine` медсестры — 1с.
+- Медсестра (`treating`) — `TREAT_APPLY_DURATION` (4с на каждый препарат).
+- После применения **последнего** препарата пациент восстанавливается 30–45с (рандом) — логика в `patients.js`, см. `specs-treatment.md`.
+- `processing` админа — 5с. `pickMedicine` медсестры — 1с.
 
 ## Магазин — вкладка «Сотрудники»
 - Вкладка `data-tab="staff"` в `#shop-popup`
@@ -77,29 +89,12 @@ ACTION_LABELS = {
 
 ## Стейт-машины
 
-### Диагност (обновлённая логика)
-```
-idle (каждые 1с):
-  → находит сикейшего (min HP) пациента в state 'atDiagExam'
-    с needsDiagnosis=true, !staffDiagnosing, !lost
-  → patient.staffDiagnosing = true
-  → targetPos = (examSlot.pos.x + 1.0, 0, examSlot.pos.z)  // рядом с кушеткой
-  → state = 'walkToPatient'
-
-walkToPatient → diagnosing (randWorkDuration ≈ 30-45с) → Game.Patients.autoRouteAfterDiag(patient)
-returning → idle
-```
-Отмена при: нет targetPatient, patient.lost, patient.state !== 'atDiagExam'.
-
-### Медсестра (min HP триаж)
+### Медсестра (FIFO, несколько одновременно)
 ```
 idle (каждую 1с) → строит список кандидатов:
-  state === 'atBed' + !needsDiagnosis + !treated + !lost
-  + !staffTreating + !staffDiagnosing + pendingConsumables.length > 0
-  → sort по hp (asc)
-  → перебирает, ищет первого, у кого есть нужный препарат на стеллаже
+  state === 'atBed' + !treated + !staffTreating + pendingConsumables.length > 0
 
-  Для выбранного:
+  Для первого кандидата у которого препарат есть на стеллаже:
     → patient.staffTreating = true
     → heldItem = pendingConsumables[0]
     → targetSlot = slot на стеллаже
@@ -108,33 +103,31 @@ idle (каждую 1с) → строит список кандидатов:
   Препарат недоступен → добавляет в missingMeds → HUD-предупреждение
 
 walkToShelf → pickMedicine (1с) → takeFromSlot → walkToPatient
-walkToPatient → treating (randWorkDuration ≈ 30-45с) → treatPatientByStaff(patient, heldItem)
-returning → idle
-  (если у пациента ещё есть pendingConsumables, idle подберёт снова)
+walkToPatient → treating (TREAT_APPLY_DURATION = 4с) → treatPatientByStaff(patient, heldItem)
+returning → idle (возвращается к своему NURSE_WORK_POSITIONS[workSlotIndex])
 ```
-**Cancel**: `patient.lost`, `patient.state !== 'atBed'`, `patient.treated`, препарат уже применён игроком/другим путём.
+**Cancel**: `patient.state !== 'atBed'`, `patient.treated`, препарат взят другим путём.
 
-### Администратор (опционально — не пре-хайрен)
+Несколько медсестёр могут параллельно лечить разных пациентов (флаг `staffTreating` на пациенте исключает перекрытие).
+
+### Администратор (опционально — не пре-хайрен, FIFO)
 ```
 idle (каждые 2с):
-  → если есть свободная кровать и patient в 'waiting' с min HP
-    → sendPatientByStaff сразу
-  → иначе если есть свободный dest и patient в очереди с min HP (при свободной кровати)
-    или FIFO (при только свободном стуле)
+  → если есть 'waiting'-пациент и findDestinationForPatient вернул ward-slot
+    → sendPatientByStaff(patient, slot.pos, slot, wardId) сразу
+  → иначе берёт первого queued-пациента (FIFO, !staffProcessing) с совместимой палатой
     → summonToDesk (patient.staffProcessing = true)
     → state = 'waitingForPatient'
 
 waitingForPatient → patient дошёл до ADMIN_DESK_POS (dist<0.15)
   → processing (5с)
-  → sendPatientByStaff в pending dest
+  → sendPatientByStaff(patient, slot.pos, slot, wardId) в подготовленную палату
 ```
+`findDestinationForPatient` итерирует `Game.Wards.ORDER`, предпочитая палаты с `tier === preferredTier`.
 
 ## Блокировка для игрока
 - `patient.staffProcessing` → игрок видит "Администратор оформляет пациента" при попытке клика
-- `patient.staffDiagnosing` / `patient.staffTreating` — используются только внутри staff-логики (игрок не кликает пациентов на кровати/экзаме)
-
-## HP-пауза во время работы
-Пока `staffDiagnosing === true` или `staffTreating === true`, HP пациента **не убывает** (см. `patients.js::updatePatients` — HP decay gated by these flags).
+- `patient.staffTreating` — используется только внутри staff-логики (игрок не кликает пациентов на кровати)
 
 ## Предупреждения
 
@@ -164,7 +157,6 @@ waitingForPatient → patient дошёл до ADMIN_DESK_POS (dist<0.15)
 ## Флаги на объекте пациента
 ```js
 patient.staffProcessing = false
-patient.staffDiagnosing = false
 patient.staffTreating = false
 ```
 
@@ -174,12 +166,13 @@ patient.staffTreating = false
 ```js
 setup(THREE, scene, camera, controls, collidables)
 update(delta)
-hire(type)              // max 1 на тип; бесплатно
+hire(type)              // admin max 1; nurse max MAX_NURSES (4); бесплатно
 fire(staffId)           // без выплат
 getHiredStaff()         // массив нанятых
 getDailySalary()        // всегда 0 (заглушка для shift.js)
-isTypeHired(type)       // bool
-isPatientBeingDiagnosed(patient)
+isTypeHired(type)       // bool — true когда cap достигнут
+countByType(type)       // → number
+isPatientBeingDiagnosed(patient)  // всегда false (backward-compat)
 isPatientBeingTreated(patient)
 ```
 
@@ -187,11 +180,9 @@ isPatientBeingTreated(patient)
 ```js
 getPatients()
 getQueue()
-sendPatientByStaff(patient, dest, slot)
+sendPatientByStaff(patient, dest, slot, wardId)  // wardId опционален — устанавливает procedureFee
 summonToDesk(patient, deskPos)
 treatPatientByStaff(patient, consumableType)
-autoRouteAfterDiag(patient)  // новое: вызывается диагностом
-revealDiagnosis(patient)
 ```
 
 ## DOM-элементы
@@ -211,7 +202,7 @@ revealDiagnosis(patient)
 ## Integration
 ### index.html
 - `<script src="js/staff.js">` между diagnostics.js и trash.js
-- `Game.Staff.setup(...)` и затем `Game.Staff.hire('nurse'); Game.Staff.hire('diagnostician');`
+- `Game.Staff.setup(...)` и затем `Game.Staff.hire('nurse');` × 4
 - `Game.Staff.update(delta)` в animation loop
 
 ### shop.js

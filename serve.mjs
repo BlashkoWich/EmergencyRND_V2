@@ -19,4 +19,7 @@ createServer(async (req, res) => {
   } catch {
     res.writeHead(404); res.end('Not found');
   }
-}).listen(3000, () => console.log('Server running on http://localhost:3000'));
+}).listen(process.env.PORT || 3000, function() {
+  var p = process.env.PORT || 3000;
+  console.log('Server running on http://localhost:' + p);
+});

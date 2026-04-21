@@ -27,18 +27,33 @@
       'popup.complaint': 'Жалоба',
       'popup.diagnosis': 'Диагноз',
       'popup.prescription': 'Назначение',
-      'popup.btn.bed': 'На кровать',
       'popup.btn.wait': 'В зону ожидания',
-      'popup.btn.diag': 'В диагностику',
       'popup.btn.reject': 'Отказать',
       'popup.btn.defer': 'Отложить',
-      'popup.err.needsDiagnosis': 'Этого пациента нельзя направить на кровать — сначала нужна диагностика',
-      'popup.err.noDiagnosisNeeded': 'Этому пациенту диагностика не нужна — направьте его на кровать',
+      'popup.err.wardTypeMismatch': 'Эта палата не принимает пациентов такого типа сложности',
+      'popup.err.wardFull': 'В этой палате нет свободных мест',
       'popup.btn.sendHome': 'Отпустить домой',
       'popup.btn.ok': 'Понятно',
 
+      // Wards
+      'ward.name.easy': 'Лёгкая',
+      'ward.name.easyPlus': 'Лёгкая улучшенная',
+      'ward.name.medium': 'Средняя',
+      'ward.name.hard': 'Сложная',
+      'ward.name.hardPlus': 'Сложная улучшенная',
+      'ward.name.vip': 'VIP',
+      'patient.tier.basic': 'Обычная',
+      'patient.tier.improved': 'Улучшенная',
+      'patient.tier.vip': 'VIP',
+      'patient.tierPrefers': 'Хочет в палату: {0}',
+
       // Signs
-      'sign.diagnostics': 'ДИАГНОСТИКА',
+      'sign.ward.easy': 'ЛЁГКАЯ',
+      'sign.ward.easyPlus': 'ЛЁГКАЯ+',
+      'sign.ward.medium': 'СРЕДНЯЯ',
+      'sign.ward.hard': 'СЛОЖНАЯ',
+      'sign.ward.hardPlus': 'СЛОЖНАЯ+',
+      'sign.ward.vip': 'VIP',
 
       // Shop
       'shop.title': 'Магазин',
@@ -67,7 +82,6 @@
       'hud.balance': 'Баланс:',
       'hud.level': 'Ур.',
       'hud.day': 'День {0}',
-      'hud.lost': 'Потеряно:',
 
       // Shift/Time
       'shift.sign.open': 'ОТКРЫТО',
@@ -131,25 +145,20 @@
 
       // Staff names
       'staff.administrator': 'Администратор',
-      'staff.diagnostician': 'Диагност',
       'staff.nurse': 'Медсестра',
 
       // Staff status labels
       'staff.status.processing': 'Оформление',
-      'staff.status.pickInstrument': 'Берёт инструмент',
-      'staff.status.diagnosing': 'Диагностика',
-      'staff.status.returnInstrument': 'Возвращает',
       'staff.status.pickMedicine': 'Берёт лекарство',
       'staff.status.treating': 'Лечение',
       'staff.status.cleaningTrash': 'Уборка мусора',
+      'patient.status.recovering': 'Восстановление',
 
       // Signs (3D text on canvas)
       'sign.delivery': 'ДОСТАВКА',
       'sign.trash': 'МУСОР',
-      'sign.instruments': 'ИНСТРУМЕНТЫ',
       'sign.clinic': 'ЧАСТНАЯ КЛИНИКА',
       'sign.waitingArea': 'ЗОНА ОЖИДАНИЯ',
-      'sign.examination': 'СМОТРОВАЯ',
       'sign.selfService': 'САМООБСЛУЖИВАНИЕ',
       'sign.reception': 'РЕСЕПШЕН',
       'sign.deliveryZone': 'ЗОНА ДОСТАВКИ',
@@ -176,15 +185,11 @@
       'notify.patientDischarged': 'Пациент выписан! Направлен на оплату.',
       'notify.patientLeft': 'Пациент ушел, не дождавшись помощи',
       'notify.patientRejected': 'Пациент отклонён и ушёл',
-      'notify.diagnosisSet': 'Диагноз установлен!',
       'notify.adminProcessing': 'Администратор оформляет пациента',
-      'notify.diagAlreadyWorking': 'Диагност уже проводит обследование',
-      'notify.needInstrument': 'Нужен: {0}',
       'notify.nurseAlreadyTreating': 'Медсестра уже лечит этого пациента',
       'notify.noMedicineInInventory': 'Нет нужных препаратов в инвентаре',
       'notify.queueOverflow': 'Пациент не смог зайти из-за того, что очередь переполнена',
       'wave.arrived': 'Скорая привезла пациентов! Определите каждого — решите, кого спасать первым.',
-      'notify.instrumentsToPanel': 'Инструменты вешайте на панель',
       'notify.alreadyHired': '{0} уже нанят(а)!',
       'notify.hired': '{0} нанят(а)!',
       'notify.fired': '{0} уволен(а)',
@@ -198,7 +203,6 @@
       'levels.unlock3.3': 'На полу появляется мусор — убирайте!',
       'levels.unlock4.0': 'Найм сотрудников',
       'levels.xp.treatment': 'XP лечение',
-      'levels.xp.diagnostics': 'XP диагностика',
 
       // Consumables/Box hints
       'box.held.trash': 'G — Выбросить в мусорку',
@@ -213,10 +217,7 @@
       'patient.hint.interact': 'ЛКМ — Осмотреть',
       'patient.age': '{0} лет',
       'patient.pulse': '{0} уд/м',
-      'patient.needDiagnosis': 'Требуется диагностика',
-      'patient.outdoorWarning': 'Пока кровать/стул на улице — их нельзя использовать',
-      'patient.brokenWarning1': '{0} кровать сломана — почините ремонтным ключом',
-      'patient.brokenWarningN': '{0} кроватей сломано — почините ремонтным ключом',
+      'patient.outdoorWarning': 'Пока мебель на улице — её нельзя использовать',
 
       // Severity labels
       'severity.severe': 'Тяжёлое',
@@ -246,7 +247,6 @@
       'panel.hint.hang': 'Повесить на E',
 
       // Staff warnings
-      'staff.diagWarning': 'Диагносту не хватает инструментов:',
       'staff.nurseWarning': 'Медсестре не хватает на стеллаже:',
 
       // Shop count labels
@@ -376,18 +376,33 @@
       'popup.complaint': 'Complaint',
       'popup.diagnosis': 'Diagnosis',
       'popup.prescription': 'Prescription',
-      'popup.btn.bed': 'To bed',
       'popup.btn.wait': 'To waiting area',
-      'popup.btn.diag': 'To diagnostics',
       'popup.btn.reject': 'Reject',
       'popup.btn.defer': 'Defer',
-      'popup.err.needsDiagnosis': 'This patient cannot go to a bed — diagnosis is required first',
-      'popup.err.noDiagnosisNeeded': 'This patient does not need diagnosis — send them to a bed',
+      'popup.err.wardTypeMismatch': 'This ward does not admit patients of this complexity',
+      'popup.err.wardFull': 'No free beds in this ward',
       'popup.btn.sendHome': 'Send home',
       'popup.btn.ok': 'OK',
 
+      // Wards
+      'ward.name.easy': 'Basic',
+      'ward.name.easyPlus': 'Basic+',
+      'ward.name.medium': 'Standard',
+      'ward.name.hard': 'Critical',
+      'ward.name.hardPlus': 'Critical+',
+      'ward.name.vip': 'VIP',
+      'patient.tier.basic': 'Basic',
+      'patient.tier.improved': 'Improved',
+      'patient.tier.vip': 'VIP',
+      'patient.tierPrefers': 'Prefers ward: {0}',
+
       // Signs
-      'sign.diagnostics': 'DIAGNOSTICS',
+      'sign.ward.easy': 'BASIC',
+      'sign.ward.easyPlus': 'BASIC+',
+      'sign.ward.medium': 'STANDARD',
+      'sign.ward.hard': 'CRITICAL',
+      'sign.ward.hardPlus': 'CRITICAL+',
+      'sign.ward.vip': 'VIP',
 
       // Shop
       'shop.title': 'Shop',
@@ -416,7 +431,6 @@
       'hud.balance': 'Balance:',
       'hud.level': 'Lvl.',
       'hud.day': 'Day {0}',
-      'hud.lost': 'Lost:',
 
       // Shift/Time
       'shift.sign.open': 'OPEN',
@@ -480,25 +494,20 @@
 
       // Staff names
       'staff.administrator': 'Administrator',
-      'staff.diagnostician': 'Diagnostician',
       'staff.nurse': 'Nurse',
 
       // Staff status labels
       'staff.status.processing': 'Processing',
-      'staff.status.pickInstrument': 'Picking instrument',
-      'staff.status.diagnosing': 'Diagnosing',
-      'staff.status.returnInstrument': 'Returning',
       'staff.status.pickMedicine': 'Picking medicine',
       'staff.status.treating': 'Treating',
       'staff.status.cleaningTrash': 'Cleaning trash',
+      'patient.status.recovering': 'Recovering',
 
       // Signs (3D text on canvas)
       'sign.delivery': 'DELIVERY',
       'sign.trash': 'TRASH',
-      'sign.instruments': 'INSTRUMENTS',
       'sign.clinic': 'PRIVATE CLINIC',
       'sign.waitingArea': 'WAITING AREA',
-      'sign.examination': 'EXAMINATION',
       'sign.selfService': 'SELF CHECKOUT',
       'sign.reception': 'RECEPTION',
       'sign.deliveryZone': 'DELIVERY ZONE',
@@ -525,15 +534,11 @@
       'notify.patientDischarged': 'Patient discharged! Sent to payment.',
       'notify.patientLeft': 'Patient left without receiving help',
       'notify.patientRejected': 'Patient rejected and left',
-      'notify.diagnosisSet': 'Diagnosis confirmed!',
       'notify.adminProcessing': 'Administrator is processing the patient',
-      'notify.diagAlreadyWorking': 'Diagnostician is already examining',
-      'notify.needInstrument': 'Need: {0}',
       'notify.nurseAlreadyTreating': 'Nurse is already treating this patient',
       'notify.noMedicineInInventory': 'No required medications in inventory',
       'notify.queueOverflow': 'Patient could not enter because the queue is full',
       'wave.arrived': 'Ambulance brought patients! Assign each one — decide who to save first.',
-      'notify.instrumentsToPanel': 'Hang instruments on the panel',
       'notify.alreadyHired': '{0} is already hired!',
       'notify.hired': '{0} hired!',
       'notify.fired': '{0} fired',
@@ -547,7 +552,6 @@
       'levels.unlock3.3': 'Trash appears on the floor — clean up!',
       'levels.unlock4.0': 'Hire staff',
       'levels.xp.treatment': 'XP treatment',
-      'levels.xp.diagnostics': 'XP diagnostics',
 
       // Consumables/Box hints
       'box.held.trash': 'G — Throw in trash',
@@ -562,10 +566,7 @@
       'patient.hint.interact': 'LMB — Examine',
       'patient.age': '{0} y.o.',
       'patient.pulse': '{0} bpm',
-      'patient.needDiagnosis': 'Diagnosis required',
-      'patient.outdoorWarning': 'Beds/chairs cannot be used while outside',
-      'patient.brokenWarning1': '{0} bed is broken — repair with the wrench',
-      'patient.brokenWarningN': '{0} beds are broken — repair with the wrench',
+      'patient.outdoorWarning': 'Furniture cannot be used while outside',
 
       // Severity labels
       'severity.severe': 'Severe',
@@ -595,7 +596,6 @@
       'panel.hint.hang': 'Hang with E',
 
       // Staff warnings
-      'staff.diagWarning': 'Diagnostician needs instruments:',
       'staff.nurseWarning': 'Nurse needs on shelf:',
 
       // Shop count labels

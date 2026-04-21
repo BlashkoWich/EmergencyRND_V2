@@ -77,11 +77,7 @@
   function awardPatientXP(patient) {
     if (!Game.Levels) return;
     var xpBase = XP_BY_SEVERITY[patient.severity.key] || 10;
-    var xpDiag = patient.wasDiagnosed ? XP_DIAGNOSIS_BONUS : 0;
-    Game.Levels.awardXP(xpBase + xpDiag, {
-      treatment: xpBase,
-      diagnosis: xpDiag
-    });
+    Game.Levels.awardXP(xpBase, { treatment: xpBase });
   }
 
   // ====== INDICATOR ICONS ======

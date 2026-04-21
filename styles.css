@@ -117,51 +117,10 @@ canvas { display: block; }
 #popup-severity-band.mild { background: linear-gradient(90deg, #44cc44, #22aa22); }
 
 /* Header */
-.popup-header { padding: 16px 24px 10px; }
+.popup-header { padding: 16px 24px 6px; }
 #patient-popup h2 {
-  font-size: 1.25rem; margin: 0 0 8px; font-weight: 600;
+  font-size: 1.25rem; margin: 0; font-weight: 600;
   letter-spacing: 0.02em; color: #fff;
-}
-.popup-meta { display: flex; gap: 20px; font-size: 0.82rem; }
-.popup-meta-item { opacity: 0.8; }
-.meta-label { opacity: 0.6; }
-.popup-meta-item span:last-child { font-weight: 600; }
-
-/* Vitals row */
-.popup-vitals {
-  display: flex; gap: 1px;
-  background: #0a1520; margin: 0 1px;
-}
-.vital-cell {
-  flex: 1; background: #152535; padding: 10px 12px; text-align: center;
-}
-.vital-label {
-  font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.1em;
-  opacity: 0.5; margin-bottom: 4px;
-}
-.vital-value {
-  font-family: 'Courier New', monospace; font-size: 1.05rem; font-weight: 700;
-  color: #7abfff;
-}
-.vital-value.vital-warning { color: #ffcc00; }
-.vital-value.vital-critical { color: #ff4444; }
-
-/* Clinical section */
-.popup-clinical { padding: 8px 24px 4px; }
-.clinical-block {
-  padding: 7px 0 7px 12px; margin-bottom: 4px;
-  border-left: 2px solid rgba(122,191,255,0.2);
-}
-.clinical-label {
-  font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em;
-  opacity: 0.45; margin-bottom: 2px;
-}
-.clinical-value { font-size: 0.88rem; color: #c0d8f0; line-height: 1.4; }
-.complaint-block .clinical-value { font-style: italic; color: #a0b8d0; }
-#popup-supply-icon {
-  display: inline-block; width: 12px; height: 12px; border-radius: 50%;
-  vertical-align: middle; margin-right: 8px;
-  border: 1px solid rgba(255,255,255,0.2);
 }
 
 /* Buttons */
@@ -174,14 +133,80 @@ canvas { display: block; }
   flex: 1; padding: 10px 0; border: none; border-radius: 6px;
   font-size: 0.88rem; font-weight: 600; cursor: pointer; transition: background 0.2s;
 }
-#btn-bed { background: #1a6b42; color: #fff; }
-#btn-bed:hover { background: #228b55; }
 #btn-wait { background: #2a4a6a; color: #fff; }
 #btn-wait:hover { background: #3a5a7a; }
-#btn-diag { background: #5a3a8a; color: #fff; }
-#btn-diag:hover { background: #6a4a9a; }
 #btn-reject { background: #b33232; color: #fff; }
 #btn-reject:hover { background: #c94646; }
+
+/* --- Ward picker grid (6 buttons, 3×2) --- */
+#popup-tier {
+  padding: 4px 24px 10px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #c0d8f0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+#popup-tier .popup-tier-item { display: inline-flex; gap: 4px; }
+#popup-tier .popup-tier-sep { opacity: 0.35; }
+#popup-tier .popup-tier-sev { font-weight: 700; }
+#popup-wards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 8px 24px 6px;
+}
+.ward-btn {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 9px 6px;
+  border: 1px solid rgba(122,191,255,0.18);
+  border-radius: 6px;
+  background: rgba(30, 50, 80, 0.7);
+  color: #e0e8f0;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+}
+.ward-btn:hover:not(:disabled) {
+  background: rgba(50, 80, 120, 0.9);
+  border-color: rgba(122,191,255,0.5);
+}
+.ward-btn .ward-name { font-size: 0.82rem; font-weight: 600; }
+.ward-btn .ward-accepts {
+  display: inline-flex; gap: 3px; justify-content: center;
+  min-height: 10px;
+}
+.ward-btn .ward-sev-dot {
+  display: inline-block;
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.35) inset;
+  opacity: 0.75;
+}
+.ward-btn .ward-sev-dot.ward-sev-active {
+  opacity: 1;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.35) inset, 0 0 0 2px rgba(255,255,255,0.65);
+  transform: scale(1.15);
+}
+.ward-btn .ward-price { font-size: 0.78rem; opacity: 0.95; }
+.ward-btn .ward-count { font-size: 0.7rem; opacity: 0.6; }
+.ward-price-strike { text-decoration: line-through; opacity: 0.55; margin-right: 4px; }
+.ward-price-actual { color: #aaffcc; font-weight: 600; }
+.ward-btn.ward-match { border-color: rgba(127,255,170,0.55); box-shadow: 0 0 0 1px rgba(127,255,170,0.2) inset; }
+.ward-btn.ward-match .ward-price-actual { color: #ffe08a; }
+.ward-btn.ward-mismatch .ward-price-actual { color: #aaffcc; }
+.ward-btn.ward-disabled,
+.ward-btn.ward-full,
+.ward-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+  border-color: rgba(255,255,255,0.08);
+}
+.ward-btn.ward-disabled { background: rgba(60, 30, 30, 0.55); }
 
 #popup-close {
   position: absolute; top: 8px; right: 8px;
@@ -422,18 +447,6 @@ canvas { display: block; }
   border: 1px solid rgba(74, 222, 128, 0.3);
 }
 #balance-value { color: #4ade80; }
-
-/* --- Lost patients HUD (below balance) --- */
-#lost-patients-hud {
-  position: fixed; top: 96px; right: 20px; z-index: 5;
-  background: rgba(0, 0, 0, 0.55);
-  color: #ff9a9a; font-family: 'Segoe UI', Arial, sans-serif;
-  font-size: 0.9rem; font-weight: 600;
-  padding: 6px 12px; border-radius: 8px;
-  pointer-events: none; user-select: none;
-  border: 1px solid rgba(220, 80, 80, 0.28);
-}
-#lost-patients-value { color: #ff6b6b; font-weight: 700; }
 
 /* --- Level HUD --- */
 #level-hud {

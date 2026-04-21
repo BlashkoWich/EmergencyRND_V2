@@ -1,4 +1,4 @@
-# EmergencyRND V2 — Пациенты, очередь, HP, состояния
+# EmergencyRND V2 — Пациенты, очередь, состояния
 
 ## Patient Data Pools
 ```
@@ -12,160 +12,113 @@ CONSUMABLE_KEYS: ['painkiller', 'antihistamine', 'strepsils']
 ```js
 {
   id, name, surname, age,
-  diagnosis,           // null если needsDiagnosis
-  complaint,           // всегда видна
-  needsDiagnosis,      // 30% у всех пациентов
-  requiredInstrument,  // для иконки-индикатора на exam-slot
-  hiddenDiagnosis,     // скрытый диагноз до обследования
-  hiddenConsumable,
+  diagnosis,               // всегда виден (диагностика как фаза удалена)
+  complaint,
   vitals: { temp, bpSys, bpDia, pulse },
-  requiredConsumable,     // PRIMARY тип
-  requiredConsumables[],  // полный список (1-3 шт)
-  pendingConsumables[],   // оставшиеся неприменённые
-  isHealthy,              // 50% шанс у needsDiagnosis — болезнь не обнаружена
-  hp, maxHp, hpDecayRate, // HP-система
-  lost,                   // true после hp ≤ 0
-  hpBar, hpBarCanvas, hpBarTexture,
+  requiredConsumable,      // PRIMARY тип препарата
+  requiredConsumables[],   // полный список (1-3 шт)
+  pendingConsumables[],    // оставшиеся неприменённые
+  severity,                // { key: 'mild'|'medium'|'severe', label }
+  preferredTier,           // 'basic' | 'improved' | 'vip' — роли́т 60/30/10
+  wardId,                  // id палаты после размещения
+  procedureFee,            // оплата = Game.Wards.calcPayment(wardId, patient)
+  paymentInfo,             // { procedure, total, reason }
+  severitySprite,          // 3D-спрайт 🟢/🟡/🔴 над головой
   mesh: THREE.Group,
   state: string,
   targetPos, queueTarget, destination,
-  diagQueueSlot, diagExamSlot,
   indicators: [],
-  animating, severity,
-  treated, wasDiagnosed, homeSent,
-  procedureFee, treatmentFee, paymentInfo,
-  leavePhase, fadeTimer,
-  staffProcessing, staffDiagnosing, staffTreating,
+  animating, treated,
+  staffProcessing, staffTreating,
   anim: { walkPhase, walkBlend, pose, targetPose, poseTransition, poseFrom, recovered, injuryType }
 }
 ```
 
+**Здоровья/HP-системы нет.** Пациенты не деградируют и не теряются по таймеру. Единственный путь ухода без оплаты — кнопка «Отпустить домой» в попапе.
+
+## Severity & Preferred Tier
+- `severity`: вероятности по уровню (см. «Spawning» ниже). Показывается игроку иконкой над головой (🟢 mild / 🟡 medium / 🔴 severe) и в попапе.
+- `preferredTier`: генерируется на спавне с распределением **basic 60%, improved 30%, vip 10%**.
+
 ## Patient States
 | Состояние | Описание |
 |-----------|----------|
-| `queued` | В **горизонтальной** очереди (шеренга вдоль X), только head (index 0) кликается |
-| `interacting` | Первичный попап открыт |
-| `walking` | Идёт к кровати/стулу |
-| `walkingToDiagQueue` | Идёт к стулу очереди диагностики |
-| `inDiagQueue` | Сидит на стуле очереди, ждёт освобождения exam-slot |
-| `walkingToDiagExam` | Идёт к кушетке диагностики |
-| `atDiagExam` | Сидит на кушетке, диагност сам инициирует обследование |
-| `atBed` | Лежит на кровати, медсестра сама применяет препараты (игрок НЕ кликается) |
-| `waiting` | Сидит в зоне ожидания (диагностированный буфер). При освобождении кровати авто-перевод |
-| `awaitingAutoRoute` | Диагностирован на exam-slot, но нет свободных кровати/стула — ждёт. Авто-перевод при освобождении |
-| `discharged` | Идёт к кассе (оплата = procedureFee + treatmentFee для discharged/home-healthy/home-after-diag) |
-| `atRegister` | У кассы, таймер 10с → деньги в registerBalance → leaving |
-| `leaving` | Идёт к выходу, fade-out при z>18 |
+| `queued` | В вертикальной очереди перед ресепшном (шеренга вдоль Z). Любой пациент кликабелен |
+| `interacting` | Попап открыт |
+| `walking` | Идёт к кровати (ward slot) или к стулу ожидания |
+| `atBed` | Лежит на кровати в палате, медсестра применяет препараты |
+| `waiting` | Сидит в зоне ожидания. Авто-перевода нет — игрок направляет в палату через попап |
+| `discharged` | Идёт к кассе после лечения (оплата = procedureFee) |
+| `atRegister` | У кассы, таймер 10с → деньги → leaving |
+| `leaving` | К выходу + fade-out при z>18 |
 
-**Потеря (HP ≤ 0):** patient.lost=true, `Game.Shift.trackPatientLost()`, красная вспышка, state→`leaving` (без кассы). Освобождает все слоты.
+## Vertical Queue
+- `getQueuePosition(index)` = `Vector3(0, 0, -7.5 + index * 1.2)` — колонна вдоль Z, index 0 ближе к стойке.
+- `getQueueCap() = Game.Wards.getTotalCapacity() + waitingChairs.length` (= 14 + 3 = 17).
 
-## HP System (3D sprite + decay)
+## Spawning
+Слот-авто-спавн — единственный режим, запускается при открытии смены.
 
-### Инициализация (в `spawnPatient`)
-```js
-HP_CONFIG = {
-  mild:   { max: 100, start: 100, decay: 0.7 },  // HP/sec
-  medium: { max: 100, start: 85,  decay: 1.2 },
-  severe: { max: 100, start: 70,  decay: 1.8 }
-}
-```
-
-### Decay
-- Активен во всех состояниях **кроме** `recovering`/`discharged`/`atRegister`/`leaving`
-- **Пауза** пока `staffDiagnosing === true` или `staffTreating === true` (сотрудник уже работает с пациентом)
-- `hp -= hpDecayRate * delta`
-- При `hp ≤ 0` → `losePatient(patient)`
-
-### HP-бар (3D Sprite)
-- Canvas 128×18, `THREE.CanvasTexture`, `scale(0.85, 0.13, 1)`
-- Позиция: `y = 1.6` (лёжа) / `2.25` (стоя/сидя)
-- Цвета: зелёный >60%, жёлтый 30–60%, красный <30%
-- Ре-рендер только при смене целочисленного процента
-- Всегда видим пока `!lost && !discharged && !atRegister && !leaving`
-
-## Horizontal Queue System
-- `getQueuePosition(index)` → `new THREE.Vector3(-3.0 + index * 1.2, 0, -7.5)` — шеренга вдоль X
-- Пациенты повёрнуты на север (rotY = 0) — лицом к стойке (desk at z=-9)
-- **Строгая шеренга:** только head (index 0) кликабелен
-- `getQueueCap() = beds + diagQueueSlots + diagExamSlot + waitingChairs`
-
-## Spawning (Slot-based Auto-Spawn — единственный режим)
-- **Стартовый burst:** `initialBurstTarget = bedCount + diagQueueSlots.length`. Planned flag `needsDiagnosis` для каждого — `bedCount` раз `false`, `diagCount` раз `true`, затем Fisher–Yates shuffle для перемешивания.
-- **Steady state:** поддерживается 80% занятости от `totalCap = beds + chairs + diagSlots`. Реактивные (0.5–2.5с) и safety-net таймеры.
+- **Стартовый burst:** `initialBurstTarget = ceil(totalWardCapacity * 0.75) = 11`.
+  - `initialPlan[i] = { severity, preferredTier }`.
+  - Severity-микс burst: ≈ 40% mild, 35% medium, 25% severe (перетасован Fisher–Yates).
+  - `preferredTier` роли́тся 60/30/10 на каждого.
+- **Steady state:** поддерживается 80% занятости от `totalWardCapacity + waitingChairs.length`. Реактивные (0.5–2.5с) и safety-net таймеры.
 - Условия спавна: `totalInBuilding < totalCap` и `queuedCount < getQueueCap()`.
 - Точка появления: `(0, 0, 1)`.
-- **Severity distribution** (по уровню):
+- **Severity distribution** (steady state, по уровню):
   - Level 2: 65% mild, 35% medium
   - Level 3+: 60% mild, 25% medium, 15% severe
-- **Шанс диагностики:** 30% независимо от уровня (`getDiagnosisChance()`).
-- **Healthy ratio (среди needsDiagnosis):** 50% — `patient.isHealthy = true`.
-- `procedureFee = BASE_PRICES[severity] ± 5` в момент спавна.
-- `treatmentFee = 0` → 15 после `revealDiagnosis()` (для не-healthy).
+- `procedureFee` устанавливается **в момент приёма в палату** через `Game.Wards.calcPayment(wardId, patient)`.
 
-## Destination Slots (world.js)
+## Ward Admission Logic
+- Игрок выбирает палату в попапе из 6 кнопок (см. `specs-wards.md`).
+- Серверная валидация (`admitToWard` в patients.js):
+  - Если `!Game.Wards.accepts(wardId, patient.severity.key)` → показ ошибки `popup.err.wardTypeMismatch`, посадка запрещена.
+  - Если `getFreeCount(wardId) === 0` → ошибка `popup.err.wardFull`.
+  - Иначе: `procedureFee = Game.Wards.calcPayment(wardId, patient)`, пациент → `walking` → `atBed`.
+
+## Destination Slots (world.js / Game.Wards)
 ```js
-beds = [{ pos: Vector3(-4.5, 0, -9), occupied }, ...]           // 3 шт
-waitingChairs = [{ pos: Vector3(5.5, 0, -2), occupied }, ...]   // 3 шт
-diagQueueSlots = [{ pos: Vector3(-2.5, 0, -15.3), occupied }, ...]  // 3 стула снаружи
-diagExamSlot = { pos: Vector3(-5.5, 0, -16.5), occupied }       // 1 кушетка
+wards: {
+  easy:     3 slots,
+  easyPlus: 2 slots,
+  medium:   3 slots,
+  hard:     3 slots,
+  hardPlus: 2 slots,
+  vip:      1 slot
+}  // 14 beds total
+waitingChairs: 3 slots
 ```
-- Bed slot offset: +1.0 по X (пациент стоит справа от кровати)
-- Chair slot offset: -1.0 по X
+Bed slot offset: патиент стоит справа (для `rotY=0`) или слева (для `rotY=π`) от койки — задаётся в world.js.
 
 ## Interaction (Raycasting)
-- `Game.Interaction.register('patients', ...)` — регистрируется **только head of queue** в состоянии `queued`/`interacting`
-- Пациенты на кровати, стуле, exam-slot — **не кликабельны игроком** (только HP-бар виден)
-- Hover подсветка зелёным, подсказка `patient.hint.interact` = «ЛКМ — Осмотреть»
+- `Game.Interaction.register('patients', ...)` — все `queued` / `interacting` + `waiting` (`!animating`). Пациенты на кровати не кликабельны.
+- Hover подсветка зелёным, подсказка `patient.hint.interact`.
+
+## Severity Display
+Сложность пациента НЕ выводится на сцене 3D-спрайтом. Игрок видит её:
+- цветная полоса-индикатор сверху попапа (`#popup-severity-band`, окрашенный по ключу severity);
+- в строке `#popup-tier` прямо под заголовком: «Тяжесть: Среднее • Хочет в палату: Обычная»;
+- на каждой ward-кнопке в виде цветных точек `.ward-sev-dot` (🟢/🟡/🔴), показывающих какие сложности палата принимает. Точка сложности текущего пациента подсвечивается (`.ward-sev-active`).
 
 ## Popup Flow
+Первичный попап (ЛКМ по пациенту): медкарта (тяжесть, имя, возраст, витальные, жалоба, диагноз, назначение), строка «Хочет в палату: {tier}», затем сетка 3×2 из 6 кнопок палат + «В зону ожидания» + «Отпустить домой».
+- Каждая ward-кнопка показывает название, цену (с перечёркнутой full price если `tier` не совпал и будет списана basic-по-severity), счётчик `(free/cap)`.
+- Disabled при `!accepts(severity)` (ward-disabled) или `free === 0` (ward-full).
+- Клик по disabled → показ ошибки в `#popup-error`.
+- Крестик `#popup-close` — возврат в `queued` / `waiting`.
 
-### Первичный попап (ЛКМ по head of queue)
-Медкарта: тяжесть, имя, возраст, витальные, жалоба, диагноз, назначение. Кнопки:
-- Ряд 1: **«На кровать (X/N)»** | **«В диагностику (X/4)»**
-- Ряд 2: **«В зону ожидания (X/N)»** | **«Отпустить домой»**
-- Ошибки:
-  - `needsDiagnosis === true` + «На кровать» → `popup.err.needsDiagnosis`
-  - `needsDiagnosis === false` + «В диагностику» → `popup.err.noDiagnosisNeeded`
-- «Отпустить домой» → сразу `leaving` (без кассы). Не учитывается в served/lost.
-- Крестик `#popup-close` — deferPatientPopup (возврат в `queued`).
-
-### Diag-result popup — УДАЛЁН
-После диагностики сотрудник автоматически маршрутизирует пациента:
-- `isHealthy === true` → `paymentInfo.total = procedureFee`, `reason = 'home-healthy'`, сразу к кассе
-- Не здоров → `revealDiagnosis()` → свободная кровать → идёт на неё; иначе → `waitingChair`; иначе → `awaitingAutoRoute` (стоит на exam-slot, ждёт)
-
-### Discharge popup — УДАЛЁН
-После применения последнего препарата (`pendingConsumables.length === 0`):
-1. `patient.treated = true`
-2. Зелёная heal-анимация (0.5с, emissive flash)
-3. По завершении анимации callback:
-   - `paymentInfo = { procedure: procedureFee, treatment: wasDiagnosed ? 15 : 0, total, reason: 'discharged' }`
-   - `dischargePatient(patient)` освобождает кровать, декремент HP кровати, state → `discharged`
-
-## Auto-Promote (waiting → bed)
-Каждый кадр `autoPromoteWaitingToBed()` сканирует свободные кровати и переводит на них **диагностированного** пациента с минимальным HP из `waiting` или `awaitingAutoRoute`. Маршрутизация через дверной проём `diagDoorWaypoint()` если пациент в диагностической комнате.
-
-## Auto-Route After Diag (`autoRouteAfterDiag(patient)`)
-Вызывается `staff.js::updateDiagnostician` при завершении диагностики:
-- Healthy → payment + cashier (через дверной waypoint)
-- Sick → `revealDiagnosis()`, затем bed → waitingChair → awaitingAutoRoute fallback
-
-## Injury Poses (при ходьбе)
-- `painkiller` → `holdStomach` / `holdBack` / `limp`
-- `antihistamine` → `holdHead`
-- `strepsils` → `holdThroat`
-- Масштабируется по severity: severe=1.0, medium=0.5, mild=0.15, recovered=0
-
-## Illness Visual Indicators
-- `applyIllnessVisuals(patient)` при спавне
-- `removeIllnessVisuals(patient)` при уходе/потере
+## Discharge (после последнего препарата)
+1. `patient.treated = true`, `animating = true`.
+2. Зелёный прогресс-бар восстановления (30–45с рандом, `autoDischarge: true`).
+3. По завершении: `paymentInfo = { procedure: procedureFee, total: procedureFee, reason: 'discharged' }` → `dischargePatient(patient)` (освобождает ward-slot, state → `discharged`) → касса.
 
 ## Movement
-- `PATIENT_SPEED = 3.5` ед/сек
-- `WALK_SPEED` одинаков для всех severity
-- `anim.recovered = true` — после диагностики здоров / после лечения / отпущен домой
+- `PATIENT_SPEED = 3.5` ед/сек.
+- `WALK_SPEED` одинаков для всех severity.
+- `anim.recovered = true` после полного применения препаратов / отпуска домой.
 
 ## No Session Persistence
-- Ничего не сохраняется между сессиями
-- Кэш отключён (`Cache-Control: no-cache, no-store`)
-- `localStorage` используется только для `gameLang` и `graphicsQuality`
+- Ничего не сохраняется между сессиями.
+- `localStorage` используется только для `gameLang` и `graphicsQuality`.

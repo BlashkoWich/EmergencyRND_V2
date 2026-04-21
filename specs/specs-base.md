@@ -26,7 +26,7 @@
 - `Game.Furniture` — система мебели (покупка, перемещение, indoor/outdoor, динамические слоты, HP кроватей, ремонт)
 - `Game.Wrench` — ремонтный ключ (переключение клавишей R, first-person модель, подсказка HP кровати)
 - `Game.Shelves` — стеллажи (создание, размещение расходников)
-- `Game.Diagnostics` — мини-игры диагностики (фонендоскоп, рефлекс-молоток, риноскоп; инструменты не физические, применяются неявно)
+- `Game.Wards` — реестр 6 палат (cost, capacity, accepts-матрица, calcPayment), питается данными из `Game.World.setup()`
 - `Game.Staff` — система найма сотрудников (NPC-помощники, зарплата)
 - `Game.Trash` — система мусора (спавн внутри больницы с уровня 3, модели, партиклы вони, мухи, уборка)
 - `Game.Shift` — система смен и дней (время, табличка Open/Closed, задачи, итоги дня)
@@ -34,9 +34,9 @@
 - `Game.Ads` — система рекламы за деньги (попап предложения, фиктивный ролик, награда $200)
 - `Game.Lang` — система локализации (переводы ru/en, функция t(), переключение языка)
 
-Порядок загрузки: lang → helpers → world → patients → controls → consumables → inventory → shop → ads → wrench → furniture → shelves → diagnostics (stub) → staff → trash → shift → cashier → inline module (оркестратор).
+Порядок загрузки: lang → interaction → helpers → levels → wards → world → patients → controls → consumables → inventory → shop → ads → wrench → furniture → shelves → staff → trash → shift → cashier → inline module (оркестратор).
 
-`tutorial.js` удалён. `diagnostics.js` — no-op заглушка (мини-игры удалены).
+`tutorial.js` удалён. `diagnostics.js` удалён (диагностика как пайплайн удалена — система палат вместо неё).
 
 ## IMPORTANT: Локализация (i18n)
 **Все тексты в игре ОБЯЗАНЫ быть на всех доступных языках (ru, en).** При разработке любой новой фичи или изменении текста:
@@ -63,8 +63,9 @@ styles.css              — вся CSS-стилизация UI
 js/
   lang.js               — система локализации (все переводы ru/en, Game.Lang API)
   helpers.js            — createWall, createSign, процедурные текстуры
-  world.js              — здание, мебель, уличная среда, освещение
-  patients.js           — система пациентов (данные, спавн, движение, лечение, UI попапа)
+  wards.js              — реестр 6 палат (TYPES, accepts, calcPayment), Game.Wards.setup(wardsData)
+  world.js              — здание 22×24, 6 палат, мебель, уличная среда, освещение
+  patients.js           — система пациентов (severity + preferredTier, спавн, ward-routing, лечение, UI попапа)
   controls.js           — WASD, коллизии, pointer lock
   consumables.js        — расходники (типы, 3D модели, физика гравитации, подбор)
   inventory.js          — инвентарь (6 слотов, UI-бар, выбор слота, уведомления)
@@ -73,8 +74,7 @@ js/
   wrench.js             — ремонтный ключ (R — взять/убрать, first-person модель, hold-E для ремонта кровати)
   furniture.js          — система мебели (покупка, перемещение, indoor/outdoor, динамические слоты, HP кроватей, ремонт)
   shelves.js            — стеллажи (создание, размещение расходников)
-  diagnostics.js        — no-op заглушка (мини-игры удалены; диагностикой занимается staff)
-  staff.js              — сотрудники (пре-хайр диагноста + медсестры на старте, зарплата отключена)
+  staff.js              — сотрудники (пре-хайр 4 медсестёр, админ доступен через магазин, зарплата отключена)
   trash.js              — система мусора (спавн, модели, партиклы вони, мухи, уборка игроком)
   shift.js              — система смен (время, табличка, задачи, маскот, итоги дня без зарплаты)
   cashier.js            — касса самообслуживания (банк кассы + снятие денег hold-E + индикатор)
@@ -169,21 +169,14 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 | `interact-hint` | div | Динамическая подсказка под прицелом |
 | `held-box-hint` | div | Подсказка при удержании коробки (ЛКМ/G) |
 | `patient-popup` | div | Попап информации о пациенте |
-| `popup-name` | h2 | Имя + фамилия |
-| `popup-diagnosis` | span | Диагноз (или "????" при needsDiagnosis) |
-| `popup-severity` | span | Тяжесть заболевания (цветной текст) |
-| `popup-supply-icon` | span | Цветная иконка расходника (круг 14px) |
-| `popup-supply` | span | Название расходника |
-| `btn-bed` | button | Кнопка "На кровать" |
-| `bed-count` | span | Счётчик свободных кроватей "(X/N)" внутри btn-bed |
+| `popup-name` | h2 | Имя + фамилия пациента (единственный текст в заголовке) |
+| `popup-severity-band` | div | Верхняя цветная полоска-индикатор тяжести |
+| `popup-tier` | div | Строка «Тяжесть: {label} • Хочет в палату: {tier}» под заголовком |
+| `popup-wards` | div | Контейнер сетки 3×2 из 6 ward-кнопок (`.ward-btn`) |
 | `btn-wait` | button | Кнопка "В зону ожидания" |
 | `chair-count` | span | Счётчик свободных стульев "(X/N)" внутри btn-wait |
-| `btn-diag` | button | Кнопка "В диагностику" (для needsDiagnosis пациентов) |
-| `diag-count` | span | Счётчик свободных слотов диагностики "(X/4)" внутри btn-diag |
 | `btn-reject` | button | Кнопка "Отпустить домой" — пациент уходит без оплаты |
-| `popup-instrument-hint` | div | Подсказка "Требуется диагностика" в попапе (при needsDiagnosis) |
 | `outdoor-warning` | div | Предупреждение о мебели на улице (в попапе пациента) |
-| `broken-bed-warning` | div | Предупреждение о сломанных кроватях (в попапе пациента) |
 | `shop-popup` | div | Попап магазина (табы: препараты + мебель + прокачка + сотрудники) |
 | `shop-tabs` | div | Контейнер табов магазина |
 | `shop-tab-consumables` | div | Секция препаратов |
@@ -207,8 +200,6 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 | `inventory-bar` | div | Панель слотов инвентаря (внутри контейнера) |
 | `inventory-hints` | div | Подсказки "Q — Магазин", "G — Бросить" (внутри контейнера) |
 | `notification` | div | Временное уведомление (создаётся динамически) |
-| `lost-patients-hud` | div | HUD счётчика потерянных пациентов (под balance, красный) |
-| `lost-patients-value` | span | Значение счётчика |
 | `time-hud` | div | HUD времени и дня (top center) |
 | `day-value` | span | "День N" |
 | `time-value` | span | "HH:MM" |
@@ -227,7 +218,7 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 ## CSS Z-Index Layers
 | z-index | Элемент |
 |---------|---------|
-| 5 | `#crosshair`, `#interact-hint`, `#inventory-container`, `#lost-patients-hud` |
+| 5 | `#crosshair`, `#interact-hint`, `#inventory-container` |
 | 10 | `#overlay`, `#pause-screen` |
 | 15 | `#notification` |
 | 20 | `#patient-popup`, `#shop-popup`, `#day-end-popup` |
@@ -320,7 +311,7 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 - Внутренние: `_canMove(direction)`, `_keys`, `_moveSpeed=4.0`, `_sprintSpeed=7.0`, `_collisionDistance=0.4`, `_velocityX/Z` (текущая скорость), `_moveDamping=12.0`, `_collisionOrigin` (Vector3 для рейкаста от y=0.5), `_savedQuat` (сохранённый quaternion при re-lock), `_gameEntered` (boolean — true после первого pointer lock)
 - **Старт**: клик по `#overlay` → скрывает overlay → `controls.lock()` (старт игры, Level 1 и tutorial удалены)
 - **Lock handler**: ставит `_gameEntered = true`, скрывает `#overlay` и `#pause-screen`, показывает crosshair
-- **Unlock handler**: не показывает ничего если активна реклама (`Game.Ads.isActive()`), открыт магазин (`Game.Shop.isOpen()`), попап пациента (`Game.Patients.isPopupOpen()`), диагностика (`Game.Diagnostics.isActive()`) или попап итогов дня (`Game.Shift.isPopupOpen()`). После всех проверок: если `_gameEntered` — показывает `#pause-screen`, иначе `#overlay`
+- **Unlock handler**: не показывает ничего если активна реклама (`Game.Ads.isActive()`), открыт магазин (`Game.Shop.isOpen()`), попап пациента (`Game.Patients.isPopupOpen()`) или попап итогов дня (`Game.Shift.isPopupOpen()`). После всех проверок: если `_gameEntered` — показывает `#pause-screen`, иначе `#overlay`
 
 ### `Game.Consumables` (`js/consumables.js`)
 - `setup(THREE, scene, camera, controls, collidables)` — инициализация, создание зоны доставки
@@ -403,18 +394,17 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 - `takeFromSlot(slot)` → type|null — забрать предмет из слота
 - `placeOnAnyShelf(type)` → boolean — положить на первый свободный стеллаж
 
-### `Game.Diagnostics` (`js/diagnostics.js`)
-Мини-игры диагностики: фонендоскоп, рефлекс-молоток, риноскоп. Инструменты не физические — применяются неявно при ЛКМ на пациента.
-- `setup(controls)` — инициализация overlay, привязка событий
-- `startMinigame(patient, instrumentType)` — запуск мини-игры (instrumentType только выбирает тип мини-игры), unlock controls, показ overlay
-- `isActive()` → boolean — активна ли мини-игра
-- `update(delta)` — обновление (мини-игра использует свой RAF loop)
+### `Game.Wards` (`js/wards.js`)
+Реестр 6 палат. Подробности — см. [specs-wards.md](specs-wards.md).
+- `setup(wardData)` — принимает `{ id: { slots } }` из `Game.World.setup()`
+- `TYPES`, `ORDER`, `accepts(id, severity)`, `calcPayment(id, patient)`
+- `getFreeSlot(id)`, `getFreeCount(id)`, `getCapacity(id)`, `getTotalCapacity()`, `getAllSlots()`, `getWardIdBySlot(slot)`
 
 ### `Game.Staff` (`js/staff.js`)
 Система найма сотрудников: NPC-помощники, зарплата.
 - `setup(THREE, scene, camera, controls, collidables)` — инициализация
 - `update(delta)` — обновление всех сотрудников, прогресс-бары
-- `hire(type)` — нанять (max 1 на тип). Типы: `administrator`, `diagnostician`, `nurse`
+- `hire(type)` — нанять (admin max 1, nurse max MAX_NURSES=4). Типы: `administrator`, `nurse`
 - `fire(staffId)` — уволить (выплата зарплаты за день)
 - `getHiredStaff()` → массив нанятых
 - `getDailySalary()` → число (сумма зарплат)
@@ -472,10 +462,7 @@ Game.FPS = { frames: 0 }         // счётчик кадров для FPS count
 - `startWaveSystem()` — запуск слот-авто-спавна при открытии смены
 - `clearAll()` — удаление всех пациентов и частиц со сцены
 - `getHoveredPatient()` → patient|null — текущий пациент под прицелом (всегда head of queue)
-- `revealDiagnosis(patient)` — раскрытие диагноза (вызывается из `autoRouteAfterDiag`)
-- `autoRouteAfterDiag(patient)` — авто-маршрутизация после обследования staff (healthy→cashier, sick→bed/chair)
 - `treatPatientByStaff(patient, consumableType)` — медсестра применяет препарат
-- Внутренние функции: `createPatientMesh`, `spawnPatient`, `getQueuePosition` (horizontal), `updateQueueTargets`, `removeFromQueue`, `highlightPatient`/`unhighlightPatient`, `getPatientFromMesh`, `updateInteraction`, `openPopup`/`closePopup`, `sendPatient`, `sendPatientToDiagnostics`, `rejectPatient`, `advanceDiagQueue`, `autoPromoteWaitingToBed`, `updatePatients`, `moveToward`, `createBedIndicators`, `updateIndicators`, `applyOneConsumable`, `dischargePatient`, `losePatient`, `createHpBarSprite`/`updateHpBar`/`removeHpBar`, `hpActive`
-- **Анимации**: emissive меняется напрямую на материале. Типы: `'heal'`, `'shake'` (для потери HP≤0), `'smiley'`.
-- **HP decay**: уменьшается каждый кадр в активных состояниях, пауза при `staffDiagnosing`/`staffTreating`. `hp <= 0` → `losePatient` (state → leaving без кассы).
-- **Auto-discharge**: `'heal'`-анимация с флагом `autoDischarge: true` по завершении вызывает `dischargePatient` (нет попапа).
+- Внутренние функции: `createPatientMesh`, `spawnPatient`, `getQueuePosition` (vertical), `updateQueueTargets`, `removeFromQueue`, `highlightPatient`/`unhighlightPatient`, `getPatientFromMesh`, `updateInteraction`, `openPopup`/`closePopup`/`refreshWardButtons`, `sendPatient`, `admitToWard`, `rejectPatient`, `updatePatients`, `updateSeveritySprites`, `moveToward`, `createBedIndicators`, `updateIndicators`, `applyOneConsumable`, `dischargePatient`
+- **Анимации**: emissive меняется напрямую на материале. Типы: `'heal'` (с опциональным `autoDischarge: true` для финального препарата), `'shake'` (зарезервировано), `'smiley'`.
+- **HP-системы нет**: пациенты не имеют хелсбаров, не деградируют, не теряются по таймеру. После последнего препарата — 0.5с `heal`-вспышка → `autoDischarge` → `dischargePatient` → касса.

@@ -39,7 +39,7 @@
     var listEl = document.getElementById('staff-hired-list');
     if (!listEl || !Game.Staff) return;
 
-    // Update hire buttons visibility — hide if already hired
+    // Update hire buttons visibility — hide when the type's cap is reached.
     var hireItems = document.querySelectorAll('.staff-hire-item');
     for (var h = 0; h < hireItems.length; h++) {
       var type = hireItems[h].dataset.type;
